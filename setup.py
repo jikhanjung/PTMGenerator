@@ -23,7 +23,7 @@ executables = [
 ]
 
 setup(name='PTMgenerator',
-      version='0.1',
+      version='0.2',
       description='PTM Generator',
       executables=executables
       )

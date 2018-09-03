@@ -3,6 +3,7 @@ from tkinter.ttk import Frame, Button, Style
 from pathlib import Path
 import subprocess
 import math
+import time
 from PIL import ImageTk, Image
 sp_coord_list = [[59,31],[74,43],[65,63],[48,51],[41,18],[55,83],[60,253],[83,245],[54,221],[69,233],
 [75,266],[43,241],[38,293],[80,298],[71,318],[56,306],[50,273],[46,326],[66,286],[21,313],
@@ -64,7 +65,7 @@ class PTMFrame(Frame):
         self.initUI()
 
     def initUI(self):
-        self.parent.title("PTM Generator")
+        self.parent.title("PTM Generator v0.2")
         self.style = Style()
         self.style.theme_use("default")
         self.fitter_filepath_str = ""
@@ -125,7 +126,7 @@ class PTMFrame(Frame):
             #self.fitter_label.text = str( filepath )
             #self.fitter_text.text = str( filepath )
     def opendir(self):
-        print( "open")
+        #print( "open")
         dirname = filedialog.askdirectory(initialdir="\\", title="Select directory")
         p = Path(dirname)
         self.currdirname = p.parts[-1]
@@ -134,9 +135,11 @@ class PTMFrame(Frame):
         #self.workdir_text.text = str(p)
         self.workdir_text.delete(0, END)
         self.workdir_text.insert(0, str(p))
+        self.imageview.image = None
 
         self.filelist = []
         if p.is_dir():
+            self.listbox.delete(0, 'end')
             i = 1
             for x in p.iterdir():
                 if not x.is_dir() :
@@ -148,7 +151,7 @@ class PTMFrame(Frame):
                         i+=1
                     else:
                         pass #print( x.suffix)
-        print(dirname)
+        #print(dirname)
     def generatePTM(self):
         if self.listbox.size() != 50:
             messagebox.showerror(message="Must be 50 image files!")
@@ -177,6 +180,7 @@ class PTMFrame(Frame):
         execute_string = " ".join( [ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ] )
         print( execute_string )
         subprocess.call([ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ])
+
     def onselect(self,evt):
         w = evt.widget
         index = int(w.curselection()[0])
@@ -196,16 +200,18 @@ class PTMFrame(Frame):
 
     def setimage(self,filename):
         manager.busy()
+        ts_start = time.time()
         img = Image.open(filename)
-        tkImg= ImageTk.PhotoImage(img)
-        orig_w = tkImg.width()
-        orig_h = tkImg.height()
+
+        ts_middle1 = time.time()
+        orig_w, orig_h = img.size
         new_w = self.imageview.winfo_width()
         new_h = self.imageview.winfo_height()
         print( orig_w, orig_h, new_w, new_h )
         scale_w = orig_w / new_w
         scale_h = orig_h / new_h
-        new_img = img.resize((new_w, new_h-4),Image.ANTIALIAS)
+        new_img = img.resize((new_w, new_h-4))
+        ts_middle2 = time.time()
         tkImg= ImageTk.PhotoImage(new_img)
 
         self.imageview.configure( image=tkImg )
@@ -213,6 +219,8 @@ class PTMFrame(Frame):
         new_w2 = self.imageview.winfo_width()
         new_h2 = self.imageview.winfo_height()
         print( orig_w, orig_h, new_w, new_h, new_w2, new_h2 )
+        ts_end = time.time()
+        print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
         manager.notbusy()
 #root=None
 #def main():
