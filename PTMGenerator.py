@@ -193,7 +193,7 @@ class PTMFrame(Frame):
         subprocess.call([ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ])
     def takePictures(self):
         self.serial = serial.Serial()
-        self.serial.port='/dev/ttyUSB4'
+        self.serial.port='COM3'
         self.serial.baudrate=9600
         self.serial.parity=serial.PARITY_ODD
         self.serial.stopbits=serial.STOPBITS_TWO
@@ -205,8 +205,11 @@ class PTMFrame(Frame):
             print( "error open serial port: " + str(e) )
             return
 
-        for i in range(1,51):
-            self.serial.write(str(i)+'\r\n')
+        command = 's\r\n'
+        self.serial.write(command.encode())
+        #for i in range(1,51):
+            #command = str(i)+'\r\n'
+            #self.serial.write(command.encode())
 
 
     def onselect(self,evt):
