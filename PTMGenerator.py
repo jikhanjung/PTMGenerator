@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import math
 import time
+import serial
 from PIL import ImageTk, Image
 #sp_coord_list = [[59,31],[74,43],[65,63],[48,51],[41,18],[55,83],[60,253],[83,245],[54,221],[69,233],
 #[75,266],[43,241],[38,293],[80,298],[71,318],[56,306],[50,273],[46,326],[66,286],[21,313],
@@ -77,24 +78,23 @@ class PTMFrame(Frame):
         self.fitter_filepath_str = ""
 
         frame1 = Frame(self, relief=RAISED, borderwidth=1)
-        frame1.pack(fill=X)
-        self.workdir_label = Label(frame1, text='Work Dir')
-        self.workdir_label.pack(side=LEFT,fill=X,padx=5,pady=5)
-        self.workdir_text = Entry(frame1,text='')
-        self.workdir_text.pack(side=LEFT,fill=X,expand=True,padx=5,pady=5)
-        self.workdirButton = Button(frame1, text="Open Dir", command=self.opendir)
-        self.workdirButton.pack(side=LEFT, fill=X,padx=5,pady=5)
-
-        frame2 = Frame(self, relief=RAISED, borderwidth=1)
-        frame2.pack(fill=BOTH, expand=True)
-        self.listbox = Listbox(frame2)
+        frame1.pack(fill=BOTH, expand=True)
+        self.listbox = Listbox(frame1)
         self.listbox.pack(side=LEFT,fill=Y,padx=5,pady=5,ipadx=5,ipady=5)
-        self.imageview = Label(frame2)
+        self.imageview = Label(frame1)
         self.imageview.pack(side=LEFT, fill=BOTH, expand=True)
         self.listbox.bind('<<ListboxSelect>>', self.onselect )
 
+        frame2 = Frame(self, relief=RAISED, borderwidth=1)
+        frame2.pack(fill=X)
+        self.workdir_label = Label(frame2, text='Work Dir')
+        self.workdir_label.pack(side=LEFT,fill=X,padx=5,pady=5)
+        self.workdir_text = Entry(frame2,text='')
+        self.workdir_text.pack(side=LEFT,fill=X,expand=True,padx=5,pady=5)
+        self.workdirButton = Button(frame2, text="Open Dir", command=self.opendir)
+        self.workdirButton.pack(side=LEFT, fill=X,padx=5,pady=5)
+
         frame3 = Frame(self)
-        #frame2.height=20
         self.fitter_label = Label(frame3, text='PTMFitter')
         self.fitter_label.pack(side=LEFT,fill=X,padx=5,pady=5)
         self.fitter_text = Entry(frame3,text='',textvariable = self.fitter_filepath_str)
@@ -104,14 +104,19 @@ class PTMFrame(Frame):
         frame3.pack(fill=X)
 
 
+        frame4 = Frame(self)
+        self.takePicturesButton = Button(frame4, text="Take Pictures",command=self.takePictures)
+        self.takePicturesButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+        self.generateButton = Button(frame4, text="Generate PTM File",command=self.generatePTM)
+        self.generateButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+        frame4.pack(fill=X)
+
         self.pack(fill=BOTH, expand=True)
         options = {}
         options['initialdir'] = 'C:\\'
         options['mustexist'] = False
         options['parent'] = self.parent
         options['title'] = 'This is a title'
-        self.generateButton = Button(self, text="Generate PTM File",command=self.generatePTM)
-        self.generateButton.pack( padx=5, pady=5)
 
         self.filelist = []
         fitter = Path.cwd().joinpath("ptmfitter.exe")
@@ -182,25 +187,42 @@ class PTMFrame(Frame):
         saveoptions['initialdir'] = self.workingpath
         saveoptions['initialfile'] = netfilename + '.ptm'
         ptmfilename = Path( filedialog.asksaveasfilename(**saveoptions) )  # mode='w',**options)
-        print( ptmfilename )
+        #print( ptmfilename )
         execute_string = " ".join( [ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ] )
-        print( execute_string )
+        #print( execute_string )
         subprocess.call([ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ])
+    def takePictures(self):
+        self.serial = serial.Serial()
+        self.serial.port='/dev/ttyUSB4'
+        self.serial.baudrate=9600
+        self.serial.parity=serial.PARITY_ODD
+        self.serial.stopbits=serial.STOPBITS_TWO
+        self.serial.bytesize=serial.SEVENBITS
+
+        try:
+            self.serial.open()
+        except Exception as e:
+            print( "error open serial port: " + str(e) )
+            return
+
+        for i in range(1,51):
+            self.serial.write(str(i)+'\r\n')
+
 
     def onselect(self,evt):
         w = evt.widget
         index = int(w.curselection()[0])
         value = w.get(index)
-        print('You selected item %d: "%s"' % (index, value))
+        #print('You selected item %d: "%s"' % (index, value))
         self.setimage( self.workingpath.joinpath( value ) )
 
     def busy(self):
-        print( "busy")
+        #print( "busy")
         self.parent.config(cursor="wait")
         self.parent.update()
 
     def notbusy(self):
-        print( "not busy")
+        #print( "not busy")
         self.parent.config(cursor="")
         self.parent.update()
 
@@ -213,7 +235,7 @@ class PTMFrame(Frame):
         orig_w, orig_h = img.size
         new_w = self.imageview.winfo_width()
         new_h = self.imageview.winfo_height()
-        print( orig_w, orig_h, new_w, new_h )
+        #print( orig_w, orig_h, new_w, new_h )
         scale_w = orig_w / new_w
         scale_h = orig_h / new_h
         new_img = img.resize((new_w, new_h-4))
@@ -224,9 +246,9 @@ class PTMFrame(Frame):
         self.imageview.image = tkImg
         new_w2 = self.imageview.winfo_width()
         new_h2 = self.imageview.winfo_height()
-        print( orig_w, orig_h, new_w, new_h, new_w2, new_h2 )
+        #print( orig_w, orig_h, new_w, new_h, new_w2, new_h2 )
         ts_end = time.time()
-        print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
+        #print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
         manager.notbusy()
 #root=None
 #def main():
