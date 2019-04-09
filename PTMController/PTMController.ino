@@ -164,22 +164,26 @@ void setRegisterPin(int index, int value){
   registers[LED_IDX[index]-1] = value;
 }
 
-
+String readString
 void loop(){
 
   if (Serial.available() > 0) {
     // Reading incoming bytes :
     incomingByte = Serial.read();
+    Serial.print("I received: ");
+    Serial.println(incomingByte, DEC);
     switch (incomingByte) {
       case 's':
         Serial.print("shoot\n");
+        
 
-        shootAll();
+        /*shootAll();*/
         for (int i = 0; i < 36; i++) { // Little trick to empty the buffer, not nice :/
           Serial.read();
         }
         break;
       default:; // Usefull for burst mode, this variables sets the time the shoot will last
+        /*Serial.print("a\n");*/
         //lightDigit2(numbers[encoder0Pos]);
         //time = incomingByte*100;
     }
