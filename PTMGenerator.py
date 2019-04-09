@@ -1,10 +1,12 @@
-from tkinter import Tk, RIGHT, LEFT, BOTTOM, BOTH, X,Y, RAISED, filedialog, Listbox, messagebox, Label, Entry, END
+from tkinter import filedialog
+from tkinter import *
 from tkinter.ttk import Frame, Button, Style
 from pathlib import Path
 import subprocess
 import math
 import time
 import serial
+import serial.tools.list_ports
 from PIL import ImageTk, Image
 #sp_coord_list = [[59,31],[74,43],[65,63],[48,51],[41,18],[55,83],[60,253],[83,245],[54,221],[69,233],
 #[75,266],[43,241],[38,293],[80,298],[71,318],[56,306],[50,273],[46,326],[66,286],[21,313],
@@ -64,6 +66,112 @@ class BusyManager:
                 pass
         self.widgets = {}
 
+class LEDDialog(Toplevel):
+
+    def __init__(self, parent, title = None):
+
+        Toplevel.__init__(self, parent)
+        self.transient(parent)
+
+        if title:
+            self.title(title)
+
+        self.parent = parent
+
+        self.result = None
+
+        body = Frame(self)
+        self.initial_focus = self.body(body)
+        body.pack(padx=5, pady=5)
+
+        self.buttonbox()
+
+        self.grab_set()
+
+        if not self.initial_focus:
+            self.initial_focus = self
+
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+
+        self.geometry("+%d+%d" % (parent.winfo_rootx()+50,
+                                  parent.winfo_rooty()+50))
+
+        self.initial_focus.focus_set()
+
+        self.wait_window(self)
+        #print("hello")
+
+    #
+    # construction hooks
+
+    def body(self, master):
+        # create dialog body.  return widget that should have
+        # initial focus.  this method should be overridden
+
+        pass
+
+    def buttonbox(self):
+        # add standard button box. override if you don't want the
+        # standard buttons
+
+        box = Frame(self)
+
+        self.LEDidx = IntVar()
+        self.LEDidx.set(1)  # initialize
+
+        for i in range(50):
+            b = Radiobutton(box, text=str(i+1),
+                            variable=self.LEDidx, value=i+1).grid(row=int(i/10),column=int(i%10))
+            #b.pack(anchor=W)
+
+        w = Button(box, text="Shoot", width=10, command=self.shoot, default=ACTIVE).grid(row=5,column=0,columnspan=5)
+        #w.pack(side=LEFT, padx=5, pady=5)
+        w = Button(box, text="Close", width=10, command=self.cancel).grid(row=5,column=5,columnspan=5)
+        #w.pack(side=LEFT, padx=5, pady=5)
+
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
+        box.pack()
+
+    #
+    # standard button semantics
+
+    def shoot(self, event=None):
+        print(self.LEDidx.get())
+        return
+
+    def ok(self, event=None):
+
+        if not self.validate():
+            self.initial_focus.focus_set() # put focus back
+            return
+
+        self.withdraw()
+        self.update_idletasks()
+
+        self.apply()
+
+        self.cancel()
+
+    def cancel(self, event=None):
+
+        # put focus back to the parent window
+        self.parent.focus_set()
+        self.destroy()
+
+    #
+    # command hooks
+
+    def validate(self):
+
+        return 1 # override
+
+    def apply(self):
+
+        pass # override
+
+
 class PTMFrame(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)
@@ -105,10 +213,55 @@ class PTMFrame(Frame):
 
 
         frame4 = Frame(self)
+        self.COM_label = Label(frame4, text='Port')
+        self.COM_label.pack(side=LEFT,fill=X,padx=5,pady=5)
+
+        # Create a Tkinter variable
+        self.tkvar = StringVar(root)
+
+        # Dictionary with options
+        choices = []
+
+        arduino_ports = [
+            p.device
+            for p in serial.tools.list_ports.comports()
+            if 'Arduino' in p.description
+        ]
+        if len(arduino_ports) > 0:
+            self.serial = serial.Serial(arduino_ports[0])
+        else:
+            for i in range(1,5):
+                port = 'COM' + str(i)
+                ser = serial.Serial()
+                ser.port=port
+                ser.baudrate=9600
+                ser.parity=serial.PARITY_ODD
+                ser.stopbits=serial.STOPBITS_TWO
+                ser.bytesize=serial.SEVENBITS
+                try:
+                    ser.open()
+                except Exception as e:
+                    print("error open serial port: " + str(e))
+                    continue
+                else:
+                    choices.append(port)
+
+        self.tkvar.set(choices[-1])  # set the default option
+        self.popupMenu = OptionMenu(frame4, self.tkvar, *choices)
+        self.popupMenu.pack( side=LEFT, fill=X,padx=5, pady=5)
+
         self.takePicturesButton = Button(frame4, text="Take Pictures",command=self.takePictures)
         self.takePicturesButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+
         self.generateButton = Button(frame4, text="Generate PTM File",command=self.generatePTM)
         self.generateButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+
+        self.controlLEDButton = Button(frame4, text="LED",command=self.controlLED)
+        self.controlLEDButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+
+
+        # on change dropdown value
+
         frame4.pack(fill=X)
 
         self.pack(fill=BOTH, expand=True)
@@ -118,12 +271,23 @@ class PTMFrame(Frame):
         options['parent'] = self.parent
         options['title'] = 'This is a title'
 
+        self.serial = serial.Serial()
+
         self.filelist = []
         fitter = Path.cwd().joinpath("ptmfitter.exe")
         if fitter.exists():
             self.fitter_filepath = fitter
             self.fitter_text.delete(0, END)
             self.fitter_text.insert(0, str(fitter))
+
+    def controlLED(self):
+        d = LEDDialog(self)
+        #self.wait_window(d)
+        #print("hello")
+        return
+
+    def change_dropdown(self,*args):
+        print(self.tkvar.get())
 
     def PTMfitter(self):
         filename = filedialog.askopenfilename(initialdir=".", title="Select file")
@@ -136,6 +300,7 @@ class PTMFrame(Frame):
             self.fitter_text.insert(0, str(filepath))
             #self.fitter_label.text = str( filepath )
             #self.fitter_text.text = str( filepath )
+
     def opendir(self):
         #print( "open")
         dirname = filedialog.askdirectory(initialdir="\\", title="Select directory")
@@ -192,7 +357,6 @@ class PTMFrame(Frame):
         #print( execute_string )
         subprocess.call([ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ])
     def takePictures(self):
-        self.serial = serial.Serial()
         self.serial.port='COM3'
         self.serial.baudrate=9600
         self.serial.parity=serial.PARITY_ODD
@@ -253,6 +417,7 @@ class PTMFrame(Frame):
         ts_end = time.time()
         #print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
         manager.notbusy()
+
 #root=None
 #def main():
 root = Tk()
