@@ -7,6 +7,7 @@ import math
 import time
 import serial
 import serial.tools.list_ports
+import io
 from PIL import ImageTk, Image
 #sp_coord_list = [[59,31],[74,43],[65,63],[48,51],[41,18],[55,83],[60,253],[83,245],[54,221],[69,233],
 #[75,266],[43,241],[38,293],[80,298],[71,318],[56,306],[50,273],[46,326],[66,286],[21,313],
@@ -217,38 +218,26 @@ class PTMFrame(Frame):
         self.COM_label.pack(side=LEFT,fill=X,padx=5,pady=5)
 
         # Create a Tkinter variable
-        self.tkvar = StringVar(root)
+        #self.tkvar = StringVar(root)
 
         # Dictionary with options
-        choices = []
+        #choices = []
 
-        arduino_ports = [
-            p.device
-            for p in serial.tools.list_ports.comports()
-            if 'Arduino' in p.description
-        ]
-        if len(arduino_ports) > 0:
-            self.serial = serial.Serial(arduino_ports[0])
-        else:
-            for i in range(1,5):
-                port = 'COM' + str(i)
-                ser = serial.Serial()
-                ser.port=port
-                ser.baudrate=9600
-                ser.parity=serial.PARITY_ODD
-                ser.stopbits=serial.STOPBITS_TWO
-                ser.bytesize=serial.SEVENBITS
-                try:
-                    ser.open()
-                except Exception as e:
-                    print("error open serial port: " + str(e))
-                    continue
-                else:
-                    choices.append(port)
+        #arduino_ports = [
+        #    p.device
+        #    for p in serial.tools.list_ports.comports()
+        #    if 'CH340' in p.description
+        #]
+        #for p in serial.tools.list_ports.comports():
+        #    pass #print( p.description)
+        #if len(arduino_ports) > 0:
+        #    self.serial = serial.Serial(arduino_ports[0])
+        #    choices.append(self.serial.port)
+        #    #print(self.serial.port)
 
-        self.tkvar.set(choices[-1])  # set the default option
-        self.popupMenu = OptionMenu(frame4, self.tkvar, *choices)
-        self.popupMenu.pack( side=LEFT, fill=X,padx=5, pady=5)
+        #self.tkvar.set(choices[-1])  # set the default option
+        #self.popupMenu = OptionMenu(frame4, self.tkvar, *choices)
+        #self.popupMenu.pack( side=LEFT, fill=X,padx=5, pady=5)
 
         self.takePicturesButton = Button(frame4, text="Take Pictures",command=self.takePictures)
         self.takePicturesButton.pack( side=LEFT, fill=X,padx=5, pady=5)
@@ -271,7 +260,7 @@ class PTMFrame(Frame):
         options['parent'] = self.parent
         options['title'] = 'This is a title'
 
-        self.serial = serial.Serial()
+        #self.serial = serial.Serial()
 
         self.filelist = []
         fitter = Path.cwd().joinpath("ptmfitter.exe")
@@ -357,24 +346,13 @@ class PTMFrame(Frame):
         #print( execute_string )
         subprocess.call([ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ])
     def takePictures(self):
-        self.serial.port='COM3'
-        self.serial.baudrate=9600
-        self.serial.parity=serial.PARITY_ODD
-        self.serial.stopbits=serial.STOPBITS_TWO
-        self.serial.bytesize=serial.SEVENBITS
-
-        try:
-            self.serial.open()
-        except Exception as e:
-            print( "error open serial port: " + str(e) )
-            return
-
-        command = 's\r\n'
-        self.serial.write(command.encode())
-        #for i in range(1,51):
-            #command = str(i)+'\r\n'
-            #self.serial.write(command.encode())
-
+        s = serial.Serial('COM4', 9600, timeout=1)
+        time.sleep(2)
+        #s.open()
+        s.write('s'.encode())
+        time.sleep(1)
+        msg = s.readline()
+        print(msg)
 
     def onselect(self,evt):
         w = evt.widget
