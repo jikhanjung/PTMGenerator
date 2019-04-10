@@ -1,4 +1,4 @@
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from tkinter import *
 from tkinter.ttk import Frame, Button, Style
 from pathlib import Path
@@ -145,17 +145,17 @@ class LEDDialog(Toplevel):
 
     def off(self, event=None):
         idx = self.LEDidx.get()
-        self.sendmessage( "OFF,"+str(idx))
+        ret_msg = self.parent.sendSerial( "OFF")
         return
 
     def on(self, event=None):
         idx = self.LEDidx.get()
-        self.sendmessage( "ON,"+str(idx))
+        ret_msg = self.parent.sendSerial( "ON,"+str(idx))
         return
 
     def shoot(self, event=None):
         idx = self.LEDidx.get()
-        self.sendmessage( "SHOOT,"+str(idx))
+        ret_msg = self.parent.sendSerial( "SHOOT,"+str(idx))
         return
 
     def close(self, event=None):
@@ -234,35 +234,44 @@ class PTMFrame(Frame):
         self.COM_label.pack(side=LEFT,fill=X,padx=5,pady=5)
 
         # Create a Tkinter variable
-        #self.tkvar = StringVar(root)
+        self.varSerialPort = StringVar(root)
 
         # Dictionary with options
-        #choices = []
+        choices = []
 
-        #arduino_ports = [
-        #    p.device
-        #    for p in serial.tools.list_ports.comports()
-        #    if 'CH340' in p.description
-        #]
+        arduino_ports = [
+            p.device
+            for p in serial.tools.list_ports.comports()
+            if 'CH340' in p.description
+        ]
         #for p in serial.tools.list_ports.comports():
         #    pass #print( p.description)
-        #if len(arduino_ports) > 0:
-        #    self.serial = serial.Serial(arduino_ports[0])
-        #    choices.append(self.serial.port)
-        #    #print(self.serial.port)
+        for p in arduino_ports:
+            choices.append( p.device )
+        if len(arduino_ports) > 0:
+            self.varSerialPort.set(choices[0])  # set the default option
+            self.serial_exist = True
+        else:
+            choices.append( "NONE")
+            self.varSerialPort.set(choices[0])  # set the default option
+            self.serial_exist = False
 
-        #self.tkvar.set(choices[-1])  # set the default option
-        #self.popupMenu = OptionMenu(frame4, self.tkvar, *choices)
-        #self.popupMenu.pack( side=LEFT, fill=X,padx=5, pady=5)
+        self.popupMenu = OptionMenu(frame4, self.varSerialPort, *choices)
+        self.popupMenu.pack( side=LEFT, fill=X,padx=5, pady=5)
 
-        self.takePicturesButton = Button(frame4, text="Take Pictures",command=self.takePictures)
-        self.takePicturesButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+        self.shootButton = Button(frame4, text="Shoot",command=self.shoot)
+        self.shootButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+
+        self.shootAllButton = Button(frame4, text="Shoot All",command=self.shootAll)
+        self.shootAllButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
         self.generateButton = Button(frame4, text="Generate PTM File",command=self.generatePTM)
         self.generateButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
-        self.controlLEDButton = Button(frame4, text="LED",command=self.controlLED)
-        self.controlLEDButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+
+        if( not self.serial_exist ):
+            self.shootAllButton["state"] = "disabled"
+            self.shootButton["state"] = "disabled"
 
 
         # on change dropdown value
@@ -285,14 +294,14 @@ class PTMFrame(Frame):
             self.fitter_text.delete(0, END)
             self.fitter_text.insert(0, str(fitter))
 
-    def controlLED(self):
+    def shoot(self):
+        if( not self.serial_exist ):
+            return
+        self.openSerial()
         d = LEDDialog(self)
-        #self.wait_window(d)
-        #print("hello")
-        return
+        self.closeSerial()
 
-    def change_dropdown(self,*args):
-        print(self.tkvar.get())
+        return
 
     def PTMfitter(self):
         filename = filedialog.askopenfilename(initialdir=".", title="Select file")
@@ -333,6 +342,7 @@ class PTMFrame(Frame):
                     else:
                         pass #print( x.suffix)
         #print(dirname)
+
     def generatePTM(self):
         if self.listbox.size() != 50:
             messagebox.showerror(message="Must be 50 image files!")
@@ -361,14 +371,36 @@ class PTMFrame(Frame):
         execute_string = " ".join( [ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ] )
         #print( execute_string )
         subprocess.call([ str( self.fitter_filepath ),"-i", str(lpfilename), "-o", str(ptmfilename) ])
-    def takePictures(self):
-        s = serial.Serial('COM4', 9600, timeout=1)
+
+    def openSerial(self):
+        if( not self.serial_exist ):
+            return
+        self.serial = serial.Serial(self.varSerialPort, 9600, timeout=2)
         time.sleep(2)
-        #s.open()
-        s.write('s'.encode())
+
+        return
+
+    def closeSerial(self):
+        self.serial.close()
+
+        return
+
+    def sendSerial(self,msg):
+        msg = "<" + msg + ">"
+        print( msg )
+        self.serial.write( msg.encode() )
         time.sleep(1)
-        msg = s.readline()
+        return_msg = self.serial.readline()
+        print( return_msg )
+        return return_msg
+
+    def shootAll(self):
+        if( not self.serial_exist ):
+            return
+        self.openSerial()
+        result = self.sendSerial("SHOOT")
         print(msg)
+        self.closeSerial()
 
     def onselect(self,evt):
         w = evt.widget
