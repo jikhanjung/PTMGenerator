@@ -247,7 +247,7 @@ class PTMFrame(Frame):
         #for p in serial.tools.list_ports.comports():
         #    pass #print( p.description)
         for p in arduino_ports:
-            choices.append( p.device )
+            choices.append( p )
         if len(arduino_ports) > 0:
             self.varSerialPort.set(choices[0])  # set the default option
             self.serial_exist = True
@@ -375,7 +375,7 @@ class PTMFrame(Frame):
     def openSerial(self):
         if( not self.serial_exist ):
             return
-        self.serial = serial.Serial(self.varSerialPort, 9600, timeout=2)
+        self.serial = serial.Serial(self.varSerialPort.get(), 9600, timeout=2)
         time.sleep(2)
 
         return
@@ -389,17 +389,24 @@ class PTMFrame(Frame):
         msg = "<" + msg + ">"
         print( msg )
         self.serial.write( msg.encode() )
-        time.sleep(1)
+
+    def receiveSerial(self):
         return_msg = self.serial.readline()
         print( return_msg )
         return return_msg
+
 
     def shootAll(self):
         if( not self.serial_exist ):
             return
         self.openSerial()
-        result = self.sendSerial("SHOOT")
-        print(msg)
+        for i in range(5):
+            msg = "SHOOT," + str(i+1)
+            self.sendSerial(msg)
+            time.sleep(7)
+            ret_msg = self.receiveSerial()
+            #print(ret_msg)
+        self.sendSerial("OFF")
         self.closeSerial()
 
     def onselect(self,evt):
