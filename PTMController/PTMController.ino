@@ -185,7 +185,32 @@ void loop(){
             // this temporary copy is necessary to protect the original data
             //   because strtok() used in parseData() replaces the commas with \0
         parseData();
-        showParsedData();
+        //showParsedData();
+        //char messageFromPC[numChars] = {0};
+        //int integerFromPC = 0;
+        //float floatFromPC = 0.0;
+        String msg = messageFromPC;
+        
+        if( msg == "ON" ) {
+          encoder0Pos = integerFromPC;
+          clearRegisters();
+          setRegisterPin(encoder0Pos-1,HIGH);
+          writeRegisters();
+          Serial.print("Turn on LED #");
+          Serial.println(encoder0Pos);
+        } else if( msg == "SHOOT" ){
+          is_shooting = TRUE;
+          encoder0Pos = integerFromPC;
+          Serial.print("Shooting with LED #" );
+          Serial.print( encoder0Pos);
+          Serial.println(" turned on.");
+          shoot( encoder0Pos-1 );
+          is_shooting = FALSE;
+        } else {
+          clearRegisters();
+          writeRegisters();
+          Serial.print("Turn off all LEDs");
+        }
         newData = false;
     }
     if( false){ 
