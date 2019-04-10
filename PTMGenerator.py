@@ -121,28 +121,44 @@ class LEDDialog(Toplevel):
         self.LEDidx.set(1)  # initialize
 
         for i in range(50):
-            b = Radiobutton(box, text=str(i+1),
+            b = Radiobutton(box, text=str(i+1), width=3,height=1,
                             variable=self.LEDidx, value=i+1).grid(row=int(i/10),column=int(i%10))
             #b.pack(anchor=W)
 
-        w = Button(box, text="Shoot", width=10, command=self.shoot, default=ACTIVE).grid(row=5,column=0,columnspan=5)
+        w = Button(box, text="On", width=10, command=self.on, default=ACTIVE).grid(row=5,column=1,columnspan=2)
+        w = Button(box, text="Off", width=10, command=self.off, default=ACTIVE).grid(row=5,column=3,columnspan=2)
+        w = Button(box, text="Shoot", width=10, command=self.shoot, default=ACTIVE).grid(row=5,column=5,columnspan=2)
         #w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Close", width=10, command=self.cancel).grid(row=5,column=5,columnspan=5)
+        w = Button(box, text="Close", width=10, command=self.close).grid(row=5,column=7,columnspan=2)
         #w.pack(side=LEFT, padx=5, pady=5)
 
-        self.bind("<Return>", self.ok)
+        self.bind("<Return>", self.close)
         self.bind("<Escape>", self.cancel)
 
         box.pack()
 
     #
     # standard button semantics
-
-    def shoot(self, event=None):
-        print(self.LEDidx.get())
+    def sendmessage(self,msg):
+        print("<"+msg+">")
         return
 
-    def ok(self, event=None):
+    def off(self, event=None):
+        idx = self.LEDidx.get()
+        self.sendmessage( "OFF,"+str(idx))
+        return
+
+    def on(self, event=None):
+        idx = self.LEDidx.get()
+        self.sendmessage( "ON,"+str(idx))
+        return
+
+    def shoot(self, event=None):
+        idx = self.LEDidx.get()
+        self.sendmessage( "SHOOT,"+str(idx))
+        return
+
+    def close(self, event=None):
 
         if not self.validate():
             self.initial_focus.focus_set() # put focus back
