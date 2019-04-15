@@ -9,6 +9,12 @@ import serial
 import serial.tools.list_ports
 import io
 from PIL import ImageTk, Image
+
+import time, os
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from win32com.shell import shell, shellcon
+
 #sp_coord_list = [[59,31],[74,43],[65,63],[48,51],[41,18],[55,83],[60,253],[83,245],[54,221],[69,233],
 #[75,266],[43,241],[38,293],[80,298],[71,318],[56,306],[50,273],[46,326],[66,286],[21,313],
 #[23,176],[13,228],[28,261],[26,38],[17,91],[67,148],[51,136],[30,123],[81,160],[39,156],
@@ -27,6 +33,10 @@ for [ theta, phi ] in sp_coord_list:
     y = math.sin(math.radians(phi-180)) * math.sin(math.radians(theta))
     z =  math.cos(math.radians(theta))
     lp_list.append( [x,y,z])
+
+class MyHandler(FileSystemEventHandler):
+    def on_modified(self, event):
+        print(f'event type: {event.event_type}  path : {event.src_path}')
 
 
 class BusyManager:
@@ -204,20 +214,27 @@ class PTMFrame(Frame):
 
         frame1 = Frame(self, relief=RAISED, borderwidth=1)
         frame1.pack(fill=BOTH, expand=True)
-        self.listbox = Listbox(frame1)
+        self.listbox = Listbox(frame1,width=40)
         self.listbox.pack(side=LEFT,fill=Y,padx=5,pady=5,ipadx=5,ipady=5)
         self.imageview = Label(frame1)
         self.imageview.pack(side=LEFT, fill=BOTH, expand=True)
+        self.selectFilesButton = Button(frame1, text="Select Files", command=self.selectfiles)
+        self.selectFilesButton.pack(side=LEFT, fill=X,padx=5,pady=5)
         self.listbox.bind('<<ListboxSelect>>', self.onselect )
 
         frame2 = Frame(self, relief=RAISED, borderwidth=1)
         frame2.pack(fill=X)
-        self.workdir_label = Label(frame2, text='Work Dir')
+        self.workdir_label = Label(frame2, text='Folder to Watch')
         self.workdir_label.pack(side=LEFT,fill=X,padx=5,pady=5)
         self.workdir_text = Entry(frame2,text='')
         self.workdir_text.pack(side=LEFT,fill=X,expand=True,padx=5,pady=5)
-        self.workdirButton = Button(frame2, text="Open Dir", command=self.opendir)
+        self.workdirButton = Button(frame2, text="Select Folder", command=self.selectworkdir)
         self.workdirButton.pack(side=LEFT, fill=X,padx=5,pady=5)
+        self.workdir_text.delete(0, END)
+        dirname =shell.SHGetFolderPath(0, shellcon.CSIDL_MYPICTURES, None, 0)
+        self.workdir_text.insert(0, dirname)
+        p = Path(dirname)
+        self.workingpath = p
 
         frame3 = Frame(self)
         self.fitter_label = Label(frame3, text='PTMFitter')
@@ -268,6 +285,8 @@ class PTMFrame(Frame):
         self.generateButton = Button(frame4, text="Generate PTM File",command=self.generatePTM)
         self.generateButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
+        self.testButton = Button(frame4, text="",command=self.test)
+        self.testButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
         if( not self.serial_exist ):
             self.shootAllButton["state"] = "disabled"
@@ -294,6 +313,8 @@ class PTMFrame(Frame):
             self.fitter_text.delete(0, END)
             self.fitter_text.insert(0, str(fitter))
 
+        print(  )
+
     def shoot(self):
         if( not self.serial_exist ):
             return
@@ -314,6 +335,37 @@ class PTMFrame(Frame):
             self.fitter_text.insert(0, str(filepath))
             #self.fitter_label.text = str( filepath )
             #self.fitter_text.text = str( filepath )
+
+    def selectworkdir(self):
+        #print( "open")
+        currdir = str(self.workingpath)
+        dirname = filedialog.askdirectory(initialdir=currdir, title="Select folder")
+        p = Path(dirname)
+        self.currdirname = p.parts[-1]
+        #self.workingdir = str(p)
+        self.workingpath = p
+        #self.workdir_text.text = str(p)
+        self.workdir_text.delete(0, END)
+        self.workdir_text.insert(0, str(p))
+        self.imageview.image = None
+        self.filelist = []
+        self.listbox.delete(0, 'end')
+
+    def selectfiles(self):
+        #print( "open")
+        filenames = filedialog.askopenfilenames(initialdir="\\", title="Select files")
+        lst = list(filenames)
+        #lst.sort()
+        self.filelist = []
+        self.listbox.delete(0, 'end')
+        if len(lst)>0:
+            i = 1
+            for fn in lst:
+                print(str(fn))
+                self.listbox.insert( i, str(fn) )
+                self.filelist.append( fn )
+                #self.text_input3.text += ",".join([str(coord) for coord in lp[i-1]])
+                i+=1
 
     def opendir(self):
         #print( "open")
@@ -395,26 +447,70 @@ class PTMFrame(Frame):
         print( return_msg )
         return return_msg
 
+    def test(self):
+        manager.busy()
+        before = dict([(f, None) for f in os.listdir(str(self.workingpath))])
+        print( before)
+
+        for i in range(10):
+            time.sleep(5)
+            after = dict([(f, None) for f in os.listdir(str(self.workingpath))])
+            added = [f for f in after if not f in before]
+            removed = [f for f in before if not f in after]
+            if added:
+                print( "Added: ", ", ".join(added) )
+                for fn in added:
+                    filename = Path(self.workingpath, fn )
+                    self.listbox.insert(END, filename)
+                    self.filelist.append(filename)
+                    self.setimage(filename)
+                    self.update()
+            else:
+                self.listbox.insert(END, 'NONE')
+                self.filelist.append('NONE')
+                self.update()
+            before = after
+        manager.notbusy()
 
     def shootAll(self):
         if( not self.serial_exist ):
             return
+
+        manager.busy()
+        before = dict([(f, None) for f in os.listdir(str(self.workingpath))])
         self.openSerial()
-        for i in range(5):
+        for i in range(50):
             msg = "SHOOT," + str(i+1)
             self.sendSerial(msg)
             time.sleep(7)
             ret_msg = self.receiveSerial()
+            after = dict([(f, None) for f in os.listdir(str(self.workingpath))])
+            added = [f for f in after if not f in before]
+            if added:
+                #print( "Added: ", ", ".join(added) )
+                for fn in added:
+                    filename = Path(self.workingpath, fn )
+                    self.listbox.insert(END, filename)
+                    self.filelist.append(filename)
+                    self.setimage(filename)
+                    self.update()
+            else:
+                self.listbox.insert(END, 'NONE')
+                self.filelist.append('NONE')
+                self.update()
             #print(ret_msg)
         self.sendSerial("OFF")
         self.closeSerial()
+        manager.notbusy()
 
     def onselect(self,evt):
         w = evt.widget
         index = int(w.curselection()[0])
         value = w.get(index)
         #print('You selected item %d: "%s"' % (index, value))
-        self.setimage( self.workingpath.joinpath( value ) )
+        if( value == 'NONE'):
+            return
+        self.setimage( value )
 
     def busy(self):
         #print( "busy")
@@ -435,10 +531,10 @@ class PTMFrame(Frame):
         orig_w, orig_h = img.size
         new_w = self.imageview.winfo_width()
         new_h = self.imageview.winfo_height()
-        #print( orig_w, orig_h, new_w, new_h )
+        print( orig_w, orig_h, new_w, new_h )
         scale_w = orig_w / new_w
         scale_h = orig_h / new_h
-        new_img = img.resize((new_w, new_h-4))
+        new_img = img.resize((new_w-4, new_h-4))
         ts_middle2 = time.time()
         tkImg= ImageTk.PhotoImage(new_img)
 
@@ -448,14 +544,14 @@ class PTMFrame(Frame):
         new_h2 = self.imageview.winfo_height()
         #print( orig_w, orig_h, new_w, new_h, new_w2, new_h2 )
         ts_end = time.time()
-        #print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
+        print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
         manager.notbusy()
 
 #root=None
 #def main():
 root = Tk()
 manager = BusyManager(root)
-root.geometry("640x480+300+300")
+root.geometry("1024x768+150+150")
 app = PTMFrame(root)
 root.mainloop()
 
