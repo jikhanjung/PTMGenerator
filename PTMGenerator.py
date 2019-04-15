@@ -11,8 +11,6 @@ import io
 from PIL import ImageTk, Image
 
 import time, os
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 from win32com.shell import shell, shellcon
 
 #sp_coord_list = [[59,31],[74,43],[65,63],[48,51],[41,18],[55,83],[60,253],[83,245],[54,221],[69,233],
@@ -33,11 +31,6 @@ for [ theta, phi ] in sp_coord_list:
     y = math.sin(math.radians(phi-180)) * math.sin(math.radians(theta))
     z =  math.cos(math.radians(theta))
     lp_list.append( [x,y,z])
-
-class MyHandler(FileSystemEventHandler):
-    def on_modified(self, event):
-        print(f'event type: {event.event_type}  path : {event.src_path}')
-
 
 class BusyManager:
 
@@ -77,6 +70,7 @@ class BusyManager:
                 pass
         self.widgets = {}
 
+
 class LEDDialog(Toplevel):
 
     def __init__(self, parent, title = None):
@@ -115,6 +109,11 @@ class LEDDialog(Toplevel):
     #
     # construction hooks
 
+    def intvar_callback(self,*args):
+        print("variable changed!")
+        self.on()
+        #self.parent.sendSerial("OFF")
+
     def body(self, master):
         # create dialog body.  return widget that should have
         # initial focus.  this method should be overridden
@@ -128,6 +127,7 @@ class LEDDialog(Toplevel):
         box = Frame(self)
 
         self.LEDidx = IntVar()
+        self.LEDidx.trace("w", self.intvar_callback)
         self.LEDidx.set(1)  # initialize
 
         for i in range(50):
@@ -169,6 +169,7 @@ class LEDDialog(Toplevel):
         return
 
     def close(self, event=None):
+        self.parent.sendSerial("OFF")
 
         if not self.validate():
             self.initial_focus.focus_set() # put focus back
@@ -498,6 +499,7 @@ class PTMFrame(Frame):
                 self.listbox.insert(END, 'NONE')
                 self.filelist.append('NONE')
                 self.update()
+            before = after
             #print(ret_msg)
         self.sendSerial("OFF")
         self.closeSerial()
