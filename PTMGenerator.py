@@ -213,15 +213,21 @@ class PTMFrame(Frame):
         self.style.theme_use("default")
         self.fitter_filepath_str = ""
 
+        self.currlistidx = -1
+
         frame1 = Frame(self, relief=RAISED, borderwidth=1)
         frame1.pack(fill=BOTH, expand=True)
         self.listbox = Listbox(frame1,width=40)
         self.listbox.pack(side=LEFT,fill=Y,padx=5,pady=5,ipadx=5,ipady=5)
         self.imageview = Label(frame1)
         self.imageview.pack(side=LEFT, fill=BOTH, expand=True)
-        self.selectFilesButton = Button(frame1, text="Select Files", command=self.selectfiles)
-        self.selectFilesButton.pack(side=LEFT, fill=X,padx=5,pady=5)
+        frame11 = Frame(frame1 )
+        self.selectFilesButton = Button(frame11, text="Select Files", command=self.selectfiles)
+        self.selectFilesButton.pack(fill=X,padx=5,pady=5)
+        self.shootAgainButton = Button(frame11, text="Shoot Again", command=self.shootAgain)
+        self.shootAgainButton.pack(fill=X,padx=5,pady=5)
         self.listbox.bind('<<ListboxSelect>>', self.onselect )
+        frame11.pack(fill=X)
 
         frame2 = Frame(self, relief=RAISED, borderwidth=1)
         frame2.pack(fill=X)
@@ -237,7 +243,7 @@ class PTMFrame(Frame):
         p = Path(dirname)
         self.workingpath = p
 
-        frame3 = Frame(self)
+        frame3 = Frame(self, relief=RAISED, borderwidth=1)
         self.fitter_label = Label(frame3, text='PTMFitter')
         self.fitter_label.pack(side=LEFT,fill=X,padx=5,pady=5)
         self.fitter_text = Entry(frame3,text='',textvariable = self.fitter_filepath_str)
@@ -247,7 +253,7 @@ class PTMFrame(Frame):
         frame3.pack(fill=X)
 
 
-        frame4 = Frame(self)
+        frame4 = Frame(self, relief=RAISED, borderwidth=1)
         self.COM_label = Label(frame4, text='Port')
         self.COM_label.pack(side=LEFT,fill=X,padx=5,pady=5)
 
@@ -292,6 +298,7 @@ class PTMFrame(Frame):
         if( not self.serial_exist ):
             self.shootAllButton["state"] = "disabled"
             self.shootButton["state"] = "disabled"
+        self.shootAgainButton["state"] = "disabled"
 
 
         # on change dropdown value
@@ -325,6 +332,31 @@ class PTMFrame(Frame):
 
         return
 
+    def shootAgain(self):
+        if( not self.serial_exist ):
+            return
+        if self.currlistidx < 0:
+            return
+
+        manager.busy()
+        before = dict([(f, None) for f in os.listdir(str(self.workingpath))])
+        self.openSerial()
+        msg = "SHOOT," + str(self.currlistidx + 1)
+        self.sendSerial(msg)
+        time.sleep(7)
+        ret_msg = self.receiveSerial()
+        after = dict([(f, None) for f in os.listdir(str(self.workingpath))])
+        added = [f for f in after if not f in before]
+        filename = Path(self.workingpath, fn)
+        self.listbox.delete(self.currlistidx)
+        self.filelist.insert(self.currlistidx,filename)
+        self.setimage(filename)
+        self.update()
+
+        self.closeSerial()
+
+        return
+
     def PTMfitter(self):
         filename = filedialog.askopenfilename(initialdir=".", title="Select file")
         filepath = Path( filename )
@@ -354,7 +386,8 @@ class PTMFrame(Frame):
 
     def selectfiles(self):
         #print( "open")
-        filenames = filedialog.askopenfilenames(initialdir="\\", title="Select files")
+        currdir = str(self.workingpath)
+        filenames = filedialog.askopenfilenames(initialdir=currdir, title="Select files")
         lst = list(filenames)
         #lst.sort()
         self.filelist = []
@@ -369,8 +402,8 @@ class PTMFrame(Frame):
                 i+=1
 
     def opendir(self):
-        #print( "open")
-        dirname = filedialog.askdirectory(initialdir="\\", title="Select directory")
+        currdir = str(self.workingpath)
+        dirname = filedialog.askdirectory(initialdir=currdir, title="Select directory")
         p = Path(dirname)
         self.currdirname = p.parts[-1]
         #self.workingdir = str(p)
@@ -508,11 +541,15 @@ class PTMFrame(Frame):
     def onselect(self,evt):
         w = evt.widget
         index = int(w.curselection()[0])
+        #print( "index=",index)
         value = w.get(index)
         #print('You selected item %d: "%s"' % (index, value))
         if( value == 'NONE'):
+            self.currlistidx = index
             return
         self.setimage( value )
+
+        self.shootAgainButton["state"] = "normal"
 
     def busy(self):
         #print( "busy")
