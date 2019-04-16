@@ -334,8 +334,10 @@ class PTMFrame(Frame):
 
     def shootAgain(self):
         if( not self.serial_exist ):
+            print("no serial")
             return
         if self.currlistidx < 0:
+            print("not selected")
             return
 
         manager.busy()
@@ -347,11 +349,16 @@ class PTMFrame(Frame):
         ret_msg = self.receiveSerial()
         after = dict([(f, None) for f in os.listdir(str(self.workingpath))])
         added = [f for f in after if not f in before]
-        filename = Path(self.workingpath, fn)
-        self.listbox.delete(self.currlistidx)
-        self.filelist.insert(self.currlistidx,filename)
-        self.setimage(filename)
-        self.update()
+        print(added)
+        if( added ):
+            fn = added[0]
+            filename = Path(self.workingpath, fn)
+
+            self.listbox.delete(self.currlistidx)
+            self.listbox.insert(self.currlistidx,filename)
+            self.filelist[self.currlistidx] = filename
+            self.setimage(filename)
+            self.update()
 
         self.closeSerial()
 
@@ -521,7 +528,7 @@ class PTMFrame(Frame):
             after = dict([(f, None) for f in os.listdir(str(self.workingpath))])
             added = [f for f in after if not f in before]
             if added:
-                #print( "Added: ", ", ".join(added) )
+                print( "Added: ", ", ".join(added) )
                 for fn in added:
                     filename = Path(self.workingpath, fn )
                     self.listbox.insert(END, filename)
@@ -541,11 +548,11 @@ class PTMFrame(Frame):
     def onselect(self,evt):
         w = evt.widget
         index = int(w.curselection()[0])
+        self.currlistidx = index
         #print( "index=",index)
         value = w.get(index)
         #print('You selected item %d: "%s"' % (index, value))
         if( value == 'NONE'):
-            self.currlistidx = index
             return
         self.setimage( value )
 
@@ -570,7 +577,7 @@ class PTMFrame(Frame):
         orig_w, orig_h = img.size
         new_w = self.imageview.winfo_width()
         new_h = self.imageview.winfo_height()
-        print( orig_w, orig_h, new_w, new_h )
+        #print( orig_w, orig_h, new_w, new_h )
         scale_w = orig_w / new_w
         scale_h = orig_h / new_h
         new_img = img.resize((new_w-4, new_h-4))
@@ -583,7 +590,7 @@ class PTMFrame(Frame):
         new_h2 = self.imageview.winfo_height()
         #print( orig_w, orig_h, new_w, new_h, new_w2, new_h2 )
         ts_end = time.time()
-        print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
+        #print( "1, 2, 3", ts_middle1 - ts_start, ts_middle2 - ts_middle1, ts_end - ts_middle2, ts_end - ts_start )
         manager.notbusy()
 
 #root=None
