@@ -352,8 +352,8 @@ class PTMFrame(Frame):
         print(added)
         if( added ):
             fn = added[0]
-            filename = Path(self.workingpath, fn)
-
+            pfn = Path(self.workingpath, fn)
+            filename = self.process_filename(pfn)
             self.listbox.delete(self.currlistidx)
             self.listbox.insert(self.currlistidx,filename)
             self.filelist[self.currlistidx] = filename
@@ -385,6 +385,7 @@ class PTMFrame(Frame):
         #self.workingdir = str(p)
         self.workingpath = p
         #self.workdir_text.text = str(p)
+
         self.workdir_text.delete(0, END)
         self.workdir_text.insert(0, str(p))
         self.imageview.image = None
@@ -403,10 +404,19 @@ class PTMFrame(Frame):
             i = 1
             for fn in lst:
                 print(str(fn))
-                self.listbox.insert( i, str(fn) )
-                self.filelist.append( fn )
+                filename = self.process_filename(fn)
+                self.listbox.insert( i, str(filename) )
+                self.filelist.append( filename)
                 #self.text_input3.text += ",".join([str(coord) for coord in lp[i-1]])
                 i+=1
+    def process_filename(self,fn):
+        filename = os.path.normpath(fn)
+        p = Path(filename)
+
+        if p.suffix in ['.JPG', '.jpg']:
+            new_p = p.with_suffix('.jpg')
+        return str(new_p)
+
 
     def opendir(self):
         currdir = str(self.workingpath)
@@ -530,7 +540,9 @@ class PTMFrame(Frame):
             if added:
                 print( "Added: ", ", ".join(added) )
                 for fn in added:
-                    filename = Path(self.workingpath, fn )
+                    pfn = Path(self.workingpath, fn )
+                    filename = self.process_filename(pfn)
+
                     self.listbox.insert(END, filename)
                     self.filelist.append(filename)
                     self.setimage(filename)
