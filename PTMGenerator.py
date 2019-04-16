@@ -283,8 +283,8 @@ class PTMFrame(Frame):
         self.popupMenu = OptionMenu(frame4, self.varSerialPort, *choices)
         self.popupMenu.pack( side=LEFT, fill=X,padx=5, pady=5)
 
-        self.shootButton = Button(frame4, text="Shoot",command=self.shoot)
-        self.shootButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+        self.LEDControlButton = Button(frame4, text="LEDControl",command=self.LEDControl)
+        self.LEDControlButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
         self.shootAllButton = Button(frame4, text="Shoot All",command=self.shootAll)
         self.shootAllButton.pack( side=LEFT, fill=X,padx=5, pady=5)
@@ -292,12 +292,12 @@ class PTMFrame(Frame):
         self.generateButton = Button(frame4, text="Generate PTM File",command=self.generatePTM)
         self.generateButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
-        self.testButton = Button(frame4, text="",command=self.test)
-        self.testButton.pack( side=LEFT, fill=X,padx=5, pady=5)
+        #self.testButton = Button(frame4, text="Test",command=self.test)
+        #self.testButton.pack( side=LEFT, fill=X,padx=5, pady=5)
 
         if( not self.serial_exist ):
             self.shootAllButton["state"] = "disabled"
-            self.shootButton["state"] = "disabled"
+            self.LEDControlButton["state"] = "disabled"
         self.shootAgainButton["state"] = "disabled"
 
 
@@ -323,7 +323,7 @@ class PTMFrame(Frame):
 
         print(  )
 
-    def shoot(self):
+    def LEDControl(self):
         if( not self.serial_exist ):
             return
         self.openSerial()
@@ -594,7 +594,10 @@ class PTMFrame(Frame):
         #print( orig_w, orig_h, new_w, new_h )
         scale_w = orig_w / new_w
         scale_h = orig_h / new_h
-        new_img = img.resize((new_w-4, new_h-4))
+        scale = max( scale_w, scale_h )
+        new_w = int( orig_w / scale ) - 4
+        new_h = int( orig_h / scale ) - 4
+        new_img = img.resize((new_w, new_h))
         ts_middle2 = time.time()
         tkImg= ImageTk.PhotoImage(new_img)
 
