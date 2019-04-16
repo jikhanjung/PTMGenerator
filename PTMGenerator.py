@@ -208,7 +208,7 @@ class PTMFrame(Frame):
         self.initUI()
 
     def initUI(self):
-        self.parent.title("PTM Generator v0.2")
+        self.parent.title("PTM Generator v0.3")
         self.style = Style()
         self.style.theme_use("default")
         self.fitter_filepath_str = ""
@@ -346,6 +346,8 @@ class PTMFrame(Frame):
         msg = "SHOOT," + str(self.currlistidx + 1)
         self.sendSerial(msg)
         time.sleep(7)
+        msg = "OFF"
+        self.sendSerial(msg)
         ret_msg = self.receiveSerial()
         after = dict([(f, None) for f in os.listdir(str(self.workingpath))])
         added = [f for f in after if not f in before]
