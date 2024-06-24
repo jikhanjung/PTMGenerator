@@ -24,8 +24,7 @@ def value_to_bool(value):
 
 ICON = {}
 ICON['open_directory'] = resource_path('icons/open_directory.png')
-PTM_IMAGE_COUNT = 5
-AUTO_RETAKE_MAXIMUM = 1
+PTM_IMAGE_COUNT = 50
 
 
 class PTMGeneratorMainWindow(QMainWindow):
@@ -34,37 +33,26 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
         self.setWindowTitle("{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
 
-        self.selected_indices = []
         self.image_data = []
         self.failed_list = []
         self.current_index = -1
         self.status = "idle"
         self.second_counter = 0
-        self.csv_file = 'image_data.csv'  # Change this to your desired CSV file path
+        self.csv_file = 'image_log.csv'  # Change this to your desired CSV file path
         self.last_checked = time.time()
         self.current_directory = "."
 
-        self.auto_retake = True
-        self.auto_retake_maximum = AUTO_RETAKE_MAXIMUM
-        self.retake_counter = 0
-        self.polling_timeout = 5
-        self.image_index_list = []
-        self.previous_index = -1
-
-        self.table_view = QTableView()
+        self.list_view = QTableView()
         self.image_view = QLabel()
 
         self.image_list_widget = QWidget()
         self.image_list_layout = QHBoxLayout()
         self.image_list_widget.setLayout(self.image_list_layout)
-        self.image_list_layout.addWidget(self.table_view, 1)
+        self.image_list_layout.addWidget(self.list_view, 1)
         self.image_list_layout.addWidget(self.image_view, 4)
 
         self.image_model = QStandardItemModel()
-        self.table_view.setModel(self.image_model)
-        header = self.table_view.horizontalHeader()  
-        header.setSectionResizeMode(header.Stretch)
-        self.table_view.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.list_view.setModel(self.image_model)
 
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -84,25 +72,16 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.directory_layout.addWidget(self.edtDirectory)
         self.directory_layout.addWidget(self.btnOpenDirectory)
 
-        self.btnTestPicture = QPushButton(self.tr("Test Picture"))
-        self.btnTestPicture.clicked.connect(self.test_picture)
         self.btnTakeAllPictures = QPushButton(self.tr("Take All Pictures"))
         self.btnTakeAllPictures.clicked.connect(self.take_all_pictures)
         self.btnRetakePicture = QPushButton(self.tr("Retake Picture"))
         self.btnRetakePicture.clicked.connect(self.on_retake_picture_triggered)
-        self.btnPauseContinue = QPushButton(self.tr("Pause/Continue"))
-        self.btnPauseContinue.clicked.connect(self.pause_continue_process)
-        self.btnStop = QPushButton(self.tr("Stop"))
-        self.btnStop.clicked.connect(self.stop_process)
 
         self.button_widget = QWidget() 
         self.button_layout = QHBoxLayout()
         self.button_widget.setLayout(self.button_layout)
-        self.button_layout.addWidget(self.btnTestPicture)
         self.button_layout.addWidget(self.btnTakeAllPictures)
         self.button_layout.addWidget(self.btnRetakePicture)
-        self.button_layout.addWidget(self.btnPauseContinue)
-        self.button_layout.addWidget(self.btnStop)
 
         self.central_widget = QWidget()
         self.central_layout = QVBoxLayout()
@@ -133,59 +112,6 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.m_app = QApplication.instance()
         self.read_settings()
 
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.take_picture_process)
-
-    def pause_continue_process(self):
-        if self.timer.isActive():
-            self.timer.stop()
-            self.statusBar.showMessage(self.tr("Paused"), 1000)
-            self.btnPauseContinue.setText(self.tr("Continue"))
-            #self.b.setEnabled(True)
-        else:
-            self.timer.start()
-            self.statusBar.showMessage(self.tr("Continued"), 1000)
-            self.btnPauseContinue.setText(self.tr("Pause"))
-
-    def stop_process(self):
-        self.timer.stop()
-        self.image_index_list = []
-        self.statusBar.showMessage(self.tr("Stopped"), 1000)
-
-    def clear_image_data(self):
-        self.image_data = []
-        self.image_model.clear()
-        self.update_csv()        
-
-    def test_picture(self):
-        self.turn_on_led(PTM_IMAGE_COUNT-1)
-        time.sleep(1)
-        self.take_shot()
-        time.sleep(1)
-        new_image = None
-        count = 0
-        while new_image is None and count < 5:
-            time.sleep(1)
-            new_image = self.get_incoming_image(self.current_directory)
-            count += 1
-        
-        if new_image is None:
-            print("Failed to get image file")
-            self.statusBar.showMessage("Failed to get image file", 1000)
-        else:
-            print(f"New image detected: {new_image}")
-            self.statusBar.showMessage(f"New image detected: {new_image}", 1000)
-
-
-    def on_selection_changed(self,selected, deselected):
-            # Iterate over selected indexes
-        selected_rows = self.table_view.selectionModel().selectedRows()
-        for model_index in selected_rows:
-            row = model_index.row()
-            print(f"Row {row} selected")
-            self.selected_indices.append(model_index)
-        print("Selected indices:", self.selected_indices)
-
     def read_settings(self):
         self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
         self.m_app.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
@@ -214,7 +140,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         QMessageBox.about(self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
 
     def turn_on_led(self, led_index):
-        print(f"Turning on LED {led_index+1}")
+        print(f"Turning on LED {led_index}")
 
     def take_shot(self):
         print("Taking a shot with the DSLR")
@@ -235,7 +161,6 @@ class PTMGeneratorMainWindow(QMainWindow):
                 if file_time > newest_time:
                     newest_time = file_time
                     newest_file = full_path
-                    print(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {newest_file} ({newest_time})")
 
         if newest_file is not None:
             self.last_checked = newest_time
@@ -243,85 +168,55 @@ class PTMGeneratorMainWindow(QMainWindow):
         else:
             return None
 
-    def take_picture_process(self):
+    def picture_process(self):
         self.second_counter += 1
         if self.status == "idle":
             self.status = "taking_picture"
-            if self.current_index != self.previous_index:
-                self.last_checked = time.time()
-            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Turning on LED #{self.current_index+1}...", 1000)
+            self.statusBar.showMessage("Turning on LED...", 1000)
             self.turn_on_led(self.current_index)
             self.second_counter = 0
         elif self.status == "taking_picture":
-            print("Taking picture...", self.current_index+1, self.image_index_list)
-            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Taking picture...{self.second_counter}", 1000)
+            self.statusBar.showMessage(f"Taking picture...{self.second_counter}", 1000)
             if self.second_counter > 2:
                 self.take_shot()
                 self.status = "polling"
                 self.second_counter = 0
         elif self.status == "polling":
-            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Polling for image file...{self.second_counter}", 1000)
+            self.statusBar.showMessage(f"Polling for image file...{self.second_counter}", 1000)
             new_image = self.get_incoming_image(self.current_directory)
-            if new_image is None:
-                if self.second_counter <= self.polling_timeout:
-                    return
-                else:
-                    self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Failed to get image file", 1000)
-                    print(f"[#{self.current_index+1}-{self.retake_counter}] Failed to get image file", self.current_index+1)
-                    if self.auto_retake and self.retake_counter < self.auto_retake_maximum:
-                        self.retake_counter += 1
-                        self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Retaking picture... retry {self.retake_counter}...", 1000)
-                        #self.retake_picture(self.current_index)
-                        self.status = "idle"
-                        return
-                    #self.failed_list.append(self.current_index)
-                    name = "-"
-                    item = QStandardItem(name)
-                    if self.current_index < self.table_view.model().rowCount():
-                        self.table_view.model().setItem(self.current_index, 0, item)
-                        self.image_data[self.current_index] = (self.current_index, name)
-                    else:
-                        self.table_view.model().appendRow(item)
-                        self.image_data.append((self.current_index, name))
-            else:
-                self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {new_image}", 1000)
-                print(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {new_image}")
-                directory, filename = os.path.split(new_image)
-                #self.add_imagefile(self.current_index, filename)
-                item = QStandardItem(filename)
-                if self.current_index < self.table_view.model().rowCount():
-                    self.table_view.model().setItem(self.current_index, 0, item)
-                    self.image_data[self.current_index] = (self.current_index, filename)
-                else:
-                    self.table_view.model().appendRow(item)
-                    self.image_data.append((self.current_index, filename))
+            if new_image is None and self.second_counter < 3:
+                return
 
-            self.second_counter = 0
-            self.retake_counter = 0
-            self.status = "idle"
-            self.previous_index = self.current_index
-            if len(self.image_index_list) > 0:
-                self.current_index = self.image_index_list.pop(0)
+            if self.second_counter > 3:
+                self.statusBar.showMessage("Failed to get image file", 1000)
+                print("Failed to get image file", self.current_index)
+                self.failed_list.append(self.current_index)
+                item = QStandardItem("-")
+                self.list_view.model().appendRow(item)
             else:
+                self.statusBar.showMessage(f"New image detected: {new_image}", 1000)
+                print(f"New image detected: {new_image}")
+                directory, filename = os.path.split(new_image)
+                self.add_imagefile(self.current_index, filename)
+                item = QStandardItem(filename)
+                self.list_view.model().appendRow(item)
+            self.second_counter = 0
+            self.current_index += 1
+            self.status = "idle"
+            if self.current_index == PTM_IMAGE_COUNT:
                 self.timer.stop()
-                self.statusBar.showMessage(f"All pictures ({PTM_IMAGE_COUNT}) taken", 5000)
-                #self.label.setText("All pictures taken")
+                self.statusBar.showMessage("All pictures taken", 5000)
+                self.label.setText("All pictures taken")
                 self.status = "idle"
-                self.update_csv()
-                self.btnPauseContinue.setText(self.tr("Pause/Continue"))
 
     def take_all_pictures(self):
         period = 1000
         self.last_checked = time.time()
-        self.image_index_list = []
-        self.btnPauseContinue.setText(self.tr("Pause"))
-
-        for i in range(PTM_IMAGE_COUNT):
-            self.image_index_list.append(i)
-            #self.image_data.append((i, "-"))
         self.image_list = []
-        self.previous_index = -1
-        self.current_index = self.image_index_list.pop(0)
+        self.failed_list = []
+        self.current_index = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.picture_process)
         self.timer.start(period)  # Poll every 1 second
 
     def load_csv_data(self):
@@ -337,20 +232,6 @@ class PTMGeneratorMainWindow(QMainWindow):
                         index, filename = row
                         self.image_data.append((int(index), filename))
                         self.image_index = max(self.image_index, int(index))
-            prev_index = -1
-            for index, filename in self.image_data:
-                item = QStandardItem(filename)
-                if index > prev_index + 1:
-                    for i in range(prev_index+1, index):
-                        #self.image_data.append((i, None))
-                        self.image_model.appendRow(QStandardItem("-"))
-                self.image_model.appendRow(item)
-                prev_index = index
-            if prev_index < PTM_IMAGE_COUNT - 1:
-                for i in range(prev_index+1, PTM_IMAGE_COUNT):
-                    #self.image_data.append((i, None))
-                    self.image_model.appendRow(QStandardItem("-"))
-
             print(f"Loaded data from CSV: {self.image_data}")
 
     def add_imagefile(self, index, filename):
@@ -366,18 +247,44 @@ class PTMGeneratorMainWindow(QMainWindow):
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(self.image_data)
 
+    def retake_picture(self, index):
+        if index < len(self.image_data):
+            current_index, current_filename = self.image_data[index]
+            if os.path.exists(current_filename):
+                os.remove(current_filename)
+            self.image_data[index] = (current_index, None)
+            self.update_csv()
+            self.label.setText(f"Retaking picture at index {index}...")
+
+            self.turn_on_led(index)
+            self.take_shot()
+
+            newest_file = None
+            newest_time = time.time()
+
+            for file in os.listdir(self.edtDirectory.text()):
+                # Check if the file is an image file
+                if not file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')):
+                    continue
+                filepath = os.path.join(self.edtDirectory.text(), file)
+                if os.path.isfile(filepath):
+                    file_time = os.path.getmtime(filepath)
+                    if file_time > newest_time:
+                        newest_time = file_time
+                        newest_file = filepath
+
+            if newest_file:
+                self.image_data[index] = (current_index, newest_file)
+                self.update_csv()
+                self.label.setText(f"New image detected: {newest_file}")
+                print(f"New image detected: {newest_file}")
+            else:
+                print("No new image detected after retake")
+
     def on_retake_picture_triggered(self):
-        period = 1000
-        self.image_index_list = []
-        for index in self.selected_indices:
-            row = index.row()
-            if row not in self.image_index_list:
-                self.image_index_list.append(row)
-        print("Retake picture list:", self.image_index_list)
-        self.previous_index = -1
-        self.current_index = self.image_index_list.pop(0)
-        self.btnPauseContinue.setText(self.tr("Pause"))
-        self.timer.start(period)  # Poll every 1 second
+        index, ok = QInputDialog.getInt(self, "Retake Picture", "Enter the index of the picture to retake:")
+        if ok:
+            self.retake_picture(index)
 
 class PreferencesWindow(QDialog):
     def __init__(self, parent=None):
@@ -420,14 +327,3 @@ if __name__ == "__main__":
 
     sys.exit(app.exec_())
 
-
-'''
-pyinstaller --name "PTMGenerator2_v0.1.0.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
-
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_en.ts
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ja.ts
-
-linguist
-
-'''
