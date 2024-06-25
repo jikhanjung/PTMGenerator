@@ -1,8 +1,11 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableView, QAction, \
                             QStatusBar, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, \
-                            QFileDialog, QDialog, QComboBox, QInputDialog, QWidget
+                            QFileDialog, QDialog, QComboBox, QInputDialog, QWidget, QFormLayout
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt, QRect, QSettings, QTimer, QTranslator
+
+import serial
+import serial.tools.list_ports
 
 import sys, os, time, csv
 
@@ -50,6 +53,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.polling_timeout = 5
         self.image_index_list = []
         self.previous_index = -1
+        self.serial_port = None
+        self.serial_exist = False
 
         self.table_view = QTableView()
         self.image_view = QLabel()
@@ -84,8 +89,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.directory_layout.addWidget(self.edtDirectory)
         self.directory_layout.addWidget(self.btnOpenDirectory)
 
-        self.btnTestPicture = QPushButton(self.tr("Test Picture"))
-        self.btnTestPicture.clicked.connect(self.test_picture)
+        self.btnTestShot = QPushButton(self.tr("Test Shot"))
+        self.btnTestShot.clicked.connect(self.test_shot)
         self.btnTakeAllPictures = QPushButton(self.tr("Take All Pictures"))
         self.btnTakeAllPictures.clicked.connect(self.take_all_pictures)
         self.btnRetakePicture = QPushButton(self.tr("Retake Picture"))
@@ -98,7 +103,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.button_widget = QWidget() 
         self.button_layout = QHBoxLayout()
         self.button_widget.setLayout(self.button_layout)
-        self.button_layout.addWidget(self.btnTestPicture)
+        self.button_layout.addWidget(self.btnTestShot)
         self.button_layout.addWidget(self.btnTakeAllPictures)
         self.button_layout.addWidget(self.btnRetakePicture)
         self.button_layout.addWidget(self.btnPauseContinue)
@@ -136,6 +141,30 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.take_picture_process)
 
+    def read_settings(self):
+        self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
+        self.m_app.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
+        if self.m_app.remember_geometry is True:
+            self.setGeometry(self.m_app.settings.value("WindowGeometry/MainWindow", QRect(100, 100, 1400, 800)))
+            is_maximized = value_to_bool(self.m_app.settings.value("IsMaximized/MainWindow", False))
+            if is_maximized:
+                self.showMaximized()
+            else:
+                self.showNormal()
+        else:
+            self.setGeometry(QRect(100, 100, 1400, 800))
+        self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
+        self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
+        if self.m_app.serial_port is not None:
+            self.serial_exist = True
+            self.openSerial()
+        else:
+            self.serial_exist = False
+
+    def save_settings(self):
+        self.m_app.settings.setValue("WindowGeometry/MainWindow", self.geometry())
+        self.m_app.settings.setValue("IsMaximized/MainWindow", self.isMaximized())
+
     def pause_continue_process(self):
         if self.timer.isActive():
             self.timer.stop()
@@ -157,7 +186,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_model.clear()
         self.update_csv()        
 
-    def test_picture(self):
+    def test_shot(self):
         self.turn_on_led(PTM_IMAGE_COUNT-1)
         time.sleep(1)
         self.take_shot()
@@ -185,19 +214,6 @@ class PTMGeneratorMainWindow(QMainWindow):
             print(f"Row {row} selected")
             self.selected_indices.append(model_index)
         print("Selected indices:", self.selected_indices)
-
-    def read_settings(self):
-        self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
-        self.m_app.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
-        if self.m_app.remember_geometry is True:
-            self.setGeometry(self.m_app.settings.value("WindowGeometry/MainWindow", QRect(100, 100, 1400, 800)))
-            is_maximized = value_to_bool(self.m_app.settings.value("IsMaximized/MainWindow", False))
-            if is_maximized:
-                self.showMaximized()
-            else:
-                self.showNormal()
-        else:
-            self.setGeometry(QRect(100, 100, 1400, 800))
 
     def on_action_open_directory_triggered(self):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Open Directory"))
@@ -379,11 +395,37 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.btnPauseContinue.setText(self.tr("Pause"))
         self.timer.start(period)  # Poll every 1 second
 
+    def openSerial(self):
+        if self.serial_exist == False:
+            return
+        if self.serial_port is None or self.serial_port == "" or self.serial_port == "None":
+            self.serial_exist = False
+            return
+        self.serial = serial.Serial(self.serial_port, 9600, timeout=2)
+        time.sleep(2)
+
+    def closeSerial(self):
+        self.serial.close()
+
+    def sendSerial(self,msg):
+        msg = "<" + msg + ">"
+        print( msg )
+        self.serial.write( msg.encode() )
+
+    def receiveSerial(self):
+        return_msg = self.serial.readline()
+        print( return_msg )
+        return return_msg
+
 class PreferencesWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Preferences"))
         self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
+
+
+        self.m_app = QApplication.instance()
+
         self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
 
         self.language_label = QLabel(self.tr("Language"))
@@ -392,18 +434,82 @@ class PreferencesWindow(QDialog):
         self.language_combobox.addItem("한국어", "ko")
         self.language_combobox.setCurrentIndex(self.language_combobox.findData(self.settings.value("language", "en")))
 
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(self.language_label)
-        self.layout.addWidget(self.language_combobox)
+
+        self.lblSerialPort = QLabel(self.tr("Serial Port"))
+        self.comboSerialPort = QComboBox()
+        arduino_ports = [ p.device for p in serial.tools.list_ports.comports() if 'CH340' in p.description ]
+        if len(arduino_ports) > 0:
+            self.comboSerialPort.addItems(arduino_ports)
+        else:
+            self.comboSerialPort.addItem("None")
+
+        self.lblPtmFitter = QLabel(self.tr("PTM Fitter"))
+        self.edtPtmFitter = QLineEdit()
+        self.edtPtmFitter.setText(self.settings.value("ptm_fitter", "ptmfitter.exe"))
+        self.btnPtmFitter = QPushButton(self.tr("Browse"))
+        self.btnPtmFitter.clicked.connect(self.on_browse_ptm_fitter)
+
+        self.ptmfitter_widget = QWidget()
+        self.ptmfitter_layout = QHBoxLayout()
+        self.ptmfitter_widget.setLayout(self.ptmfitter_layout)
+        self.ptmfitter_layout.addWidget(self.edtPtmFitter)
+        self.ptmfitter_layout.addWidget(self.btnPtmFitter)
+
+        self.btnOkay = QPushButton(self.tr("OK"))
+        self.btnOkay.clicked.connect(self.Okay)
+
+        self.layout = QFormLayout()
+
+        self.layout.addRow(self.language_label, self.language_combobox)
+        self.layout.addRow(self.lblSerialPort, self.comboSerialPort)
+        self.layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
+        self.layout.addRow(self.btnOkay)
+
+        #self.layout.addWidget(self.language_label)
+        #self.layout.addWidget(self.language_combobox)
 
         self.setLayout(self.layout)
 
         self.language_combobox.currentIndexChanged.connect(self.language_combobox_currentIndexChanged)
 
-    def language_combobox_currentIndexChanged(self, index):
-        self.settings.setValue("language", self.language_combobox.currentData())
+        self.read_settings()
+
+    def Okay(self):
+        #self.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
+        self.save_settings()
         self.accept()
 
+    def on_browse_ptm_fitter(self):
+        filename, _ = QFileDialog.getOpenFileName(self, self.tr("Select PTM Fitter"), "", "Executable Files (*.exe)")
+        if filename:
+            self.edtPtmFitter.setText(filename)
+
+    def read_settings(self):
+        self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
+        self.m_app.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
+        if self.m_app.remember_geometry is True:
+            self.setGeometry(self.m_app.settings.value("WindowGeometry/PreferencesWindow", QRect(100, 100, 500, 250)))
+            is_maximized = value_to_bool(self.m_app.settings.value("IsMaximized/PreferencesWindow", False))
+            if is_maximized:
+                self.showMaximized()
+            else:
+                self.showNormal()
+        else:
+            self.setGeometry(QRect(100, 100, 500, 250))
+        self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
+        self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
+
+
+    def save_settings(self):
+        self.m_app.settings.setValue("WindowGeometry/PreferencesWindow", self.geometry())
+        self.m_app.settings.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
+        self.m_app.settings.setValue("language", self.language_combobox.currentData())
+        self.m_app.settings.setValue("serial_port", self.comboSerialPort.currentText())
+        self.m_app.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
+
+    def language_combobox_currentIndexChanged(self, index):
+        self.settings.setValue("language", self.language_combobox.currentData())
+        #self.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
