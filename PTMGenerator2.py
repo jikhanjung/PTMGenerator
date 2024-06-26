@@ -160,6 +160,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
         if self.m_app.serial_port is not None:
             self.serial_exist = True
+            self.serial_port = self.m_app.serial_port
             self.openSerial()
         else:
             self.serial_exist = False
@@ -255,13 +256,13 @@ class PTMGeneratorMainWindow(QMainWindow):
         QMessageBox.about(self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
 
     def turn_on_led(self, led_index):
-        msg = "ON," + str(self.currlistidx + 1)
+        msg = "ON," + str(led_index + 1)
         self.sendSerial(msg)
 
         print(f"Turning on LED {led_index+1}")
 
     def take_shot(self):
-        msg = "SHOOT," + str(self.currlistidx + 1)
+        msg = "SHOOT," + str(self.current_index + 1)
         ret_msg = self.sendSerial( msg )
         print("Taking a shot with the DSLR")
 
@@ -435,9 +436,12 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.timer.start(period)  # Poll every 1 second
 
     def openSerial(self):
+        print("Opening serial port...") 
         if self.serial_exist == False:
+            print("Serial port not found 1")
             return
         if self.serial_port is None or self.serial_port == "" or self.serial_port == "None":
+            print("Serial port not found 2")
             self.serial_exist = False
             return
         self.serial = serial.Serial(self.serial_port, 9600, timeout=2)
