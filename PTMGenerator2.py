@@ -1,13 +1,14 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableView, QAction, \
                             QStatusBar, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, \
                             QFileDialog, QDialog, QComboBox, QInputDialog, QWidget, QFormLayout
-from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QPixmap
 from PyQt5.QtCore import Qt, QRect, QSettings, QTimer, QTranslator
 
 import serial
 import serial.tools.list_ports
 
 import sys, os, time, csv
+from datetime import datetime
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PTMGenerator2"
@@ -28,7 +29,7 @@ def value_to_bool(value):
 ICON = {}
 ICON['open_directory'] = resource_path('icons/open_directory.png')
 PTM_IMAGE_COUNT = 5
-AUTO_RETAKE_MAXIMUM = 1
+AUTO_RETAKE_MAXIMUM = 0
 
 
 class PTMGeneratorMainWindow(QMainWindow):
@@ -55,6 +56,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.previous_index = -1
         self.serial_port = None
         self.serial_exist = False
+        self.prev_selected_rows = []
 
         self.table_view = QTableView()
         self.image_view = QLabel()
@@ -66,6 +68,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_list_layout.addWidget(self.image_view, 4)
 
         self.image_model = QStandardItemModel()
+        self.image_model.setHorizontalHeaderLabels(['Filename'])
         self.table_view.setModel(self.image_model)
         header = self.table_view.horizontalHeader()  
         header.setSectionResizeMode(header.Stretch)
@@ -181,11 +184,6 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_index_list = []
         self.statusBar.showMessage(self.tr("Stopped"), 1000)
 
-    def clear_image_data(self):
-        self.image_data = []
-        self.image_model.clear()
-        self.update_csv()        
-
     def test_shot(self):
         self.turn_on_led(PTM_IMAGE_COUNT-1)
         time.sleep(1)
@@ -207,20 +205,45 @@ class PTMGeneratorMainWindow(QMainWindow):
 
 
     def on_selection_changed(self,selected, deselected):
-            # Iterate over selected indexes
-        selected_rows = self.table_view.selectionModel().selectedRows()
-        for model_index in selected_rows:
+        # Iterate over selected indexes
+        self.selected_rows = []        
+        for model_index in self.table_view.selectionModel().selectedRows():
             row = model_index.row()
+            self.selected_rows.append(row)
+            if row not in self.prev_selected_rows:
+                self.last_selected_row = row
+                self.show_image( os.path.join( self.current_directory, self.image_data[row][1]) )
             print(f"Row {row} selected")
-            self.selected_indices.append(model_index)
-        print("Selected indices:", self.selected_indices)
+            #self.selected_indices.append(model_index)
+        #print("Selected indices:", self.selected_indices)
+
+        self.prev_selected_rows = self.selected_rows
 
     def on_action_open_directory_triggered(self):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Open Directory"))
         if directory:
             self.current_directory = directory
             self.edtDirectory.setText(directory)
+            self.clear_image_data()
+            csv_path = os.path.join(self.current_directory, self.csv_file)
+            if os.path.exists(self.current_directory):
+                if os.path.exists(csv_path):
+                    #self.clear_image_data()
+                    self.load_csv_data()    
+                else:
+                    self.load_image_files()
+
+    def load_image_files(self):
+        image_data = self.detect_irregular_intervals(self.current_directory)
+
+        if len(image_data) == PTM_IMAGE_COUNT:
+            for i, filename in image_data:
+                self.image_data.append((i, filename))
+            self.update_csv()
             self.load_csv_data()
+        else:
+            print("Image files not found or not enough images in the directory.")
+            self.statusBar.showMessage(self.tr("Image files not found or not enough images in the directory."), 5000)
 
     def on_action_preferences_triggered(self):
         preferences = PreferencesWindow(self)
@@ -311,6 +334,7 @@ class PTMGeneratorMainWindow(QMainWindow):
                 else:
                     self.table_view.model().appendRow(item)
                     self.image_data.append((self.current_index, filename))
+                self.show_image(new_image)
 
             self.second_counter = 0
             self.retake_counter = 0
@@ -326,6 +350,10 @@ class PTMGeneratorMainWindow(QMainWindow):
                 self.update_csv()
                 self.btnPauseContinue.setText(self.tr("Pause/Continue"))
 
+    def show_image(self, image_file):
+        print("Showing image:", image_file)
+        self.image_view.setPixmap(QPixmap(image_file).scaled(self.image_view.size(), Qt.KeepAspectRatio))
+
     def take_all_pictures(self):
         period = 1000
         self.last_checked = time.time()
@@ -340,34 +368,33 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.current_index = self.image_index_list.pop(0)
         self.timer.start(period)  # Poll every 1 second
 
+    def clear_image_data(self):
+        self.image_data = []
+        self.image_model.clear()
+        self.image_view.clear()
+        self.table_view.selectionModel().clearSelection()
+        self.prev_selected_rows = []
+        #self.update_csv()        
+
     def load_csv_data(self):
         self.path = self.edtDirectory.text()
-        self.image_data = []
-        self.image_index = 0
         csv_path = os.path.join(self.path, self.csv_file)
+        print("Loading data from CSV:", csv_path)
         if os.path.exists(csv_path):
+
             with open(csv_path, 'r', newline='') as csvfile:
                 csvreader = csv.reader(csvfile)
                 for row in csvreader:
+                    print("Row:", row)
                     if len(row) == 2:
                         index, filename = row
                         self.image_data.append((int(index), filename))
-                        self.image_index = max(self.image_index, int(index))
-            prev_index = -1
-            for index, filename in self.image_data:
-                item = QStandardItem(filename)
-                if index > prev_index + 1:
-                    for i in range(prev_index+1, index):
-                        #self.image_data.append((i, None))
-                        self.image_model.appendRow(QStandardItem("-"))
-                self.image_model.appendRow(item)
-                prev_index = index
-            if prev_index < PTM_IMAGE_COUNT - 1:
-                for i in range(prev_index+1, PTM_IMAGE_COUNT):
-                    #self.image_data.append((i, None))
-                    self.image_model.appendRow(QStandardItem("-"))
-
+                        #self.image_index = max(self.image_index, int(index))
+                        self.image_model.appendRow(QStandardItem(filename))
             print(f"Loaded data from CSV: {self.image_data}")
+        else:
+            print("CSV file not found:", csv_path)
+        self.table_view.selectRow(0)
 
     def add_imagefile(self, index, filename):
         csv_path = os.path.join(self.current_directory, self.csv_file)
@@ -378,17 +405,17 @@ class PTMGeneratorMainWindow(QMainWindow):
         print(f"Logged to CSV: Index [{index}], Filename - [{filename}]")
 
     def update_csv(self):
-        with open(self.csv_file, 'w', newline='') as csvfile:
+        csv_path = os.path.join(self.current_directory, self.csv_file)
+        with open(csv_path, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(self.image_data)
 
     def on_retake_picture_triggered(self):
         period = 1000
         self.image_index_list = []
-        for index in self.selected_indices:
-            row = index.row()
-            if row not in self.image_index_list:
-                self.image_index_list.append(row)
+        if len(self.selected_rows) == 0:
+            return
+        self.image_index_list = sorted(self.selected_rows)
         print("Retake picture list:", self.image_index_list)
         self.previous_index = -1
         self.current_index = self.image_index_list.pop(0)
@@ -416,6 +443,73 @@ class PTMGeneratorMainWindow(QMainWindow):
         return_msg = self.serial.readline()
         print( return_msg )
         return return_msg
+
+    def detect_irregular_intervals(self,directory_path):
+        """
+        Detects image files with irregular time intervals in a directory, 
+        first determining the typical interval from existing images.
+
+        Args:
+            directory_path (str): The path to the directory containing the images.
+
+        Returns:
+            list: A list of tuples (filename, actual_interval) for images with irregular intervals.
+        """
+        def get_file_creation_time(filename):
+            """Helper function to get file creation time for sorting."""
+            filepath = os.path.join(directory_path, filename)
+            return os.path.getctime(filepath)
+
+        image_files = [f for f in os.listdir(directory_path) if f.endswith(('.jpg', '.jpeg', '.png', '.tiff'))]
+        # Sort files by creation time using the helper function
+        image_files.sort(key=get_file_creation_time) 
+
+        intervals = []
+        for i in range(1, len(image_files)):
+            try:
+                filepath1 = os.path.join(directory_path, image_files[i - 1])
+                filepath2 = os.path.join(directory_path, image_files[i])
+                ctime1 = os.path.getctime(filepath1)
+                ctime2 = os.path.getctime(filepath2)
+                datetime1 = datetime.fromtimestamp(ctime1)
+                datetime2 = datetime.fromtimestamp(ctime2)
+
+                actual_interval = round((datetime2 - datetime1).total_seconds())
+                intervals.append(actual_interval)
+            except FileNotFoundError:
+                print(f"Error: Image file not found: {image_files[i]}")
+
+        if len(intervals) == 0:
+            return []
+        # Determine the most common interval (typical_interval)
+        print(intervals)
+        interval_counts = {}
+        for interval in intervals:
+            interval_counts[interval] = interval_counts.get(interval, 0) + 1
+        typical_interval = max(interval_counts, key=interval_counts.get)  # Most frequent interval
+        print("Typical interval:", typical_interval)
+
+        image_data = []
+        image_data.append( (0, image_files[0]) )
+        span = 0
+
+        irregular_intervals = []
+        for i, interval in enumerate(intervals):
+            print(interval)
+            if not (0.5 * typical_interval <= interval <= 1.5 * typical_interval):
+                print("current:",interval, "typical:",typical_interval)
+                if interval > 1.5 * typical_interval:
+                    print(f"Image {image_files[i+1]} has an irregular interval of {interval} seconds.")
+                    span_count = round(interval / typical_interval ) - 1
+                    for j in range(span_count):
+                        image_data.append( (i+j+1, "-") )
+                    span += span_count
+            image_data.append( (i+span+1, image_files[i+1]) )
+        print(image_data)
+
+        return image_data
+
+        return image_files, typical_interval, irregular_intervals
 
 class PreferencesWindow(QDialog):
     def __init__(self, parent=None):
