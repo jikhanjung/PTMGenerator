@@ -182,6 +182,8 @@ class PTMGeneratorMainWindow(QMainWindow):
     def stop_process(self):
         self.timer.stop()
         self.image_index_list = []
+        #self.sendSerial("OFF")
+        self.closeSerial()
         self.statusBar.showMessage(self.tr("Stopped"), 1000)
 
     def test_shot(self):
@@ -253,9 +255,14 @@ class PTMGeneratorMainWindow(QMainWindow):
         QMessageBox.about(self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
 
     def turn_on_led(self, led_index):
+        msg = "ON," + str(self.currlistidx + 1)
+        self.sendSerial(msg)
+
         print(f"Turning on LED {led_index+1}")
 
     def take_shot(self):
+        msg = "SHOOT," + str(self.currlistidx + 1)
+        ret_msg = self.sendSerial( msg )
         print("Taking a shot with the DSLR")
 
     def get_incoming_image(self, directory):
@@ -349,6 +356,9 @@ class PTMGeneratorMainWindow(QMainWindow):
                 self.status = "idle"
                 self.update_csv()
                 self.btnPauseContinue.setText(self.tr("Pause/Continue"))
+                #self.sendSerial("OFF")
+                self.closeSerial()
+
 
     def show_image(self, image_file):
         print("Showing image:", image_file)
@@ -365,6 +375,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             #self.image_data.append((i, "-"))
         self.image_list = []
         self.previous_index = -1
+        self.openSerial()
         self.current_index = self.image_index_list.pop(0)
         self.timer.start(period)  # Poll every 1 second
 
@@ -420,6 +431,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.previous_index = -1
         self.current_index = self.image_index_list.pop(0)
         self.btnPauseContinue.setText(self.tr("Pause"))
+        self.openSerial()
         self.timer.start(period)  # Poll every 1 second
 
     def openSerial(self):
@@ -432,6 +444,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         time.sleep(2)
 
     def closeSerial(self):
+        self.sendSerial("OFF")
         self.serial.close()
 
     def sendSerial(self,msg):
