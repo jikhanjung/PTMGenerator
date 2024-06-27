@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableView, QAction, \
                             QStatusBar, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, \
                             QFileDialog, QDialog, QComboBox, QInputDialog, QWidget, QFormLayout
-from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QPixmap
-from PyQt5.QtCore import Qt, QRect, QSettings, QTimer, QTranslator
+from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QPixmap, QIntValidator
+from PyQt5.QtCore import Qt, QRect, QSettings, QTimer, QTranslator, QObject, pyqtSignal
 
 import serial
 import serial.tools.list_ports
@@ -28,9 +28,33 @@ def value_to_bool(value):
 
 ICON = {}
 ICON['open_directory'] = resource_path('icons/open_directory.png')
-PTM_IMAGE_COUNT = 5
+PTM_IMAGE_COUNT = 50
 AUTO_RETAKE_MAXIMUM = 0
 
+class OutputRedirector(QObject):
+    output_written = pyqtSignal(str)
+
+    def __init__(self, file_path):
+        super().__init__()
+        self.file_path = file_path
+        self.stdout = sys.stdout
+        self.file = open(file_path, 'w')
+
+    def write(self, message):
+        if self.stdout is not None:
+            self.stdout.write(message)
+        #self.stdout.write(message)
+        self.file.write(message)
+        self.file.flush()
+        self.output_written.emit(message)
+
+    def flush(self):
+        if self.stdout is not None:
+            self.stdout.flush()
+        self.file.flush()
+
+    def close(self):
+        self.file.close()
 
 class PTMGeneratorMainWindow(QMainWindow):
     def __init__(self):
@@ -47,6 +71,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.csv_file = 'image_data.csv'  # Change this to your desired CSV file path
         self.last_checked = time.time()
         self.current_directory = "."
+        self.preparation_time = 2
 
         self.auto_retake = True
         self.auto_retake_maximum = AUTO_RETAKE_MAXIMUM
@@ -57,6 +82,9 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.serial_port = None
         self.serial_exist = False
         self.prev_selected_rows = []
+
+        self.redirector = OutputRedirector("output.log")
+        sys.stdout = self.redirector
 
         self.table_view = QTableView()
         self.image_view = QLabel()
@@ -165,6 +193,8 @@ class PTMGeneratorMainWindow(QMainWindow):
             #self.openSerial()
         else:
             self.serial_exist = False
+        self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", PTM_IMAGE_COUNT))
+        self.retry_count = int(self.m_app.settings.value("RetryCount", AUTO_RETAKE_MAXIMUM))
 
     def save_settings(self):
         self.m_app.settings.setValue("WindowGeometry/MainWindow", self.geometry())
@@ -189,8 +219,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.statusBar.showMessage(self.tr("Stopped"), 1000)
 
     def test_shot(self):
-        self.turn_on_led(PTM_IMAGE_COUNT-1)
-        time.sleep(1)
+        #self.turn_on_led(self.number_of_LEDs-1)
+        #time.sleep(1)
         self.take_shot()
         time.sleep(1)
         new_image = None
@@ -240,7 +270,7 @@ class PTMGeneratorMainWindow(QMainWindow):
     def load_image_files(self):
         image_data = self.detect_irregular_intervals(self.current_directory)
 
-        if len(image_data) == PTM_IMAGE_COUNT:
+        if len(image_data) == self.number_of_LEDs:
             for i, filename in image_data:
                 self.image_data.append((i, filename))
             self.update_csv()
@@ -273,7 +303,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         print(f"Last checked time: {newest_time}")
         newest_file = None
         files = os.listdir(directory)
-        print(f"Files in directory: {files}")
+        #print(f"Files in directory: {files}")
         for file in files:
             if not file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')):
                 continue
@@ -292,37 +322,54 @@ class PTMGeneratorMainWindow(QMainWindow):
             return None
 
     def take_picture_process(self):
-        self.second_counter += 1
-        if self.status == "idle":
+        #self.second_counter += 1
+        '''if self.status == "idle":
             self.status = "taking_picture"
             if self.current_index != self.previous_index:
                 self.last_checked = time.time()
             self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Turning on LED #{self.current_index+1}...", 1000)
             self.turn_on_led(self.current_index)
             self.second_counter = 0
-        elif self.status == "taking_picture":
+        el'''
+        if self.status == "idle":
+            self.status = "preparing picture"
+            if self.current_index != self.previous_index:
+                self.last_checked = time.time()
             print("Taking picture...", self.current_index+1, self.image_index_list)
-            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Taking picture...{self.second_counter}", 1000)
-            if self.second_counter > 2:
-                self.take_shot()
+            #if self.second_counter == 0:
+            self.take_shot()
+            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Preparing picture...{self.second_counter}", 1000)
+            self.second_counter += 1
+        elif self.status == "preparing picture":
+            if self.second_counter == self.preparation_time:
                 self.status = "polling"
-                self.second_counter = 0
+                self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Taking picture...{self.second_counter}", 1000)
+            else:
+                self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Preparing picture...{self.second_counter}", 1000)
+            self.second_counter += 1
+                #self.second_counter = 0
+                #return
         elif self.status == "polling":
-            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Polling for image file...{self.second_counter}", 1000)
+            self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Polling for image file...{self.second_counter}", 1000)
             new_image = self.get_incoming_image(self.current_directory)
             if new_image is None:
-                if self.second_counter <= self.polling_timeout:
+                if self.second_counter < self.polling_timeout:
+                    self.second_counter += 1
                     return
                 else:
-                    self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Failed to get image file", 1000)
+                    # Failed to get image file
+                    self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Failed to get image file", 1000)
                     print(f"[#{self.current_index+1}-{self.retake_counter}] Failed to get image file", self.current_index+1)
-                    if self.auto_retake and self.retake_counter < self.auto_retake_maximum:
+
+                    # Retake picture
+                    if self.retake_counter < self.auto_retake_maximum:
                         self.retake_counter += 1
-                        self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] Retaking picture... retry {self.retake_counter}...", 1000)
-                        #self.retake_picture(self.current_index)
+                        self.second_counter = 0
+                        self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Retaking picture... retry {self.retake_counter}...", 1000)
                         self.status = "idle"
                         return
-                    #self.failed_list.append(self.current_index)
+
+                    # failed to get an image and no more retake
                     name = "-"
                     item = QStandardItem(name)
                     if self.current_index < self.table_view.model().rowCount():
@@ -332,8 +379,9 @@ class PTMGeneratorMainWindow(QMainWindow):
                         self.table_view.model().appendRow(item)
                         self.image_data.append((self.current_index, name))
             else:
-                self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {new_image}", 1000)
-                print(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {new_image}")
+                # got a new image!
+                self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] New image detected: {new_image}", 1000)
+                print(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] New image detected: {new_image}")
                 directory, filename = os.path.split(new_image)
                 #self.add_imagefile(self.current_index, filename)
                 item = QStandardItem(filename)
@@ -353,7 +401,7 @@ class PTMGeneratorMainWindow(QMainWindow):
                 self.current_index = self.image_index_list.pop(0)
             else:
                 self.timer.stop()
-                self.statusBar.showMessage(f"All pictures ({PTM_IMAGE_COUNT}) taken", 5000)
+                self.statusBar.showMessage(f"All pictures ({self.number_of_LEDs}) taken", 5000)
                 #self.label.setText("All pictures taken")
                 self.status = "idle"
                 self.update_csv()
@@ -372,7 +420,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_index_list = []
         self.btnPauseContinue.setText(self.tr("Pause"))
 
-        for i in range(PTM_IMAGE_COUNT):
+        for i in range(self.number_of_LEDs):
             self.image_index_list.append(i)
             #self.image_data.append((i, "-"))
         self.image_list = []
@@ -445,6 +493,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             print("Serial port not found 2")
             self.serial_exist = False
             return
+        print("Serial port:", self.serial_port)
         self.serial = serial.Serial(self.serial_port, 9600, timeout=2)
         time.sleep(2)
 
@@ -550,16 +599,19 @@ class PreferencesWindow(QDialog):
         self.lblSerialPort = QLabel(self.tr("Serial Port"))
         self.comboSerialPort = QComboBox()
         arduino_ports = []
-        for p in serial.tools.list_ports.comports():
+        port_list = serial.tools.list_ports.comports()
+        for p in port_list:
             print(p, p.description, p.device)
             arduino_ports.append(p.device)
+            self.comboSerialPort.addItem(p.device + " - " + p.description, p.device)
 
         #arduino_ports = [ p.device for p in serial.tools.list_ports.comports()]
         #arduino_ports = [ p.device for p in serial.tools.list_ports.comports() if 'CH340' in p.description ]
-        if len(arduino_ports) > 0:
-            self.comboSerialPort.addItems(arduino_ports)
-        else:
-            self.comboSerialPort.addItem("None")
+        if len(port_list) == 0:
+        #    self.comboSerialPort.addItems(arduino_ports)
+        #else:
+            self.comboSerialPort.addItem("None","None")
+
 
         self.lblPtmFitter = QLabel(self.tr("PTM Fitter"))
         self.edtPtmFitter = QLineEdit()
@@ -573,6 +625,16 @@ class PreferencesWindow(QDialog):
         self.ptmfitter_layout.addWidget(self.edtPtmFitter)
         self.ptmfitter_layout.addWidget(self.btnPtmFitter)
 
+        self.lblNumberOfLEDs = QLabel(self.tr("Number of LEDs"))
+        self.edtNumberOfLEDs = QLineEdit()
+        # integer validator for edtNumberofLEDs
+        self.edtNumberOfLEDs.setValidator(QIntValidator())
+
+        self.lblRetryCount = QLabel(self.tr("Retry Count"))
+        self.edtRetryCount = QLineEdit()
+        # integer validator for edtNumberofLEDs
+        self.edtRetryCount.setValidator(QIntValidator())
+
         self.btnOkay = QPushButton(self.tr("OK"))
         self.btnOkay.clicked.connect(self.Okay)
 
@@ -581,6 +643,8 @@ class PreferencesWindow(QDialog):
         self.layout.addRow(self.language_label, self.language_combobox)
         self.layout.addRow(self.lblSerialPort, self.comboSerialPort)
         self.layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
+        self.layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
+        self.layout.addRow(self.lblRetryCount, self.edtRetryCount)
         self.layout.addRow(self.btnOkay)
 
         #self.layout.addWidget(self.language_label)
@@ -591,6 +655,11 @@ class PreferencesWindow(QDialog):
         self.language_combobox.currentIndexChanged.connect(self.language_combobox_currentIndexChanged)
 
         self.read_settings()
+
+        self.comboSerialPort.setCurrentIndex(self.comboSerialPort.findData(self.m_app.serial_port))
+        self.edtNumberOfLEDs.setText(str(self.m_app.number_of_LEDs))
+        self.edtRetryCount.setText(str(self.m_app.retry_count))
+
 
     def Okay(self):
         #self.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
@@ -617,14 +686,22 @@ class PreferencesWindow(QDialog):
         self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
         print("Serial port:", self.m_app.serial_port)
         self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
+        self.m_app.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", 50))
+        self.m_app.retry_count = int(self.m_app.settings.value("RetryCount", 0))
+
+
 
 
     def save_settings(self):
         self.m_app.settings.setValue("WindowGeometry/PreferencesWindow", self.geometry())
         self.m_app.settings.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
         self.m_app.settings.setValue("language", self.language_combobox.currentData())
-        self.m_app.settings.setValue("serial_port", self.comboSerialPort.currentText())
+        serial_port = self.comboSerialPort.currentData()
+        print("Serial port:", serial_port)
+        self.m_app.settings.setValue("serial_port", serial_port)
         self.m_app.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
+        self.m_app.settings.setValue("Number_of_LEDs", str(self.edtNumberOfLEDs.text()))
+        self.m_app.settings.setValue("RetryCount", str(self.edtRetryCount.text()))
 
     def language_combobox_currentIndexChanged(self, index):
         self.settings.setValue("language", self.language_combobox.currentData())
@@ -647,7 +724,7 @@ if __name__ == "__main__":
 
 
 '''
-pyinstaller --name "PTMGenerator2_v0.1.0.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
+pyinstaller --name "PTMGenerator2_v0.1.0_20240627.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
 
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_en.ts
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts

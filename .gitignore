@@ -2,3 +2,4 @@ dist/
 build/
 *.spec
 image_data.csv
+output.log
