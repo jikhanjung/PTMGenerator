@@ -7,13 +7,27 @@ from PyQt5.QtCore import Qt, QRect, QSettings, QTimer, QTranslator, QObject, pyq
 import serial
 import serial.tools.list_ports
 
-import sys, os, time, csv
+import sys, os, time, csv, math
+from pathlib import Path
 from datetime import datetime
+import subprocess
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PTMGenerator2"
 PROGRAM_VERSION = "0.1.0"
 
+POLAR_LIGHT_LIST = [[85, 330], [84, 108], [83, 245], [82, 23], [81, 160], [80, 298], [79, 76], [78, 213], [77, 351], [76, 128],
+ [75, 266], [74, 43], [73, 181], [71, 318], [70, 96], [69, 233], [68, 11], [67, 148], [66, 286], [65, 63],
+ [64, 201], [62, 338], [61, 116], [60, 253], [59, 31], [58, 168], [56, 306], [55, 83], [54, 221], [52, 358],
+ [51, 136], [50, 273], [48, 51], [47, 188], [46, 326], [44, 103], [43, 241], [41, 18], [39, 156], [38, 293],
+ [36, 71], [34, 208], [32, 346], [30, 123], [28, 261], [26, 38], [23, 176], [21, 313], [17, 91], [13, 228]]
+
+LIGHT_POSITION_LIST = []
+for [ theta, phi ] in POLAR_LIGHT_LIST:
+    x = math.cos(math.radians(phi-180)) * math.sin(math.radians(theta))
+    y = math.sin(math.radians(phi-180)) * math.sin(math.radians(theta))
+    z =  math.cos(math.radians(theta))
+    LIGHT_POSITION_LIST.append( [x,y,z])
 
 def resource_path(relative_path):
     try:
@@ -130,6 +144,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.btnPauseContinue.clicked.connect(self.pause_continue_process)
         self.btnStop = QPushButton(self.tr("Stop"))
         self.btnStop.clicked.connect(self.stop_process)
+        self.btnGeneratePTM = QPushButton(self.tr("Generate PTM"))
+        self.btnGeneratePTM.clicked.connect(self.generatePTM)
 
         self.button_widget = QWidget() 
         self.button_layout = QHBoxLayout()
@@ -139,6 +155,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.button_layout.addWidget(self.btnRetakePicture)
         self.button_layout.addWidget(self.btnPauseContinue)
         self.button_layout.addWidget(self.btnStop)
+        self.button_layout.addWidget(self.btnGeneratePTM)
 
         self.central_widget = QWidget()
         self.central_layout = QVBoxLayout()
@@ -186,7 +203,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.setGeometry(QRect(100, 100, 1400, 800))
         self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
         print("Serial port:", self.m_app.serial_port)
-        self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
+        self.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
         if self.m_app.serial_port is not None:
             self.serial_exist = True
             self.serial_port = self.m_app.serial_port
@@ -194,7 +211,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         else:
             self.serial_exist = False
         self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", PTM_IMAGE_COUNT))
-        self.retry_count = int(self.m_app.settings.value("RetryCount", AUTO_RETAKE_MAXIMUM))
+        self.auto_retake_maximum = int(self.m_app.settings.value("RetryCount", AUTO_RETAKE_MAXIMUM))
+        
 
     def save_settings(self):
         self.m_app.settings.setValue("WindowGeometry/MainWindow", self.geometry())
@@ -282,6 +300,7 @@ class PTMGeneratorMainWindow(QMainWindow):
     def on_action_preferences_triggered(self):
         preferences = PreferencesWindow(self)
         preferences.exec()
+        self.read_settings()
 
     def on_action_about_triggered(self):
         QMessageBox.about(self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
@@ -364,8 +383,8 @@ class PTMGeneratorMainWindow(QMainWindow):
                     # Retake picture
                     if self.retake_counter < self.auto_retake_maximum:
                         self.retake_counter += 1
-                        self.second_counter = 0
                         self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] Retaking picture... retry {self.retake_counter}...", 1000)
+                        self.second_counter = 0
                         self.status = "idle"
                         return
 
@@ -419,6 +438,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.last_checked = time.time()
         self.image_index_list = []
         self.btnPauseContinue.setText(self.tr("Pause"))
+        self.clear_image_data()
 
         for i in range(self.number_of_LEDs):
             self.image_index_list.append(i)
@@ -578,6 +598,46 @@ class PTMGeneratorMainWindow(QMainWindow):
 
         return image_files, typical_interval, irregular_intervals
 
+    def generatePTM(self):
+       
+        #lp_list = []  # Placeholder for lp_list, should be filled appropriately
+        ret_str = ""
+        image_count = 0
+        for image in self.image_data:
+            i, image_name = image
+            if image_name == '-':
+                continue
+            image_count += 1
+            # make image_name's extension as lowercase
+            image_name = image_name.split('.')[0] + '.' + image_name.split('.')[1].lower()
+
+            ret_str += os.path.join( self.current_directory, image_name ) + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
+        ret_str = str(image_count) + "\n" + ret_str
+        
+        netfilename = Path(self.current_directory).parts[-1]
+        lpfilename = Path(self.current_directory, netfilename + ".lp")
+        
+        with open(str(lpfilename), 'w') as file:
+            file.write(ret_str)
+        
+        saveoptions = QFileDialog.Options()
+        #saveoptions |= QFileDialog.DontUseNativeDialog
+        saveoptions = {
+            'defaultextension': '.ptm',
+            'filetypes': [('PTM files', '*.ptm'), ('All files', '*.*')],
+            'initialdir': str(self.current_directory),
+            'initialfile': netfilename + '.ptm'
+        }
+        
+        ptmfilename, _ = QFileDialog.getSaveFileName(self, "Save PTM file", str(self.current_directory), 
+                                                     "PTM files (*.ptm);;All files (*)")
+        if ptmfilename:
+            execute_string = " ".join([str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)])
+            execute_list = [str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)]
+            print("Executing:", execute_list)
+            subprocess.call([str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)])
+
+
 class PreferencesWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -601,7 +661,7 @@ class PreferencesWindow(QDialog):
         arduino_ports = []
         port_list = serial.tools.list_ports.comports()
         for p in port_list:
-            print(p, p.description, p.device)
+            #print(p, p.description, p.device)
             arduino_ports.append(p.device)
             self.comboSerialPort.addItem(p.device + " - " + p.description, p.device)
 
@@ -684,7 +744,7 @@ class PreferencesWindow(QDialog):
         else:
             self.setGeometry(QRect(100, 100, 500, 250))
         self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
-        print("Serial port:", self.m_app.serial_port)
+        #print("Serial port:", self.m_app.serial_port)
         self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
         self.m_app.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", 50))
         self.m_app.retry_count = int(self.m_app.settings.value("RetryCount", 0))
@@ -697,7 +757,7 @@ class PreferencesWindow(QDialog):
         self.m_app.settings.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
         self.m_app.settings.setValue("language", self.language_combobox.currentData())
         serial_port = self.comboSerialPort.currentData()
-        print("Serial port:", serial_port)
+        #print("Serial port:", serial_port)
         self.m_app.settings.setValue("serial_port", serial_port)
         self.m_app.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
         self.m_app.settings.setValue("Number_of_LEDs", str(self.edtNumberOfLEDs.text()))
