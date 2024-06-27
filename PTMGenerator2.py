@@ -157,11 +157,12 @@ class PTMGeneratorMainWindow(QMainWindow):
         else:
             self.setGeometry(QRect(100, 100, 1400, 800))
         self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
+        print("Serial port:", self.m_app.serial_port)
         self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
         if self.m_app.serial_port is not None:
             self.serial_exist = True
             self.serial_port = self.m_app.serial_port
-            self.openSerial()
+            #self.openSerial()
         else:
             self.serial_exist = False
 
@@ -548,7 +549,13 @@ class PreferencesWindow(QDialog):
 
         self.lblSerialPort = QLabel(self.tr("Serial Port"))
         self.comboSerialPort = QComboBox()
-        arduino_ports = [ p.device for p in serial.tools.list_ports.comports() if 'CH340' in p.description ]
+        arduino_ports = []
+        for p in serial.tools.list_ports.comports():
+            print(p, p.description, p.device)
+            arduino_ports.append(p.device)
+
+        #arduino_ports = [ p.device for p in serial.tools.list_ports.comports()]
+        #arduino_ports = [ p.device for p in serial.tools.list_ports.comports() if 'CH340' in p.description ]
         if len(arduino_ports) > 0:
             self.comboSerialPort.addItems(arduino_ports)
         else:
@@ -608,6 +615,7 @@ class PreferencesWindow(QDialog):
         else:
             self.setGeometry(QRect(100, 100, 500, 250))
         self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
+        print("Serial port:", self.m_app.serial_port)
         self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
 
 
