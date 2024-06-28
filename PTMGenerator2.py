@@ -110,7 +110,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_list_layout.addWidget(self.image_view, 4)
 
         self.image_model = QStandardItemModel()
-        self.image_model.setHorizontalHeaderLabels(['Filename'])
+        self.image_model.setHorizontalHeaderLabels([self.tr('Filename')])
         self.table_view.setModel(self.image_model)
         header = self.table_view.horizontalHeader()  
         header.setSectionResizeMode(header.Stretch)
@@ -202,7 +202,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         else:
             self.setGeometry(QRect(100, 100, 1400, 800))
         self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
-        print("Serial port:", self.m_app.serial_port)
+        self.m_app.language = self.m_app.settings.value("language", "en")
+        #print("Serial port:", self.m_app.serial_port)
         self.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
         if self.m_app.serial_port is not None:
             self.serial_exist = True
@@ -212,6 +213,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.serial_exist = False
         self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", PTM_IMAGE_COUNT))
         self.auto_retake_maximum = int(self.m_app.settings.value("RetryCount", AUTO_RETAKE_MAXIMUM))
+        self.update_language(self.m_app.language)
         
 
     def save_settings(self):
@@ -301,6 +303,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         preferences = PreferencesWindow(self)
         preferences.exec()
         self.read_settings()
+        self.update_language(self.m_app.language)
 
     def on_action_about_triggered(self):
         QMessageBox.about(self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
@@ -637,13 +640,37 @@ class PTMGeneratorMainWindow(QMainWindow):
             print("Executing:", execute_list)
             subprocess.call([str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)])
 
+    def update_language(self, language):
+        translator = QTranslator()
+        translator.load(resource_path("translations/PTMGenerator2_{}.qm".format(app.language)))
+        #translator.load('PTMGenerator2_{}.qm'.format(language))
+        self.m_app.installTranslator(translator)
+
+        self.setWindowTitle("{} v{}".format(self.tr(PROGRAM_NAME), PROGRAM_VERSION))
+        self.file_menu.setTitle(self.tr("File"))
+        self.edit_menu.setTitle(self.tr("Edit"))
+        self.help_menu.setTitle(self.tr("Help"))
+        self.actionOpenDirectory.setText(self.tr("Open Directory"))
+        self.actionPreferences.setText(self.tr("Preferences"))
+        self.actionAbout.setText(self.tr("About"))
+        #self.lblDirectory.setText(self.tr("Directory"))
+        self.image_model.setHorizontalHeaderLabels([self.tr('Filename')])
+        self.lblDirectory.setText(self.tr("Directory"))
+        self.btnOpenDirectory.setText(self.tr("Open Directory"))
+        self.btnTestShot.setText(self.tr("Test Shot"))        
+        self.btnTakeAllPictures.setText(self.tr("Take All Pictures"))
+        self.btnRetakePicture.setText(self.tr("Retake Picture"))
+        self.btnPauseContinue.setText(self.tr("Pause/Continue"))
+        self.btnStop.setText(self.tr("Stop"))
+        self.btnGeneratePTM.setText(self.tr("Generate PTM"))
 
 class PreferencesWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        print("parent", parent)
+        self.parent = parent
         self.setWindowTitle(self.tr("Preferences"))
         self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
-
 
         self.m_app = QApplication.instance()
 
@@ -671,7 +698,6 @@ class PreferencesWindow(QDialog):
         #    self.comboSerialPort.addItems(arduino_ports)
         #else:
             self.comboSerialPort.addItem("None","None")
-
 
         self.lblPtmFitter = QLabel(self.tr("PTM Fitter"))
         self.edtPtmFitter = QLineEdit()
@@ -706,23 +732,21 @@ class PreferencesWindow(QDialog):
         self.layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
         self.layout.addRow(self.lblRetryCount, self.edtRetryCount)
         self.layout.addRow(self.btnOkay)
-
-        #self.layout.addWidget(self.language_label)
-        #self.layout.addWidget(self.language_combobox)
-
         self.setLayout(self.layout)
-
-        self.language_combobox.currentIndexChanged.connect(self.language_combobox_currentIndexChanged)
 
         self.read_settings()
 
-        self.comboSerialPort.setCurrentIndex(self.comboSerialPort.findData(self.m_app.serial_port))
-        self.edtNumberOfLEDs.setText(str(self.m_app.number_of_LEDs))
-        self.edtRetryCount.setText(str(self.m_app.retry_count))
+        self.language_combobox.currentIndexChanged.connect(self.language_combobox_currentIndexChanged)
+
+        self.language_combobox.setCurrentIndex(self.language_combobox.findData(self.language))
+        self.comboSerialPort.setCurrentIndex(self.comboSerialPort.findData(self.serial_port))
+        self.edtNumberOfLEDs.setText(str(self.number_of_LEDs))
+        self.edtRetryCount.setText(str(self.retry_count))
 
 
     def Okay(self):
-        #self.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
+        #self.settings.setValue("ptm_fitter", self.edtPtmFitter.text())               
+        self.parent.update_language(self.language)
         self.save_settings()
         self.accept()
 
@@ -733,8 +757,8 @@ class PreferencesWindow(QDialog):
 
     def read_settings(self):
         self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
-        self.m_app.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
-        if self.m_app.remember_geometry is True:
+        self.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
+        if self.remember_geometry is True:
             self.setGeometry(self.m_app.settings.value("WindowGeometry/PreferencesWindow", QRect(100, 100, 500, 250)))
             is_maximized = value_to_bool(self.m_app.settings.value("IsMaximized/PreferencesWindow", False))
             if is_maximized:
@@ -743,14 +767,13 @@ class PreferencesWindow(QDialog):
                 self.showNormal()
         else:
             self.setGeometry(QRect(100, 100, 500, 250))
-        self.m_app.serial_port = self.m_app.settings.value("serial_port", None)
+        self.serial_port = self.m_app.settings.value("serial_port", None)
         #print("Serial port:", self.m_app.serial_port)
-        self.m_app.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
-        self.m_app.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", 50))
-        self.m_app.retry_count = int(self.m_app.settings.value("RetryCount", 0))
-
-
-
+        self.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
+        self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", 50))
+        self.retry_count = int(self.m_app.settings.value("RetryCount", 0))
+        self.language = self.m_app.settings.value("language", "en")
+        self.prev_language = self.language
 
     def save_settings(self):
         self.m_app.settings.setValue("WindowGeometry/PreferencesWindow", self.geometry())
@@ -764,8 +787,29 @@ class PreferencesWindow(QDialog):
         self.m_app.settings.setValue("RetryCount", str(self.edtRetryCount.text()))
 
     def language_combobox_currentIndexChanged(self, index):
-        self.settings.setValue("language", self.language_combobox.currentData())
+        self.language = self.language_combobox.currentData()
+        #self.settings.setValue("language", self.language_combobox.currentData())
+        #print("language:", self.language)
         #self.accept()
+        self.update_language(self.language)
+
+    def update_language(self,language):
+        #print("update language:", language)
+        translator = QTranslator()
+        #translator.load('PTMGenerator2_{}.qm'.format(language))
+        translator.load(resource_path("translations/PTMGenerator2_{}.qm".format(self.language)))
+        self.m_app.installTranslator(translator)
+
+        #print("language_label before:", self.language_label.text())
+        self.language_label.setText(self.tr("Language"))
+        #print("language_label after:", self.language_label.text())
+        self.lblSerialPort.setText(self.tr("Serial Port"))
+        self.lblPtmFitter.setText(self.tr("PTM Fitter"))
+        self.btnPtmFitter.setText(self.tr("Browse"))
+        self.lblNumberOfLEDs.setText(self.tr("Number of LEDs"))
+        self.lblRetryCount.setText(self.tr("Retry Count"))
+        self.btnOkay.setText(self.tr("OK"))
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
