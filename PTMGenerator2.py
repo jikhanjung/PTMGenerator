@@ -213,6 +213,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.serial_exist = False
         self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", PTM_IMAGE_COUNT))
         self.auto_retake_maximum = int(self.m_app.settings.value("RetryCount", AUTO_RETAKE_MAXIMUM))
+        #print("read setting language:", self.m_app.language)
         self.update_language(self.m_app.language)
         
 
@@ -303,7 +304,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         preferences = PreferencesWindow(self)
         preferences.exec()
         self.read_settings()
-        self.update_language(self.m_app.language)
+        #self.update_language(self.m_app.language)
 
     def on_action_about_triggered(self):
         QMessageBox.about(self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
@@ -602,6 +603,13 @@ class PTMGeneratorMainWindow(QMainWindow):
         return image_files, typical_interval, irregular_intervals
 
     def generatePTM(self):
+        # check ptmfitter exists
+        if not os.path.exists(self.ptm_fitter):
+            print("PTM fitter not found:", self.ptm_fitter)
+            self.statusBar.showMessage(f"PTM fitter not found: {self.ptm_fitter}", 5000)
+            # show error message
+            QMessageBox.critical(self, self.tr("Error"), f"PTM fitter not found: {self.ptm_fitter}")
+            return
        
         #lp_list = []  # Placeholder for lp_list, should be filled appropriately
         ret_str = ""
@@ -616,6 +624,16 @@ class PTMGeneratorMainWindow(QMainWindow):
 
             ret_str += os.path.join( self.current_directory, image_name ) + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
         ret_str = str(image_count) + "\n" + ret_str
+
+        #check current directory
+        print("Current directory:", self.current_directory)
+        #print("Current directory parts:", Path(self.current_directory).parts)
+        if len(Path(self.current_directory).parts) == 0:
+            print("Current directory not found")
+            self.statusBar.showMessage("Current directory not found", 5000)
+            QMessageBox.critical(self, self.tr("Error"), "Current directory not found")
+            return
+        #print(Path(self.current_directory).parts)
         
         netfilename = Path(self.current_directory).parts[-1]
         lpfilename = Path(self.current_directory, netfilename + ".lp")
@@ -641,13 +659,37 @@ class PTMGeneratorMainWindow(QMainWindow):
             subprocess.call([str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)])
 
     def update_language(self, language):
+        #print("main update language:", language)
+        #translators = self.m_app.findChildren(QTranslator)
+        #for translator in translators:
+        #    print("Translator:", translator)
+        
+        if self.m_app.translator is not None:
+            self.m_app.removeTranslator(self.m_app.translator)
+            #print("removed translator")
+            self.m_app.translator = None
+        else:
+            pass
+            #print("no translator")
+
         translator = QTranslator()
-        translator.load(resource_path("translations/PTMGenerator2_{}.qm".format(app.language)))
-        #translator.load('PTMGenerator2_{}.qm'.format(language))
-        self.m_app.installTranslator(translator)
+        translator_path = resource_path("translations/PTMGenerator2_{}.qm".format(language))
+        #print("translator_path:", translator_path)
+        if os.path.exists(translator_path):
+            #print("Loading new translator:", translator_path)
+            #pass
+            translator.load(translator_path)
+            #translator.load('PTMGenerator2_{}.qm'.format(language))
+            self.m_app.installTranslator(translator)
+            self.m_app.translator = translator
+        else:
+            pass
+            #print("Translator not found:", translator_path)
 
         self.setWindowTitle("{} v{}".format(self.tr(PROGRAM_NAME), PROGRAM_VERSION))
-        self.file_menu.setTitle(self.tr("File"))
+        file_text = self.tr("File")
+        #print("file_text:", file_text)
+        self.file_menu.setTitle(file_text)
         self.edit_menu.setTitle(self.tr("Edit"))
         self.help_menu.setTitle(self.tr("Help"))
         self.actionOpenDirectory.setText(self.tr("Open Directory"))
@@ -667,12 +709,13 @@ class PTMGeneratorMainWindow(QMainWindow):
 class PreferencesWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        print("parent", parent)
+        #print("parent", parent)
         self.parent = parent
         self.setWindowTitle(self.tr("Preferences"))
         self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
 
         self.m_app = QApplication.instance()
+        self.current_translator = None
 
         self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
 
@@ -746,7 +789,7 @@ class PreferencesWindow(QDialog):
 
     def Okay(self):
         #self.settings.setValue("ptm_fitter", self.edtPtmFitter.text())               
-        self.parent.update_language(self.language)
+        #self.parent.update_language(self.language)
         self.save_settings()
         self.accept()
 
@@ -774,6 +817,7 @@ class PreferencesWindow(QDialog):
         self.retry_count = int(self.m_app.settings.value("RetryCount", 0))
         self.language = self.m_app.settings.value("language", "en")
         self.prev_language = self.language
+        self.update_language(self.language)
 
     def save_settings(self):
         self.m_app.settings.setValue("WindowGeometry/PreferencesWindow", self.geometry())
@@ -794,14 +838,35 @@ class PreferencesWindow(QDialog):
         self.update_language(self.language)
 
     def update_language(self,language):
+        if self.m_app.translator is not None:
+            self.m_app.removeTranslator(self.m_app.translator)
+            #print("removed translator")
+            self.m_app.translator = None
+        else:
+            pass
+            #print("no translator")
+        #print("pref update language:", language)
         #print("update language:", language)
         translator = QTranslator()
         #translator.load('PTMGenerator2_{}.qm'.format(language))
-        translator.load(resource_path("translations/PTMGenerator2_{}.qm".format(self.language)))
-        self.m_app.installTranslator(translator)
+        filename = "translations/PTMGenerator2_{}.qm".format(language)
+        #print("filename:", filename)
+        if os.path.exists(resource_path(filename)):
+            #print('path exists:', resource_path(filename))
+            #print("loading translator", resource_path(filename))
+            ret = translator.load(resource_path(filename))
+            #print("load result:", ret)
+            ret = self.m_app.installTranslator(translator)
+            self.m_app.translator = translator
+            #print("install result:", ret)
+        else:
+            #print("not exist:", resource_path(filename))
+            pass
 
         #print("language_label before:", self.language_label.text())
-        self.language_label.setText(self.tr("Language"))
+        lang_text = self.tr("Language")
+        #print("lang_text:", lang_text)
+        self.language_label.setText(lang_text)
         #print("language_label after:", self.language_label.text())
         self.lblSerialPort.setText(self.tr("Serial Port"))
         self.lblPtmFitter.setText(self.tr("PTM Fitter"))
@@ -809,10 +874,12 @@ class PreferencesWindow(QDialog):
         self.lblNumberOfLEDs.setText(self.tr("Number of LEDs"))
         self.lblRetryCount.setText(self.tr("Retry Count"))
         self.btnOkay.setText(self.tr("OK"))
+        self.update()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.translator = None
     app.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
     app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
 
@@ -820,6 +887,7 @@ if __name__ == "__main__":
     app.language = app.settings.value("language", "en")
     translator.load(resource_path("translations/PTMGenerator2_{}.qm".format(app.language)))
     app.installTranslator(translator)
+    app.translator = translator
 
     myWindow = PTMGeneratorMainWindow()
     myWindow.show()
