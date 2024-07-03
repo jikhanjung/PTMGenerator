@@ -71,11 +71,73 @@ class OutputRedirector(QObject):
         self.file.close()
 
 class PTMGeneratorMainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
-        self.setWindowTitle("{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
+    """
+    Main window class for the PTMGenerator application.
 
+    This class represents the main window of the PTMGenerator application. It contains various widgets and functionality
+    for controlling the image capturing and PTM generation process.
+
+    Attributes:
+        selected_indices (list): A list of selected row indices in the image table.
+        image_data (list): A list of image data containing the filename and other information.
+        failed_list (list): A list of failed image captures.
+        current_index (int): The index of the currently selected image.
+        status (str): The current status of the application.
+        second_counter (int): A counter for tracking the elapsed time.
+        csv_file (str): The path to the CSV file for storing image data.
+        last_checked (float): The timestamp of the last check for new images.
+        current_directory (str): The current directory for image capture.
+        preparation_time (int): The time in seconds for preparation before capturing an image.
+        auto_retake (bool): Flag indicating whether to automatically retake failed images.
+        auto_retake_maximum (int): The maximum number of retakes allowed for a single image.
+        retake_counter (int): The counter for tracking the number of retakes for a single image.
+        polling_timeout (int): The timeout in seconds for polling for new images.
+        image_index_list (list): A list of indices of images to be captured.
+        previous_index (int): The index of the previously selected image.
+        serial_port (str): The serial port for communication with external devices.
+        serial_exist (bool): Flag indicating whether a serial port is available.
+        prev_selected_rows (list): A list of previously selected row indices in the image table.
+        redirector (OutputRedirector): An instance of the OutputRedirector class for redirecting stdout.
+        table_view (QTableView): The table view widget for displaying image data.
+        image_view (QLabel): The label widget for displaying the selected image.
+        image_list_widget (QWidget): The widget for containing the table view and image view.
+        image_model (QStandardItemModel): The model for the image table view.
+        statusBar (QStatusBar): The status bar widget.
+        lblDirectory (QLabel): The label widget for displaying the current directory.
+        btnOpenDirectory (QPushButton): The button widget for opening the directory.
+        edtDirectory (QLineEdit): The line edit widget for displaying the current directory path.
+        directory_widget (QWidget): The widget for containing the directory-related widgets.
+        btnTestShot (QPushButton): The button widget for performing a test shot.
+        btnTakeAllPictures (QPushButton): The button widget for capturing all images.
+        btnRetakePicture (QPushButton): The button widget for retaking a single image.
+        btnPauseContinue (QPushButton): The button widget for pausing/continuing the image capture process.
+        btnStop (QPushButton): The button widget for stopping the image capture process.
+        btnGeneratePTM (QPushButton): The button widget for generating the PTM.
+        button_widget (QWidget): The widget for containing the buttons.
+        central_widget (QWidget): The central widget of the main window.
+        actionOpenDirectory (QAction): The action for opening the directory.
+        actionPreferences (QAction): The action for opening the preferences dialog.
+        actionAbout (QAction): The action for opening the about dialog.
+        main_menu (QMenuBar): The main menu bar.
+        file_menu (QMenu): The file menu.
+        edit_menu (QMenu): The edit menu.
+        help_menu (QMenu): The help menu.
+        m_app (QApplication): The instance of the QApplication.
+        timer (QTimer): The timer for capturing images at regular intervals.
+
+    """
+
+    def __init__(self):
+        """
+        Initializes the PTMGenerator2 class.
+
+        Sets up the window properties, initializes instance variables, and sets up the user interface.
+        """
+        super().__init__()
+        self.initialize_variables()
+        self.setup_ui()
+
+    def initialize_variables(self):
         self.selected_indices = []
         self.image_data = []
         self.failed_list = []
@@ -99,6 +161,10 @@ class PTMGeneratorMainWindow(QMainWindow):
 
         self.redirector = OutputRedirector("output.log")
         sys.stdout = self.redirector
+
+    def setup_ui(self):
+        self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
+        self.setWindowTitle("{} v{}".format(self.tr("PTMGenerator2"), PROGRAM_VERSION))
 
         self.table_view = QTableView()
         self.image_view = QLabel()
@@ -707,17 +773,60 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.btnGeneratePTM.setText(self.tr("Generate PTM"))
 
 class PreferencesWindow(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        #print("parent", parent)
-        self.parent = parent
-        self.setWindowTitle(self.tr("Preferences"))
-        self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
+    """
+    A dialog window for managing preferences in the PTMGenerator application.
 
+    Attributes:
+        parent (QWidget): The parent widget of the dialog.
+        m_app (QApplication): The instance of the QApplication.
+        current_translator (QTranslator): The current translator for language localization.
+        settings (QSettings): The settings object for storing and retrieving preferences.
+        language_label (QLabel): The label for the language selection.
+        language_combobox (QComboBox): The combobox for selecting the language.
+        lblSerialPort (QLabel): The label for the serial port selection.
+        comboSerialPort (QComboBox): The combobox for selecting the serial port.
+        lblPtmFitter (QLabel): The label for the PTM fitter selection.
+        edtPtmFitter (QLineEdit): The line edit for entering the PTM fitter path.
+        btnPtmFitter (QPushButton): The button for browsing the PTM fitter executable.
+        ptmfitter_widget (QWidget): The widget for containing the PTM fitter line edit and button.
+        ptmfitter_layout (QHBoxLayout): The layout for the PTM fitter widget.
+        lblNumberOfLEDs (QLabel): The label for the number of LEDs setting.
+        edtNumberOfLEDs (QLineEdit): The line edit for entering the number of LEDs.
+        lblRetryCount (QLabel): The label for the retry count setting.
+        edtRetryCount (QLineEdit): The line edit for entering the retry count.
+        btnOkay (QPushButton): The button for accepting the preferences and closing the dialog.
+        layout (QFormLayout): The layout for arranging the preferences widgets.
+    """
+
+    def __init__(self, parent=None):
+        """
+        Initializes a new instance of the PreferencesWindow class.
+
+        Args:
+            parent (QWidget): The parent widget of the dialog.
+        """
+        super().__init__(parent)
+        self.initialize_variables(parent)
+        self.setup_ui()
+
+    def initialize_variables(self, parent):
+        """
+        Initializes the variables required for the PreferencesWindow.
+
+        Args:
+            parent (QWidget): The parent widget of the dialog.
+        """
+        self.parent = parent
         self.m_app = QApplication.instance()
         self.current_translator = None
-
         self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
+
+    def setup_ui(self):
+        """
+        Sets up the user interface of the PreferencesWindow.
+        """
+        self.setWindowTitle(self.tr("Preferences"))
+        self.setWindowIcon(QIcon(resource_path('icons/PTMGenerator2.png')))
 
         self.language_label = QLabel(self.tr("Language"))
         self.language_combobox = QComboBox()
@@ -786,19 +895,40 @@ class PreferencesWindow(QDialog):
         self.edtNumberOfLEDs.setText(str(self.number_of_LEDs))
         self.edtRetryCount.setText(str(self.retry_count))
 
-
     def Okay(self):
+        """
+        Performs the necessary actions when the 'Okay' button is clicked.
+        Saves the settings, accepts the changes, and closes the dialog.
+        """
         #self.settings.setValue("ptm_fitter", self.edtPtmFitter.text())               
         #self.parent.update_language(self.language)
         self.save_settings()
         self.accept()
 
     def on_browse_ptm_fitter(self):
+        """
+        Opens a file dialog to select a PTM Fitter executable file and sets the selected file path to the edtPtmFitter QLineEdit.
+
+        Parameters:
+        - None
+
+        Returns:
+        - None
+        """
         filename, _ = QFileDialog.getOpenFileName(self, self.tr("Select PTM Fitter"), "", "Executable Files (*.exe)")
         if filename:
             self.edtPtmFitter.setText(filename)
 
     def read_settings(self):
+        """
+        Reads the application settings from the QSettings object and applies them to the preferences window.
+
+        This method retrieves various settings values such as window geometry, serial port, PTM fitter, number of LEDs,
+        retry count, and language. It then updates the preferences window with the retrieved values.
+
+        Returns:
+            None
+        """
         self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
         self.remember_geometry = value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         if self.remember_geometry is True:
@@ -820,6 +950,15 @@ class PreferencesWindow(QDialog):
         self.update_language(self.language)
 
     def save_settings(self):
+        """
+        Saves the current settings of the application.
+
+        This method saves the window geometry, maximized state, language selection,
+        serial port, PTM fitter, number of LEDs, and retry count to the application settings.
+
+        Returns:
+            None
+        """
         self.m_app.settings.setValue("WindowGeometry/PreferencesWindow", self.geometry())
         self.m_app.settings.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
         self.m_app.settings.setValue("language", self.language_combobox.currentData())
@@ -831,13 +970,32 @@ class PreferencesWindow(QDialog):
         self.m_app.settings.setValue("RetryCount", str(self.edtRetryCount.text()))
 
     def language_combobox_currentIndexChanged(self, index):
+        """
+        This method is called when the index of the language_combobox is changed.
+        It updates the selected language and calls the update_language method.
+
+        Parameters:
+        - index: The new index of the language_combobox.
+
+        Returns:
+        None
+        """
         self.language = self.language_combobox.currentData()
         #self.settings.setValue("language", self.language_combobox.currentData())
         #print("language:", self.language)
         #self.accept()
         self.update_language(self.language)
 
-    def update_language(self,language):
+    def update_language(self, language):
+        """
+        Update the language of the application.
+
+        Args:
+            language (str): The language to be set.
+
+        Returns:
+            None
+        """
         if self.m_app.translator is not None:
             self.m_app.removeTranslator(self.m_app.translator)
             #print("removed translator")
