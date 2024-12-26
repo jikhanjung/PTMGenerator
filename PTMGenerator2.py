@@ -22,8 +22,11 @@ POLAR_LIGHT_LIST = [[85, 330], [84, 108], [83, 245], [82, 23], [81, 160], [80, 2
  [51, 136], [50, 273], [48, 51], [47, 188], [46, 326], [44, 103], [43, 241], [41, 18], [39, 156], [38, 293],
  [36, 71], [34, 208], [32, 346], [30, 123], [28, 261], [26, 38], [23, 176], [21, 313], [17, 91], [13, 228]]
 
+
+
 LIGHT_POSITION_LIST = []
 for [ theta, phi ] in POLAR_LIGHT_LIST:
+    phi = phi - 90
     x = math.cos(math.radians(phi-180)) * math.sin(math.radians(theta))
     y = math.sin(math.radians(phi-180)) * math.sin(math.radians(theta))
     z =  math.cos(math.radians(theta))
@@ -313,7 +316,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         new_image = None
         count = 0
         while new_image is None and count < 5:
-            time.sleep(1)
+            time.sleep(3)
             new_image = self.get_incoming_image(self.current_directory)
             count += 1
         
@@ -390,9 +393,10 @@ class PTMGeneratorMainWindow(QMainWindow):
         print("Polling for incoming image file...", directory)
         newest_time = self.last_checked
         print(f"Last checked time: {newest_time}")
+        time.sleep(1)
         newest_file = None
         files = os.listdir(directory)
-        #print(f"Files in directory: {files}")
+        print(f"Files in directory: {files}")
         for file in files:
             if not file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')):
                 continue
@@ -653,6 +657,10 @@ class PTMGeneratorMainWindow(QMainWindow):
         irregular_intervals = []
         for i, interval in enumerate(intervals):
             print(interval)
+            if interval == 0: 
+                print(f"Image {image_files[i+1]} has an irregular interval of {interval} seconds.")
+                span += 1
+                continue
             if not (0.5 * typical_interval <= interval <= 1.5 * typical_interval):
                 print("current:",interval, "typical:",typical_interval)
                 if interval > 1.5 * typical_interval:
@@ -1054,7 +1062,7 @@ if __name__ == "__main__":
 
 
 '''
-pyinstaller --name "PTMGenerator2_v0.1.0_20240627.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
+pyinstaller --name "PTMGenerator2_v0.1.0_20241226.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
 
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_en.ts
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
