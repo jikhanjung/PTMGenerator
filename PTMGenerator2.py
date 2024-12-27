@@ -14,7 +14,7 @@ import subprocess
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PTMGenerator2"
-PROGRAM_VERSION = "0.1.0"
+PROGRAM_VERSION = "0.1.1"
 
 POLAR_LIGHT_LIST = [[85, 330], [84, 108], [83, 245], [82, 23], [81, 160], [80, 298], [79, 76], [78, 213], [77, 351], [76, 128],
  [75, 266], [74, 43], [73, 181], [71, 318], [70, 96], [69, 233], [68, 11], [67, 148], [66, 286], [65, 63],
@@ -24,13 +24,6 @@ POLAR_LIGHT_LIST = [[85, 330], [84, 108], [83, 245], [82, 23], [81, 160], [80, 2
 
 
 
-LIGHT_POSITION_LIST = []
-for [ theta, phi ] in POLAR_LIGHT_LIST:
-    phi = phi - 90
-    x = math.cos(math.radians(phi-180)) * math.sin(math.radians(theta))
-    y = math.sin(math.radians(phi-180)) * math.sin(math.radians(theta))
-    z =  math.cos(math.radians(theta))
-    LIGHT_POSITION_LIST.append( [x,y,z])
 
 def resource_path(relative_path):
     try:
@@ -282,6 +275,8 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.serial_exist = False
         self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", PTM_IMAGE_COUNT))
         self.auto_retake_maximum = int(self.m_app.settings.value("RetryCount", AUTO_RETAKE_MAXIMUM))
+        self.light_position_adjustment = int(self.m_app.settings.value("light_position_adjustment", 0))
+        self.post_shutter_polling = float(self.m_app.settings.value("post_shutter_polling", 1))
         #print("read setting language:", self.m_app.language)
         self.update_language(self.m_app.language)
         
@@ -336,7 +331,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.selected_rows.append(row)
             if row not in self.prev_selected_rows:
                 self.last_selected_row = row
-                self.show_image( os.path.join( self.current_directory, self.image_data[row][1]) )
+                self.show_image( os.path.join( self.image_data[row][0], self.image_data[row][1]) )
             print(f"Row {row} selected")
             #self.selected_indices.append(model_index)
         #print("Selected indices:", self.selected_indices)
@@ -361,8 +356,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         image_data = self.detect_irregular_intervals(self.current_directory)
 
         if len(image_data) == self.number_of_LEDs:
-            for i, filename in image_data:
-                self.image_data.append((i, filename))
+            for i, directory, filename in image_data:
+                self.image_data.append((i, directory, filename))
             self.update_csv()
             self.load_csv_data()
         else:
@@ -390,29 +385,38 @@ class PTMGeneratorMainWindow(QMainWindow):
         print("Taking a shot with the DSLR")
 
     def get_incoming_image(self, directory):
-        print("Polling for incoming image file...", directory)
+        print(f"Polling for incoming image files in {directory} and subdirectories...")
         newest_time = self.last_checked
-        print(f"Last checked time: {newest_time}")
-        time.sleep(1)
+        print(f"Last checked time: {newest_time}, sleeping for: {self.post_shutter_polling}")
+        time.sleep(self.post_shutter_polling)
+        
         newest_file = None
-        files = os.listdir(directory)
-        print(f"Files in directory: {files}")
-        for file in files:
-            if not file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')):
+        base_path = Path(directory)
+        
+        # Define image extensions once
+        IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff'}
+        
+        # Use glob pattern matching - much faster than checking each file
+        # rglob automatically handles subdirectories
+        for filepath in base_path.rglob('*'):
+            # Skip directories
+            if not filepath.is_file():
                 continue
-            full_path = os.path.join(directory, file)
-            if os.path.isfile(full_path):
-                file_time = os.path.getmtime(full_path)
-                if file_time > newest_time:
-                    newest_time = file_time
-                    newest_file = full_path
-                    print(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {newest_file} ({newest_time})")
+                
+            # Check extension using set lookup (faster than multiple endswith checks)
+            if filepath.suffix.lower() not in IMAGE_EXTENSIONS:
+                continue
+                
+            file_time = filepath.stat().st_mtime
+            if file_time > newest_time:
+                newest_time = file_time
+                newest_file = str(filepath)
+                print(f"[#{self.current_index+1}-{self.retake_counter}] New image detected: {newest_file} ({newest_time})")
 
         if newest_file is not None:
             self.last_checked = newest_time
             return newest_file
-        else:
-            return None
+        return None
 
     def take_picture_process(self):
         #self.second_counter += 1
@@ -470,7 +474,7 @@ class PTMGeneratorMainWindow(QMainWindow):
                         self.image_data[self.current_index] = (self.current_index, name)
                     else:
                         self.table_view.model().appendRow(item)
-                        self.image_data.append((self.current_index, name))
+                        self.image_data.append((self.current_index, name, name))
             else:
                 # got a new image!
                 self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] New image detected: {new_image}", 1000)
@@ -480,10 +484,10 @@ class PTMGeneratorMainWindow(QMainWindow):
                 item = QStandardItem(filename)
                 if self.current_index < self.table_view.model().rowCount():
                     self.table_view.model().setItem(self.current_index, 0, item)
-                    self.image_data[self.current_index] = (self.current_index, filename)
+                    self.image_data[self.current_index] = (self.current_index, directory, filename)
                 else:
                     self.table_view.model().appendRow(item)
-                    self.image_data.append((self.current_index, filename))
+                    self.image_data.append((self.current_index, directory, filename))
                 self.show_image(new_image)
 
             self.second_counter = 0
@@ -542,8 +546,8 @@ class PTMGeneratorMainWindow(QMainWindow):
                 for row in csvreader:
                     print("Row:", row)
                     if len(row) == 2:
-                        index, filename = row
-                        self.image_data.append((int(index), filename))
+                        index, directory, filename = row
+                        self.image_data.append((int(index), directory, filename))
                         #self.image_index = max(self.image_index, int(index))
                         self.image_model.appendRow(QStandardItem(filename))
             print(f"Loaded data from CSV: {self.image_data}")
@@ -651,7 +655,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         print("Typical interval:", typical_interval)
 
         image_data = []
-        image_data.append( (0, image_files[0]) )
+        image_data.append( (0, directory_path, image_files[0]) )
         span = 0
 
         irregular_intervals = []
@@ -667,9 +671,9 @@ class PTMGeneratorMainWindow(QMainWindow):
                     print(f"Image {image_files[i+1]} has an irregular interval of {interval} seconds.")
                     span_count = round(interval / typical_interval ) - 1
                     for j in range(span_count):
-                        image_data.append( (i+j+1, "-") )
+                        image_data.append( (i+j+1, "-", "-") )
                     span += span_count
-            image_data.append( (i+span+1, image_files[i+1]) )
+            image_data.append( (i+span+1, directory_path, image_files[i+1]) )
         print(image_data)
 
         return image_data
@@ -684,23 +688,29 @@ class PTMGeneratorMainWindow(QMainWindow):
             # show error message
             QMessageBox.critical(self, self.tr("Error"), f"PTM fitter not found: {self.ptm_fitter}")
             return
+        
+        LIGHT_POSITION_LIST = self.prepare_light_positions()
        
         #lp_list = []  # Placeholder for lp_list, should be filled appropriately
         ret_str = ""
         image_count = 0
+        image_directory = None
         for image in self.image_data:
-            i, image_name = image
+            i, directory, image_name = image
+            if image_directory is None:
+                image_directory = directory
             if image_name == '-':
                 continue
             image_count += 1
             # make image_name's extension as lowercase
             image_name = image_name.split('.')[0] + '.' + image_name.split('.')[1].lower()
 
-            ret_str += os.path.join( self.current_directory, image_name ) + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
+            ret_str += os.path.join( directory, image_name ) + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
         ret_str = str(image_count) + "\n" + ret_str
 
         #check current directory
         print("Current directory:", self.current_directory)
+        print("Image directory:", image_directory)
         #print("Current directory parts:", Path(self.current_directory).parts)
         if len(Path(self.current_directory).parts) == 0:
             print("Current directory not found")
@@ -709,8 +719,8 @@ class PTMGeneratorMainWindow(QMainWindow):
             return
         #print(Path(self.current_directory).parts)
         
-        netfilename = Path(self.current_directory).parts[-1]
-        lpfilename = Path(self.current_directory, netfilename + ".lp")
+        netfilename = Path(image_directory).parts[-1]
+        lpfilename = Path(image_directory, netfilename + ".lp")
         
         with open(str(lpfilename), 'w') as file:
             file.write(ret_str)
@@ -731,6 +741,18 @@ class PTMGeneratorMainWindow(QMainWindow):
             execute_list = [str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)]
             print("Executing:", execute_list)
             subprocess.call([str(self.ptm_fitter), "-i", str(lpfilename), "-o", str(ptmfilename)])
+
+    def prepare_light_positions(self):
+        LIGHT_POSITION_LIST = []
+
+        for [ theta, phi ] in POLAR_LIGHT_LIST:
+            phi_corrected = phi - 90 + self.light_position_adjustment
+            x = math.cos(math.radians(phi_corrected-180)) * math.sin(math.radians(theta))
+            y = math.sin(math.radians(phi_corrected-180)) * math.sin(math.radians(theta))
+            z =  math.cos(math.radians(theta))
+            LIGHT_POSITION_LIST.append( [x,y,z])
+        print (LIGHT_POSITION_LIST)
+        return LIGHT_POSITION_LIST
 
     def update_language(self, language):
         #print("main update language:", language)
@@ -881,6 +903,14 @@ class PreferencesWindow(QDialog):
         # integer validator for edtNumberofLEDs
         self.edtRetryCount.setValidator(QIntValidator())
 
+        self.lblPostShutterPolling = QLabel(self.tr("Post Shutter Polling"))
+        self.edtPostShutterPolling = QLineEdit()
+        self.edtPostShutterPolling.setValidator(QIntValidator())
+
+        self.lblLightPositionAdjustment = QLabel(self.tr("Light Position Adjustment"))
+        self.edtLightPositionAdjustment = QLineEdit()
+        self.edtLightPositionAdjustment.setValidator(QIntValidator())
+
         self.btnOkay = QPushButton(self.tr("OK"))
         self.btnOkay.clicked.connect(self.Okay)
 
@@ -891,6 +921,8 @@ class PreferencesWindow(QDialog):
         self.layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
         self.layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
         self.layout.addRow(self.lblRetryCount, self.edtRetryCount)
+        self.layout.addRow(self.lblPostShutterPolling, self.edtPostShutterPolling)
+        self.layout.addRow(self.lblLightPositionAdjustment, self.edtLightPositionAdjustment)
         self.layout.addRow(self.btnOkay)
         self.setLayout(self.layout)
 
@@ -902,6 +934,8 @@ class PreferencesWindow(QDialog):
         self.comboSerialPort.setCurrentIndex(self.comboSerialPort.findData(self.serial_port))
         self.edtNumberOfLEDs.setText(str(self.number_of_LEDs))
         self.edtRetryCount.setText(str(self.retry_count))
+        self.edtLightPositionAdjustment.setText(str(self.light_position_adjustment))
+        self.edtPostShutterPolling.setText(str(self.post_shutter_polling))
 
     def Okay(self):
         """
@@ -952,7 +986,9 @@ class PreferencesWindow(QDialog):
         #print("Serial port:", self.m_app.serial_port)
         self.ptm_fitter = self.m_app.settings.value("ptm_fitter", "ptmfitter.exe")
         self.number_of_LEDs = int(self.m_app.settings.value("Number_of_LEDs", 50))
-        self.retry_count = int(self.m_app.settings.value("RetryCount", 0))
+        self.retry_count = int(self.m_app.settings.value("RetryCount", 3))
+        self.light_position_adjustment = int(self.m_app.settings.value("light_position_adjustment", 0))
+        self.post_shutter_polling = float(self.m_app.settings.value("post_shutter_polling", 1))
         self.language = self.m_app.settings.value("language", "en")
         self.prev_language = self.language
         self.update_language(self.language)
@@ -976,6 +1012,8 @@ class PreferencesWindow(QDialog):
         self.m_app.settings.setValue("ptm_fitter", self.edtPtmFitter.text())
         self.m_app.settings.setValue("Number_of_LEDs", str(self.edtNumberOfLEDs.text()))
         self.m_app.settings.setValue("RetryCount", str(self.edtRetryCount.text()))
+        self.m_app.settings.setValue("light_position_adjustment", str(self.edtLightPositionAdjustment.text()))
+        self.m_app.settings.setValue("post_shutter_polling", str(self.edtPostShutterPolling.text()))
 
     def language_combobox_currentIndexChanged(self, index):
         """
@@ -1062,7 +1100,7 @@ if __name__ == "__main__":
 
 
 '''
-pyinstaller --name "PTMGenerator2_v0.1.0_20241226.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
+pyinstaller --name "PTMGenerator2_v0.1.1_20241227_2.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
 
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_en.ts
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
