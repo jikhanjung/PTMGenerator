@@ -4,3 +4,4 @@ build/
 image_data.csv
 *.log
 *.pyc
+.claude/settings.local.json

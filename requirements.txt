@@ -1,3 +1,6 @@
 pyserial
 Pillow
-(pywin32)
+#(pywin32)
+PyQt5
+PyQt5-sip
+pyinstaller
