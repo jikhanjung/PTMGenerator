@@ -14,7 +14,7 @@ import subprocess
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PTMGenerator2"
-PROGRAM_VERSION = "0.1.1"
+PROGRAM_VERSION = "0.1.2"
 
 POLAR_LIGHT_LIST = [[85, 330], [84, 108], [83, 245], [82, 23], [81, 160], [80, 298], [79, 76], [78, 213], [77, 351], [76, 128],
  [75, 266], [74, 43], [73, 181], [71, 318], [70, 96], [69, 233], [68, 11], [67, 148], [66, 286], [65, 63],
@@ -172,10 +172,11 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_list_layout.addWidget(self.image_view, 4)
 
         self.image_model = QStandardItemModel()
-        self.image_model.setHorizontalHeaderLabels([self.tr('Filename')])
+        self.image_model.setHorizontalHeaderLabels([self.tr('Include'), self.tr('Filename')])
         self.table_view.setModel(self.image_model)
-        header = self.table_view.horizontalHeader()  
-        header.setSectionResizeMode(header.Stretch)
+        header = self.table_view.horizontalHeader()
+        header.setSectionResizeMode(0, header.ResizeToContents)  # Include column
+        header.setSectionResizeMode(1, header.Stretch)  # Filename column
         self.table_view.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         self.statusBar = QStatusBar()
@@ -306,6 +307,7 @@ class PTMGeneratorMainWindow(QMainWindow):
     def test_shot(self):
         #self.turn_on_led(self.number_of_LEDs-1)
         #time.sleep(1)
+        self.openSerial()
         self.take_shot()
         time.sleep(1)
         new_image = None
@@ -314,7 +316,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             time.sleep(3)
             new_image = self.get_incoming_image(self.current_directory)
             count += 1
-        
+
         if new_image is None:
             print("Failed to get image file")
             self.statusBar.showMessage("Failed to get image file", 1000)
@@ -322,16 +324,19 @@ class PTMGeneratorMainWindow(QMainWindow):
             print(f"New image detected: {new_image}")
             self.statusBar.showMessage(f"New image detected: {new_image}", 1000)
 
+        self.closeSerial()
+
 
     def on_selection_changed(self,selected, deselected):
         # Iterate over selected indexes
-        self.selected_rows = []        
+        self.selected_rows = []
         for model_index in self.table_view.selectionModel().selectedRows():
             row = model_index.row()
             self.selected_rows.append(row)
             if row not in self.prev_selected_rows:
                 self.last_selected_row = row
-                self.show_image( os.path.join( self.image_data[row][0], self.image_data[row][1]) )
+                # image_data structure: (index, directory, filename, include)
+                self.show_image( os.path.join( self.image_data[row][1], self.image_data[row][2]) )
             print(f"Row {row} selected")
             #self.selected_indices.append(model_index)
         #print("Selected indices:", self.selected_indices)
@@ -356,8 +361,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         image_data = self.detect_irregular_intervals(self.current_directory)
 
         if len(image_data) == self.number_of_LEDs:
-            for i, directory, filename in image_data:
-                self.image_data.append((i, directory, filename))
+            for i, directory, filename, include in image_data:
+                self.image_data.append((i, directory, filename, include))
             self.update_csv()
             self.load_csv_data()
         else:
@@ -385,20 +390,20 @@ class PTMGeneratorMainWindow(QMainWindow):
         print("Taking a shot with the DSLR")
 
     def get_incoming_image(self, directory):
-        print(f"Polling for incoming image files in {directory} and subdirectories...")
+        print(f"Polling for incoming image files in {directory}...")
         newest_time = self.last_checked
         print(f"Last checked time: {newest_time}, sleeping for: {self.post_shutter_polling}")
         time.sleep(self.post_shutter_polling)
-        
+
         newest_file = None
         base_path = Path(directory)
-        
+
         # Define image extensions once
         IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff'}
-        
+
         # Use glob pattern matching - much faster than checking each file
-        # rglob automatically handles subdirectories
-        for filepath in base_path.rglob('*'):
+        # glob only checks the specified directory, not subdirectories
+        for filepath in base_path.glob('*'):
             # Skip directories
             if not filepath.is_file():
                 continue
@@ -468,26 +473,34 @@ class PTMGeneratorMainWindow(QMainWindow):
 
                     # failed to get an image and no more retake
                     name = "-"
-                    item = QStandardItem(name)
+                    checkbox_item = QStandardItem()
+                    checkbox_item.setCheckable(True)
+                    checkbox_item.setCheckState(Qt.Unchecked)  # Failed images unchecked by default
+                    filename_item = QStandardItem(name)
                     if self.current_index < self.table_view.model().rowCount():
-                        self.table_view.model().setItem(self.current_index, 0, item)
-                        self.image_data[self.current_index] = (self.current_index, name)
+                        self.table_view.model().setItem(self.current_index, 0, checkbox_item)
+                        self.table_view.model().setItem(self.current_index, 1, filename_item)
+                        self.image_data[self.current_index] = (self.current_index, name, name, False)
                     else:
-                        self.table_view.model().appendRow(item)
-                        self.image_data.append((self.current_index, name, name))
+                        self.table_view.model().appendRow([checkbox_item, filename_item])
+                        self.image_data.append((self.current_index, name, name, False))
             else:
                 # got a new image!
                 self.statusBar.showMessage(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] New image detected: {new_image}", 1000)
                 print(f"[#{self.current_index+1}-{self.retake_counter}] [{self.second_counter}] New image detected: {new_image}")
                 directory, filename = os.path.split(new_image)
                 #self.add_imagefile(self.current_index, filename)
-                item = QStandardItem(filename)
+                checkbox_item = QStandardItem()
+                checkbox_item.setCheckable(True)
+                checkbox_item.setCheckState(Qt.Checked)  # Successful images checked by default
+                filename_item = QStandardItem(filename)
                 if self.current_index < self.table_view.model().rowCount():
-                    self.table_view.model().setItem(self.current_index, 0, item)
-                    self.image_data[self.current_index] = (self.current_index, directory, filename)
+                    self.table_view.model().setItem(self.current_index, 0, checkbox_item)
+                    self.table_view.model().setItem(self.current_index, 1, filename_item)
+                    self.image_data[self.current_index] = (self.current_index, directory, filename, True)
                 else:
-                    self.table_view.model().appendRow(item)
-                    self.image_data.append((self.current_index, directory, filename))
+                    self.table_view.model().appendRow([checkbox_item, filename_item])
+                    self.image_data.append((self.current_index, directory, filename, True))
                 self.show_image(new_image)
 
             self.second_counter = 0
@@ -530,6 +543,7 @@ class PTMGeneratorMainWindow(QMainWindow):
     def clear_image_data(self):
         self.image_data = []
         self.image_model.clear()
+        self.image_model.setHorizontalHeaderLabels([self.tr('Include'), self.tr('Filename')])
         self.image_view.clear()
         self.table_view.selectionModel().clearSelection()
         self.prev_selected_rows = []
@@ -545,11 +559,26 @@ class PTMGeneratorMainWindow(QMainWindow):
                 csvreader = csv.reader(csvfile)
                 for row in csvreader:
                     print("Row:", row)
-                    if len(row) == 2:
+                    # Support both old format (3 elements) and new format (4 elements)
+                    if len(row) == 3:
+                        # Old format: (index, directory, filename) - default include=True
                         index, directory, filename = row
-                        self.image_data.append((int(index), directory, filename))
-                        #self.image_index = max(self.image_index, int(index))
-                        self.image_model.appendRow(QStandardItem(filename))
+                        include = True
+                    elif len(row) == 4:
+                        # New format: (index, directory, filename, include)
+                        index, directory, filename, include_str = row
+                        include = include_str.lower() == 'true'
+                    else:
+                        continue  # Skip invalid rows
+
+                    self.image_data.append((int(index), directory, filename, include))
+
+                    # Add checkbox and filename to table
+                    checkbox_item = QStandardItem()
+                    checkbox_item.setCheckable(True)
+                    checkbox_item.setCheckState(Qt.Checked if include else Qt.Unchecked)
+                    filename_item = QStandardItem(filename)
+                    self.image_model.appendRow([checkbox_item, filename_item])
             print(f"Loaded data from CSV: {self.image_data}")
         else:
             print("CSV file not found:", csv_path)
@@ -563,7 +592,19 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_data.append((index, filename))
         print(f"Logged to CSV: Index [{index}], Filename - [{filename}]")
 
+    def sync_checkbox_states_to_image_data(self):
+        """Synchronize checkbox states from table to image_data"""
+        for row in range(self.image_model.rowCount()):
+            checkbox_item = self.image_model.item(row, 0)
+            if checkbox_item and row < len(self.image_data):
+                is_checked = checkbox_item.checkState() == Qt.Checked
+                # Update include flag in image_data
+                i, directory, image_name, _ = self.image_data[row]
+                self.image_data[row] = (i, directory, image_name, is_checked)
+
     def update_csv(self):
+        # Sync checkbox states before saving
+        self.sync_checkbox_states_to_image_data()
         csv_path = os.path.join(self.current_directory, self.csv_file)
         with open(csv_path, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
@@ -655,13 +696,13 @@ class PTMGeneratorMainWindow(QMainWindow):
         print("Typical interval:", typical_interval)
 
         image_data = []
-        image_data.append( (0, directory_path, image_files[0]) )
+        image_data.append( (0, directory_path, image_files[0], True) )  # Add include flag
         span = 0
 
         irregular_intervals = []
         for i, interval in enumerate(intervals):
             print(interval)
-            if interval == 0: 
+            if interval == 0:
                 print(f"Image {image_files[i+1]} has an irregular interval of {interval} seconds.")
                 span += 1
                 continue
@@ -671,9 +712,9 @@ class PTMGeneratorMainWindow(QMainWindow):
                     print(f"Image {image_files[i+1]} has an irregular interval of {interval} seconds.")
                     span_count = round(interval / typical_interval ) - 1
                     for j in range(span_count):
-                        image_data.append( (i+j+1, "-", "-") )
+                        image_data.append( (i+j+1, "-", "-", False) )  # Missing images not included
                     span += span_count
-            image_data.append( (i+span+1, directory_path, image_files[i+1]) )
+            image_data.append( (i+span+1, directory_path, image_files[i+1], True) )  # Add include flag
         print(image_data)
 
         return image_data
@@ -688,24 +729,30 @@ class PTMGeneratorMainWindow(QMainWindow):
             # show error message
             QMessageBox.critical(self, self.tr("Error"), f"PTM fitter not found: {self.ptm_fitter}")
             return
-        
+
         LIGHT_POSITION_LIST = self.prepare_light_positions()
-       
+
+        # Update image_data with current checkbox states from table
+        self.sync_checkbox_states_to_image_data()
+
         #lp_list = []  # Placeholder for lp_list, should be filled appropriately
         ret_str = ""
         image_count = 0
         image_directory = None
         for image in self.image_data:
-            i, directory, image_name = image
+            i, directory, image_name, include = image
             if image_directory is None:
                 image_directory = directory
-            if image_name == '-':
+            # Skip if image failed or not included
+            if image_name == '-' or not include:
                 continue
             image_count += 1
             # make image_name's extension as lowercase
             image_name = image_name.split('.')[0] + '.' + image_name.split('.')[1].lower()
 
-            ret_str += os.path.join( directory, image_name ) + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
+            # Ensure absolute path for PTMfitter
+            image_path = os.path.abspath(os.path.join(directory, image_name))
+            ret_str += image_path + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
         ret_str = str(image_count) + "\n" + ret_str
 
         #check current directory
@@ -792,7 +839,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.actionPreferences.setText(self.tr("Preferences"))
         self.actionAbout.setText(self.tr("About"))
         #self.lblDirectory.setText(self.tr("Directory"))
-        self.image_model.setHorizontalHeaderLabels([self.tr('Filename')])
+        self.image_model.setHorizontalHeaderLabels([self.tr('Include'), self.tr('Filename')])
         self.lblDirectory.setText(self.tr("Directory"))
         self.btnOpenDirectory.setText(self.tr("Open Directory"))
         self.btnTestShot.setText(self.tr("Test Shot"))        
@@ -1100,7 +1147,7 @@ if __name__ == "__main__":
 
 
 '''
-pyinstaller --name "PTMGenerator2_v0.1.1_20241227_2.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
+pyinstaller --name "PTMGenerator2_v0.1.2_20251107.exe" --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PTMGenerator2.png" PTMGenerator2.py
 
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_en.ts
 pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
