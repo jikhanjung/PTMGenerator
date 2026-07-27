@@ -1,6 +1,12 @@
-pyserial
-Pillow
-#(pywin32)
-PyQt5
+# Runtime dependencies for PTMGenerator2 (PTMGenerator2.py)
+PyQt5>=5.15
 PyQt5-sip
+pyserial>=3.5
+
+# Packaging — builds the Windows .exe from PTMGenerator2.spec
 pyinstaller
+
+# Not imported by PTMGenerator2 as of v0.1.2. Needed only by the legacy Tkinter
+# app in legacy/, which is Windows only.
+# Pillow
+# pywin32

@@ -1,7 +1,16 @@
+# Build output
 dist/
 build/
-*.spec
+
+# Runtime output
 image_data.csv
 *.log
+
+# Python
+__pycache__/
 *.pyc
+
+# Tooling
 .claude/settings.local.json
+
+# Note: PTMGenerator2.spec is build configuration (source), so it is tracked.
