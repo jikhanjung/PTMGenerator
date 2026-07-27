@@ -663,9 +663,9 @@ class PTMGeneratorMainWindow(QMainWindow):
             directory_path (str): The path to the directory containing the images.
 
         Returns:
-            list: A list of (index, directory, filename) tuples, one per capture
-            slot. Missed shots are ("-", "-"). Empty if no intervals could be
-            measured (fewer than two images).
+            list: A list of (index, directory, filename, include) tuples, one per
+            capture slot. Missed shots are ("-", "-", False). Empty if no
+            intervals could be measured (fewer than two images).
         """
         def get_file_creation_time(filename):
             """Helper function to get file creation time for sorting."""
