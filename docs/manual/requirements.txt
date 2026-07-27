@@ -1,0 +1,9 @@
+# The narrower set CI installs to *build* the manual. The full authoring
+# toolchain, including sphinx-autobuild, is the `docs` extra in pyproject.toml.
+sphinx>=7.1.2
+sphinx-rtd-theme>=1.3.0
+myst-parser>=2.0.0
+# conf.py imports version.py, which parses __version__ with semver.
+semver>=3.0.0
+# api.rst autodocs core/, which imports nothing else; ui/ is not autodocumented,
+# so PyQt5 is not needed to build the manual.

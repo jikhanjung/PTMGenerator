@@ -1,0 +1,43 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Manual builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      # Installs docs/manual/requirements.txt rather than naming packages here.
+      # A job that lists its own subset is how a docs build comes to fail for
+      # weeks while a green tick says otherwise -- conf.py imports version.py,
+      # which needs semver, and that is easy to leave out.
+      - name: Install
+        run: pip install -r docs/manual/requirements.txt
+
+      # -W in the manual's Makefile turns warnings into errors, so a broken
+      # cross-reference or a malformed table fails the build rather than
+      # scrolling past.
+      - name: Build
+        run: make -C docs/manual clean html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manual-html
+          path: docs/manual/_build/html
+          retention-days: 14
