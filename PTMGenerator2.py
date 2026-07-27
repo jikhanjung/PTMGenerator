@@ -652,14 +652,20 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def detect_irregular_intervals(self,directory_path):
         """
-        Detects image files with irregular time intervals in a directory, 
-        first determining the typical interval from existing images.
+        Rebuilds the capture slot table for a directory of already-taken images.
+
+        Sorts the images by creation time, takes the most frequent interval
+        between consecutive files as the typical shot interval, and treats any
+        gap longer than 1.5x that as one or more missed shots, inserting a
+        placeholder slot for each.
 
         Args:
             directory_path (str): The path to the directory containing the images.
 
         Returns:
-            list: A list of tuples (filename, actual_interval) for images with irregular intervals.
+            list: A list of (index, directory, filename) tuples, one per capture
+            slot. Missed shots are ("-", "-"). Empty if no intervals could be
+            measured (fewer than two images).
         """
         def get_file_creation_time(filename):
             """Helper function to get file creation time for sorting."""
@@ -699,7 +705,6 @@ class PTMGeneratorMainWindow(QMainWindow):
         image_data.append( (0, directory_path, image_files[0], True) )  # Add include flag
         span = 0
 
-        irregular_intervals = []
         for i, interval in enumerate(intervals):
             print(interval)
             if interval == 0:
@@ -718,8 +723,6 @@ class PTMGeneratorMainWindow(QMainWindow):
         print(image_data)
 
         return image_data
-
-        return image_files, typical_interval, irregular_intervals
 
     def generatePTM(self):
         # check ptmfitter exists
