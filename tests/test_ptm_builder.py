@@ -63,14 +63,21 @@ def test_empty_table_produces_a_zero_count():
     assert build_lp_content([], VECTORS) == "0\n"
 
 
+# Asserted on the parts rather than a suffix: os.path.join builds a native
+# separator while the input keeps whatever it was given, so a suffix match
+# compares "specimen01\specimen01.lp" against "specimen01/specimen01.lp" on
+# Windows and fails for a reason that has nothing to do with the contract.
+
+
 def test_lp_is_named_after_the_capture_directory():
-    assert lp_path_for(os.path.join("/data", "specimen01")).endswith(
-        os.path.join("specimen01", "specimen01.lp")
-    )
+    path = lp_path_for(os.path.join("/data", "specimen01"))
+    assert os.path.basename(path) == "specimen01.lp"
+    assert os.path.basename(os.path.dirname(path)) == "specimen01"
 
 
 def test_trailing_separator_does_not_produce_an_empty_name():
-    assert lp_path_for("/data/specimen01/").endswith(os.path.join("specimen01", "specimen01.lp"))
+    path = lp_path_for(os.path.join("/data", "specimen01") + os.sep)
+    assert os.path.basename(path) == "specimen01.lp"
 
 
 def test_write_lp_round_trip(tmp_path):
