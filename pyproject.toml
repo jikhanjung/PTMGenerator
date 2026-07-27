@@ -83,6 +83,11 @@ include = ["core*", "ui*"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# The application is imported from the repository root (core/, ui/, version),
+# and it is not installed into the environment for a test run. `python -m
+# pytest` would put the root on sys.path implicitly; a bare `pytest` does not,
+# which is how CI ran it. Declare it so both invocations work.
+pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
