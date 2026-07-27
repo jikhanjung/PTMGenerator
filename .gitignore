@@ -14,3 +14,11 @@ __pycache__/
 .claude/settings.local.json
 
 # Note: PTMGenerator2.spec is build configuration (source), so it is tracked.
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

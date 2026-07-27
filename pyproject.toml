@@ -1,0 +1,196 @@
+# pyproject.toml - PTMGenerator2 project configuration
+
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PTMGenerator2"
+# Not hardcoded here. version.py is the single source of truth; see
+# [tool.setuptools.dynamic] below and tests/test_version_consistency.py.
+dynamic = ["version"]
+description = "Automated Polynomial Texture Mapping capture for an Arduino LED dome"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "PaleoBytes"}]
+keywords = ["ptm", "polynomial-texture-mapping", "photography", "arduino", "rti"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+
+dependencies = [
+    "pyqt5>=5.15.0,<6.0.0",
+    "pyserial>=3.5,<4.0.0",
+    # version.py parses __version__ with it, so it is a runtime dependency and
+    # not a tooling one.
+    "semver>=3.0.0,<4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0,<10.0.0",
+    "pytest-cov>=4.1.0,<8.0.0",
+    "pytest-timeout>=2.2.0,<3.0.0",
+    "pytest-xdist>=3.5.0,<4.0.0",
+    # ruff replaces black + isort + flake8 + pyupgrade. Pinned exactly, not
+    # ranged: a newer ruff formats code the previous one accepted, so an
+    # unpinned bump reformats the tree from under an unrelated PR. Bump
+    # deliberately, together with .pre-commit-config.yaml and the `lint` job in
+    # .github/workflows/test.yml.
+    "ruff==0.16.0",
+    "mypy>=1.7.0,<2.0.0",
+    "pre-commit>=3.3.3",
+    # lrelease, to compile translations/*.ts into the .qm files the app loads.
+    # PyQt5 ships pylupdate5 but not lrelease; PySide6 provides it as
+    # `pyside6-lrelease`. Not needed at runtime.
+    "PySide6-Essentials>=6.6.0",
+]
+build = [
+    "pyinstaller>=6.0.0",
+]
+docs = [
+    "sphinx>=7.1.2",
+    "sphinx-rtd-theme>=1.3.0",
+    # Lets the manual include the repository-root CHANGELOG.md, which is the
+    # single source of release history.
+    "myst-parser>=2.0.0",
+    "sphinx-intl>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/jikhanjung/PTMGenerator"
+Repository = "https://github.com/jikhanjung/PTMGenerator"
+Changelog = "https://github.com/jikhanjung/PTMGenerator/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = {attr = "version.__version__"}
+
+[tool.setuptools]
+py-modules = ["PTMGenerator2", "version"]
+
+[tool.setuptools.packages.find]
+include = ["core*", "ui*"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Coverage is NOT enabled by default so local runs stay fast; CI passes
+# --cov=... --cov-fail-under=... explicitly.
+addopts = """
+    -ra
+    --strict-markers
+    --strict-config
+    --tb=short
+    --color=yes
+"""
+
+markers = [
+    "unit: Fast, isolated, no Qt and no filesystem beyond tmp_path",
+    "ui: Requires a QApplication and real widgets",
+    "smoke: Import/startup checks - must pass on every OS in the matrix",
+    "slow: May take more than a second",
+]
+
+# Warnings are errors so silent runtime degradation (pending deprecations,
+# unclosed resources) fails the build instead of scrolling past. Add a
+# narrowly-scoped ignore with a comment - never a blanket ignore.
+filterwarnings = [
+    "error",
+    # PyQt5's sip module emits this on Python 3.12 for its own enum shims.
+    "ignore:.*sipPyTypeDict.*:DeprecationWarning",
+]
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["core", "ui"]
+omit = [
+    "scripts/*",
+    "tests/*",
+    "legacy/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["legacy", "build", "dist"]
+
+[tool.ruff.lint]
+# Grown incrementally, the way the reference projects did it: add a group, fix
+# the tree, then commit. Anything not listed here is not yet clean.
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # import sorting
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "SIM",  # simplify
+    "PTH",  # prefer pathlib
+    "RUF",
+]
+ignore = [
+    # The Qt API is camelCase and the widget attributes mirror it (btnOkay,
+    # edtPtmFitter). Renaming them would churn every call site for no gain.
+    "N802", "N803", "N806",
+    # `os.path` is used throughout and the paths are strings on the wire (CSV,
+    # .lp files); a pathlib conversion is a separate, testable change. Tracked
+    # in TODOs.md.
+    "PTH118", "PTH120", "PTH123", "PTH110", "PTH100", "PTH103", "PTH119", "PTH208",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests reach into private attributes to stage a fake serial port.
+"tests/*" = ["SLF001"]
+# The entry point and conftest set environment before importing PyQt5.
+"tests/conftest.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+# Scope is core/ only, the Qt-free half. Widening to ui/ means teaching mypy
+# about PyQt5's stubs; do it a module at a time, each one clean before it is
+# added. Tracked in TODOs.md.
+[[tool.mypy.overrides]]
+module = "core.*"
+disallow_untyped_defs = false
+warn_unused_ignores = true

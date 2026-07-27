@@ -4,20 +4,22 @@
 #
 #   pyinstaller PTMGenerator2.spec
 #
-# The output name is derived from PROGRAM_VERSION in PTMGenerator2.py plus the
-# build date, reproducing the historical naming convention
-# (PTMGenerator2_v0.1.1_20241227.exe) without needing a new spec file per build.
+# The output name is derived from version.py — the single source of truth — plus
+# the build date, reproducing the historical naming convention
+# (PTMGenerator2_v0.1.2_20251107.exe) without a second version number to keep in
+# step. Bump with `python scripts/bump_version.py <part>`.
 
-import os
 import re
 from datetime import datetime
+from pathlib import Path
 
-_source = os.path.join(SPECPATH, 'PTMGenerator2.py')
-with open(_source, encoding='utf-8') as fh:
-    _match = re.search(r'^PROGRAM_VERSION\s*=\s*["\'](.+?)["\']', fh.read(), re.MULTILINE)
-VERSION = _match.group(1) if _match else '0.0.0'
+_source = Path(SPECPATH) / "version.py"
+_match = re.search(
+    r'^__version__\s*=\s*["\'](.+?)["\']', _source.read_text(encoding="utf-8"), re.MULTILINE
+)
+__version__ = _match.group(1) if _match else "0.0.0"
 
-EXE_NAME = 'PTMGenerator2_v{}_{}.exe'.format(VERSION, datetime.now().strftime('%Y%m%d'))
+EXE_NAME = "PTMGenerator2_v{}_{}.exe".format(__version__, datetime.now().strftime("%Y%m%d"))
 
 
 a = Analysis(
@@ -25,7 +27,10 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('icons/*.png', 'icons'), ('translations/*.qm', 'translations')],
-    hiddenimports=[],
+    # core/ and ui/ are imported by name from the entry point, which
+    # PyInstaller follows, but list the packages so a module that is only
+    # reached dynamically cannot be dropped from the bundle.
+    hiddenimports=['core', 'ui'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
