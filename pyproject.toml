@@ -170,10 +170,19 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests reach into private attributes to stage a fake serial port.
-"tests/*" = ["SLF001"]
-# The entry point and conftest set environment before importing PyQt5.
+# Tests reach into private attributes to stage a fake serial port, and assert
+# on os.path results rather than rewriting the assertion in pathlib terms.
+"tests/*" = ["SLF001", "PTH117"]
+# conftest sets QT_QPA_PLATFORM before importing PyQt5, which has to happen
+# after the os import and before anything Qt-related.
 "tests/conftest.py" = ["E402"]
+# The polar LED table is a measured 5x10 grid. Wrapping it one pair per line
+# would make it 50 lines and hide the shape.
+"core/light_positions.py" = ["E501"]
+# RUF001: the menu path is written "Edit › Preferences" with U+203A. It is the
+# source string the .ts files are keyed on, so replacing it with ">" would
+# orphan the Korean translation.
+"ui/main_window.py" = ["RUF001"]
 
 [tool.ruff.format]
 quote-style = "double"

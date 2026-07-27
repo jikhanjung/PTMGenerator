@@ -40,6 +40,5 @@ def test_spec_derives_the_exe_name_from_version_py():
 def test_changelog_mentions_the_current_version():
     text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     assert version.__version__ in text, (
-        "CHANGELOG.md has no entry for %s; run scripts/bump_version.py"
-        % version.__version__
+        f"CHANGELOG.md has no entry for {version.__version__}; run scripts/bump_version.py"
     )

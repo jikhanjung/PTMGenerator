@@ -47,7 +47,7 @@ def read_csv(path):
     if not os.path.exists(path):
         return []
     slots = []
-    with open(path, "r", newline="") as fh:
+    with open(path, newline="") as fh:
         for row in csv.reader(fh):
             if len(row) == 3:
                 index, directory, filename = row
@@ -83,9 +83,7 @@ def detect_irregular_intervals(directory_path, getctime=os.path.getctime):
         list[CaptureSlot]: One slot per LED position. Empty when fewer than two
         images make the interval unmeasurable.
     """
-    image_files = [
-        f for f in os.listdir(directory_path) if f.lower().endswith(IMAGE_EXTENSIONS)
-    ]
+    image_files = [f for f in os.listdir(directory_path) if f.lower().endswith(IMAGE_EXTENSIONS)]
     image_files.sort(key=lambda f: getctime(os.path.join(directory_path, f)))
 
     intervals = []
@@ -96,7 +94,7 @@ def detect_irregular_intervals(directory_path, getctime=os.path.getctime):
             gap = datetime.fromtimestamp(second) - datetime.fromtimestamp(first)
             intervals.append(round(gap.total_seconds()))
         except FileNotFoundError:
-            print("Error: Image file not found: %s" % image_files[i])
+            print(f"Error: Image file not found: {image_files[i]}")
 
     if not intervals:
         return []

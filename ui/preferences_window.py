@@ -119,7 +119,7 @@ class PreferencesWindow(QDialog):
 
         ports = list(serial.tools.list_ports.comports())
         for port in ports:
-            self.comboSerialPort.addItem("%s - %s" % (port.device, port.description), port.device)
+            self.comboSerialPort.addItem(f"{port.device} - {port.description}", port.device)
         if not ports:
             self.comboSerialPort.addItem("None", "None")
 
@@ -143,9 +143,7 @@ class PreferencesWindow(QDialog):
             s.value("WindowGeometry/RememberGeometry", True)
         )
         if self.remember_geometry:
-            self.setGeometry(
-                s.value("WindowGeometry/PreferencesWindow", QRect(100, 100, 500, 250))
-            )
+            self.setGeometry(s.value("WindowGeometry/PreferencesWindow", QRect(100, 100, 500, 250)))
             if prefs.value_to_bool(s.value("IsMaximized/PreferencesWindow", False)):
                 self.showMaximized()
             else:
@@ -172,9 +170,7 @@ class PreferencesWindow(QDialog):
         s.setValue(prefs.PTM_FITTER, self.edtPtmFitter.text())
         s.setValue(prefs.NUMBER_OF_LEDS, str(self.edtNumberOfLEDs.text()))
         s.setValue(prefs.RETRY_COUNT, str(self.edtRetryCount.text()))
-        s.setValue(
-            prefs.LIGHT_POSITION_ADJUSTMENT, str(self.edtLightPositionAdjustment.text())
-        )
+        s.setValue(prefs.LIGHT_POSITION_ADJUSTMENT, str(self.edtLightPositionAdjustment.text()))
         s.setValue(prefs.POST_SHUTTER_POLLING, str(self.edtPostShutterPolling.text()))
 
     def language_combobox_currentIndexChanged(self, index):

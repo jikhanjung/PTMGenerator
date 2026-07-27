@@ -27,9 +27,7 @@ def main(argv=None):
     app = QApplication(argv)
     app.translator = None
     app.setWindowIcon(QIcon(icon_path("app")))
-    app.settings = QSettings(
-        QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME
-    )
+    app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
 
     app.language = read_str(app.settings, LANGUAGE)
     translator = QTranslator()

@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (
 
 from core import image_data, ptm_builder
 from core import settings as prefs
-from core.capture_session import CAPTURED, CaptureSession
+from core.capture_session import CaptureSession
 from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
 from core.resources import icon_path, translation_path
@@ -45,7 +45,9 @@ class OutputRedirector(QObject):
         super().__init__()
         self.file_path = file_path
         self.stdout = sys.stdout
-        self.file = open(file_path, "w")
+        # Held open for the lifetime of the window and closed in close();
+        # a context manager cannot express that.
+        self.file = open(file_path, "w")  # noqa: SIM115
 
     def write(self, message):
         if self.stdout is not None:
@@ -296,7 +298,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         if new_image is None:
             self.statusBar.showMessage(self.tr("Failed to get image file"), 1000)
         else:
-            self.statusBar.showMessage("New image detected: %s" % new_image, 1000)
+            self.statusBar.showMessage(f"New image detected: {new_image}", 1000)
         self.serial.close()
 
     def poll_for_image(self):
@@ -322,7 +324,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.record_slot(led_index, path)
 
         self.statusBar.showMessage(
-            "[#%s] %s" % (index + 1 if index is not None else "-", result.event), 1000
+            "[#{}] {}".format(index + 1 if index is not None else "-", result.event), 1000
         )
 
         if result.finished:
@@ -419,9 +421,7 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def update_csv(self):
         self.sync_checkbox_states_to_image_data()
-        image_data.write_csv(
-            os.path.join(self.current_directory, self.csv_file), self.image_data
-        )
+        image_data.write_csv(os.path.join(self.current_directory, self.csv_file), self.image_data)
 
     def on_selection_changed(self, selected, deselected):
         self.selected_rows = sorted(
@@ -468,10 +468,8 @@ class PTMGeneratorMainWindow(QMainWindow):
     def generatePTM(self):
         """Write the .lp file and hand it to PTMfitter."""
         if not os.path.exists(self.ptm_fitter):
-            self.statusBar.showMessage("PTM fitter not found: %s" % self.ptm_fitter, 5000)
-            QMessageBox.critical(
-                self, self.tr("Error"), "PTM fitter not found: %s" % self.ptm_fitter
-            )
+            self.statusBar.showMessage(f"PTM fitter not found: {self.ptm_fitter}", 5000)
+            QMessageBox.critical(self, self.tr("Error"), f"PTM fitter not found: {self.ptm_fitter}")
             return
 
         self.sync_checkbox_states_to_image_data()

@@ -40,11 +40,16 @@ for image in self.image_data:
     i, directory, image_name = image
     if image_directory is None:
         image_directory = directory
-    if image_name == '-':  # 실패한 이미지만 제외
+    if image_name == "-":  # 실패한 이미지만 제외
         continue
     image_count += 1
-    image_name = image_name.split('.')[0] + '.' + image_name.split('.')[1].lower()
-    ret_str += os.path.join( directory, image_name ) + " " + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]]) + "\n"
+    image_name = image_name.split(".")[0] + "." + image_name.split(".")[1].lower()
+    ret_str += (
+        os.path.join(directory, image_name)
+        + " "
+        + " ".join([str(f) for f in LIGHT_POSITION_LIST[i]])
+        + "\n"
+    )
 ```
 
 **동작 방식**:
@@ -63,7 +68,7 @@ for image in self.image_data:
 **현재 동작**:
 ```python
 # 711라인
-ret_str += os.path.join( directory, image_name ) + " " + ...
+ret_str += os.path.join(directory, image_name) + " " + ...
 ```
 
 **image_data 구조**:
@@ -148,7 +153,7 @@ for filepath in base_path.glob('*'):
 ```python
 # generatePTM() 711라인 수정
 # 변경 전
-ret_str += os.path.join( directory, image_name ) + " " + ...
+ret_str += os.path.join(directory, image_name) + " " + ...
 
 # 변경 후
 image_path = os.path.abspath(os.path.join(directory, image_name))

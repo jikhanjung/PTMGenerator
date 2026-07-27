@@ -19,9 +19,9 @@ import sys
 # Must be set before PyQt5 is imported.
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-import pytest  # noqa: E402
-from PyQt5.QtCore import QSettings, qInstallMessageHandler  # noqa: E402
-from PyQt5.QtWidgets import QApplication  # noqa: E402
+import pytest
+from PyQt5.QtCore import QSettings, qInstallMessageHandler
+from PyQt5.QtWidgets import QApplication
 
 _EXPECTED_QT_NOISE = (
     # The offscreen platform plugin emits this for every window it shows.

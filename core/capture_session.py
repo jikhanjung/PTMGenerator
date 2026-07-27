@@ -10,7 +10,7 @@ policy — how long to wait, when to retake, when to give up — can be tested
 without a controller, a camera or a clock.
 """
 
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 IDLE = "idle"
 PREPARING = "preparing picture"
@@ -22,7 +22,7 @@ class StepResult(NamedTuple):
 
     event: str
     #: Set when a slot was decided: (led_index, image_path or None).
-    recorded: Optional[tuple] = None
+    recorded: tuple | None = None
     #: True once the queue has drained and the run is over.
     finished: bool = False
 

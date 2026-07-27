@@ -79,7 +79,7 @@ def run_detection(directory, names, ctimes):
     """Create `names` and detect intervals with creation times faked exactly."""
     for name in names:
         (directory / name).touch()
-    lookup = {os.path.join(str(directory), n): t for n, t in zip(names, ctimes)}
+    lookup = {os.path.join(str(directory), n): t for n, t in zip(names, ctimes, strict=False)}
     return detect_irregular_intervals(str(directory), getctime=lookup.__getitem__)
 
 

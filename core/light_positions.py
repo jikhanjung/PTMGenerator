@@ -12,6 +12,7 @@ import math
 # them. theta is the angle down from vertical, phi the azimuth around the dome.
 # Measured from the physical rig; do not reorder without re-measuring, because
 # the index into this list *is* the LED number.
+# fmt: off
 POLAR_LIGHT_LIST = [
     [85, 330], [84, 108], [83, 245], [82, 23], [81, 160], [80, 298], [79, 76], [78, 213], [77, 351], [76, 128],
     [75, 266], [74, 43], [73, 181], [71, 318], [70, 96], [69, 233], [68, 11], [67, 148], [66, 286], [65, 63],
@@ -19,6 +20,7 @@ POLAR_LIGHT_LIST = [
     [51, 136], [50, 273], [48, 51], [47, 188], [46, 326], [44, 103], [43, 241], [41, 18], [39, 156], [38, 293],
     [36, 71], [34, 208], [32, 346], [30, 123], [28, 261], [26, 38], [23, 176], [21, 313], [17, 91], [13, 228],
 ]
+# fmt: on
 
 LED_COUNT = len(POLAR_LIGHT_LIST)
 

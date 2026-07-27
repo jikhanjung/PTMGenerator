@@ -44,7 +44,7 @@ class SerialController:
         if self.port in (None, "", "None"):
             self._log("No serial port configured.")
             return False
-        self._log("Serial port: %s" % self.port)
+        self._log(f"Serial port: {self.port}")
         self._serial = serial.Serial(self.port, self.BAUD_RATE, timeout=self.READ_TIMEOUT)
         time.sleep(self.RESET_DELAY)
         return True
@@ -61,7 +61,7 @@ class SerialController:
         """Frame and write a message. Discarded, with a note, if there is no port."""
         framed = "<" + message + ">"
         if self._serial is None:
-            self._log("No serial port open, discarding: %s" % framed)
+            self._log(f"No serial port open, discarding: {framed}")
             return False
         self._log(framed)
         self._serial.write(framed.encode())
@@ -79,11 +79,11 @@ class SerialController:
 
     def turn_on(self, led_index):
         """Light LED `led_index` (0-based here, 1-based on the wire)."""
-        return self.send("ON,%d" % (led_index + 1))
+        return self.send(f"ON,{led_index + 1}")
 
     def shoot(self, led_index):
         """Light LED `led_index` and fire the shutter."""
-        return self.send("SHOOT,%d" % (led_index + 1))
+        return self.send(f"SHOOT,{led_index + 1}")
 
     def all_off(self):
         return self.send("OFF")

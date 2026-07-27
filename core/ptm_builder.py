@@ -33,11 +33,12 @@ def build_lp_content(slots, light_vectors):
         # PTMfitter is case-sensitive about the extension it is handed, and
         # tethering software writes .JPG as often as .jpg.
         stem, _, extension = filename.rpartition(".")
-        normalised = "%s.%s" % (stem, extension.lower()) if stem else filename
+        normalised = f"{stem}.{extension.lower()}" if stem else filename
         path = os.path.abspath(os.path.join(directory, normalised))
         vector = " ".join(str(component) for component in light_vectors[index])
-        lines.append("%s %s" % (path, vector))
-    return "%d\n%s" % (len(lines), "".join(line + "\n" for line in lines))
+        lines.append(f"{path} {vector}")
+    body = "".join(line + "\n" for line in lines)
+    return f"{len(lines)}\n{body}"
 
 
 def lp_path_for(image_directory):
@@ -67,5 +68,5 @@ def run_fitter(fitter_path, lp_path, ptm_path, runner=None):
     if runner is None:
         runner = subprocess.call
     command = [str(fitter_path), "-i", str(lp_path), "-o", str(ptm_path)]
-    print("Executing: %s" % command)
+    print(f"Executing: {command}")
     return runner(command)

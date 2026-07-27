@@ -70,9 +70,7 @@ def test_lp_is_named_after_the_capture_directory():
 
 
 def test_trailing_separator_does_not_produce_an_empty_name():
-    assert lp_path_for("/data/specimen01/").endswith(
-        os.path.join("specimen01", "specimen01.lp")
-    )
+    assert lp_path_for("/data/specimen01/").endswith(os.path.join("specimen01", "specimen01.lp"))
 
 
 def test_write_lp_round_trip(tmp_path):

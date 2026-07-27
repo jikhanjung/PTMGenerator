@@ -63,7 +63,7 @@ ret_str += image_path + " " + ...
 
 #### 1. 테이블 헤더 설정 (Line 175-180)
 ```python
-self.image_model.setHorizontalHeaderLabels([self.tr('Include'), self.tr('Filename')])
+self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
 header = self.table_view.horizontalHeader()
 header.setSectionResizeMode(0, header.ResizeToContents)  # Include column
 header.setSectionResizeMode(1, header.Stretch)  # Filename column
@@ -133,7 +133,7 @@ self.sync_checkbox_states_to_image_data()
 #### 2. 필터링 로직 추가 (Line 742-743)
 ```python
 # Skip if image failed or not included
-if image_name == '-' or not include:
+if image_name == "-" or not include:
     continue
 ```
 
@@ -168,7 +168,7 @@ def update_csv(self):
     # Sync checkbox states before saving
     self.sync_checkbox_states_to_image_data()
     csv_path = os.path.join(self.current_directory, self.csv_file)
-    with open(csv_path, 'w', newline='') as csvfile:
+    with open(csv_path, "w", newline="") as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerows(self.image_data)  # 자동으로 4개 요소 저장
 ```
@@ -184,7 +184,7 @@ if len(row) == 3:
 # 4개 요소 (신 형식): (index, directory, filename, include)
 elif len(row) == 4:
     index, directory, filename, include_str = row
-    include = include_str.lower() == 'true'
+    include = include_str.lower() == "true"
 ```
 
 **체크박스 복원**:

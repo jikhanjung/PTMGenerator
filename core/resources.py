@@ -31,4 +31,4 @@ def icon_path(name):
 
 def translation_path(language):
     """Absolute path to a compiled .qm for `language` ("en", "ko")."""
-    return resource_path("translations/PTMGenerator2_%s.qm" % language)
+    return resource_path(f"translations/PTMGenerator2_{language}.qm")

@@ -213,7 +213,7 @@ def test_a_tick_with_no_session_stops_the_timer(main_window):
 
 
 def test_finishing_a_run_writes_the_csv_and_releases_the_port(connected, workdir):
-    window, port = connected
+    window, _port = connected
     window.current_directory = str(workdir)
     window.number_of_LEDs = 1
     window.post_shutter_polling = 0
@@ -307,8 +307,9 @@ class TestPromptDialog:
             real_init(box, *a, **kw)
             boxes.append(box)
 
-        with patch.object(QMessageBox, "__init__", record), patch.object(
-            QMessageBox, "exec", lambda box: 0
+        with (
+            patch.object(QMessageBox, "__init__", record),
+            patch.object(QMessageBox, "exec", lambda box: 0),
         ):
             result = main_window.confirm_capture_without_controller()
         return result, boxes[-1]
@@ -358,9 +359,10 @@ def test_generate_writes_the_lp_and_runs_the_fitter(ready_to_generate):
         CaptureSlot(2, str(capture_dir), "c.jpg", False),
     ]
     out = str(capture_dir / "specimen01.ptm")
-    with patch.object(QFileDialog, "getSaveFileName", return_value=(out, "")), patch(
-        "core.ptm_builder.subprocess.call"
-    ) as call:
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(out, "")),
+        patch("core.ptm_builder.subprocess.call") as call,
+    ):
         window.generatePTM()
 
     lp_path = capture_dir / "specimen01.lp"
@@ -374,9 +376,10 @@ def test_generate_writes_the_lp_and_runs_the_fitter(ready_to_generate):
 def test_cancelling_the_save_dialog_skips_the_fitter(ready_to_generate):
     window, capture_dir, _fitter = ready_to_generate
     window.image_data = [CaptureSlot(0, str(capture_dir), "a.jpg", True)]
-    with patch.object(QFileDialog, "getSaveFileName", return_value=("", "")), patch(
-        "core.ptm_builder.subprocess.call"
-    ) as call:
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=("", "")),
+        patch("core.ptm_builder.subprocess.call") as call,
+    ):
         window.generatePTM()
     call.assert_not_called()
 
