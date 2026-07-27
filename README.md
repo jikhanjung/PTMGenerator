@@ -234,6 +234,11 @@ preferences.
 - Check Device Manager (Windows) or `ls /dev/tty*` (Linux/Mac)
 - Install CH340 drivers if using CH340-based Arduino clones
 
+Starting a capture with no port configured asks whether to continue. Cancelling
+is the default, since without the controller the LEDs and shutter are never
+triggered and every slot would time out. Continuing anyway is there for trying
+out the interface without hardware attached.
+
 ### Images not detected
 - Increase "Post Shutter Polling" delay in Preferences
 - Check camera is set to save images to the working directory

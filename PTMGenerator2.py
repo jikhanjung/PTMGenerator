@@ -644,29 +644,44 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.serial = serial.Serial(self.serial_port, 9600, timeout=2)
         time.sleep(2)
 
-    def ensure_serial_ready(self):
-        """Open the controller's port, warning the user if there is not one.
+    def confirm_capture_without_controller(self):
+        """Ask whether to run a capture with no controller attached.
 
         Returns:
-            bool: True when the LEDs and shutter can be driven. When False the
-            caller must not start a capture — without the controller nothing
-            would be photographed.
+            bool: True if the user chose to go ahead anyway. Defaults to
+            cancelling, since without the controller nothing is photographed.
+        """
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Warning)
+        box.setWindowTitle(self.tr("No serial port"))
+        box.setText(
+            self.tr(
+                "No serial port is configured, so the LEDs and the camera "
+                "shutter cannot be triggered. Nothing will be photographed.\n\n"
+                "Choose the controller's port in Edit › Preferences, or "
+                "continue anyway to try out the interface without hardware."
+            )
+        )
+        proceed = box.addButton(self.tr("Continue anyway"), QMessageBox.AcceptRole)
+        cancel = box.addButton(self.tr("Cancel"), QMessageBox.RejectRole)
+        box.setDefaultButton(cancel)
+        box.exec()
+        return box.clickedButton() is proceed
+
+    def ensure_serial_ready(self):
+        """Open the controller's port, prompting the user if there is not one.
+
+        Returns:
+            bool: True when the caller should start the capture — either because
+            the controller answered, or because the user chose to continue
+            without it.
         """
         self.openSerial()
         if self.serial is not None:
             return True
-        print("No serial port configured; refusing to start a capture.")
+        print("No serial port configured; asking whether to continue.")
         self.statusBar.showMessage(self.tr("No serial port configured"), 5000)
-        QMessageBox.warning(
-            self,
-            self.tr("No serial port"),
-            self.tr(
-                "No serial port is configured, so the LEDs and the camera "
-                "shutter cannot be triggered.\n\n"
-                "Choose the controller's port in Edit › Preferences."
-            ),
-        )
-        return False
+        return self.confirm_capture_without_controller()
 
     def closeSerial(self):
         if self.serial is None:

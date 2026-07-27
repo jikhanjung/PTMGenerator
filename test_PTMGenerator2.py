@@ -410,10 +410,13 @@ class NoSerialPortTests(GuiTestCase):
         super().setUp()
         self.win = self.make_window()
         self.assertIsNone(self.win.serial, "a fresh window must start portless")
-        # A real QMessageBox would block the suite forever waiting for a click.
-        warn = patch.object(PTMGenerator2.QMessageBox, "warning")
-        self.warning = warn.start()
-        self.addCleanup(warn.stop)
+        # A real dialog would block the suite forever waiting for a click.
+        prompt = patch.object(
+            PTMGeneratorMainWindow, "confirm_capture_without_controller",
+            return_value=False,
+        )
+        prompt.start()
+        self.addCleanup(prompt.stop)
 
     def test_send_serial_discards_the_message(self):
         self.win.sendSerial("ON,1")  # must not raise
@@ -760,55 +763,131 @@ class TakeAllPicturesTests(ConnectedCaptureTestCase):
         self.assertEqual(self.win.image_data, [])
 
 
-class MissingControllerWarningTests(GuiTestCase):
-    """Starting a capture with no port configured must warn, not proceed."""
+class MissingControllerPromptTests(GuiTestCase):
+    """With no port configured the user is asked whether to continue."""
 
     def setUp(self):
         super().setUp()
         self.win = self.make_window()
         self.win.number_of_LEDs = 4
-        warn = patch.object(PTMGenerator2.QMessageBox, "warning")
-        self.warning = warn.start()
-        self.addCleanup(warn.stop)
+        prompt = patch.object(
+            PTMGeneratorMainWindow, "confirm_capture_without_controller"
+        )
+        self.prompt = prompt.start()
+        self.addCleanup(prompt.stop)
+        self.answer_cancel()
 
-    def test_ensure_serial_ready_reports_failure(self):
+    def answer_cancel(self):
+        self.prompt.return_value = False
+
+    def answer_continue(self):
+        self.prompt.return_value = True
+
+    def test_ensure_serial_ready_follows_the_answer(self):
+        self.answer_cancel()
         self.assertFalse(self.win.ensure_serial_ready())
-        self.warning.assert_called_once()
+        self.answer_continue()
+        self.assertTrue(self.win.ensure_serial_ready())
 
-    def test_ensure_serial_ready_is_quiet_when_a_port_opens(self):
+    def test_no_prompt_when_a_port_opens(self):
         with patch.object(PTMGeneratorMainWindow, "openSerial",
                           lambda win: setattr(win, "serial", MagicMock())):
             self.assertTrue(self.win.ensure_serial_ready())
-        self.warning.assert_not_called()
+        self.prompt.assert_not_called()
 
-    def test_take_all_pictures_warns_and_does_not_start(self):
+    def test_take_all_pictures_stops_when_cancelled(self):
         self.win.take_all_pictures()
-        self.warning.assert_called_once()
+        self.prompt.assert_called_once()
         self.assertFalse(self.win.timer.isActive())
         self.assertEqual(self.win.image_index_list, [])
 
-    def test_refused_run_leaves_the_existing_capture_table_alone(self):
+    def test_take_all_pictures_runs_when_continued(self):
+        self.answer_continue()
+        self.win.take_all_pictures()
+        self.addCleanup(self.win.timer.stop)
+        self.assertTrue(self.win.timer.isActive())
+        self.assertEqual(self.win.current_index, 0)
+        self.assertEqual(self.win.image_index_list, [1, 2, 3])
+
+    def test_cancelled_run_leaves_the_existing_capture_table_alone(self):
         existing = [(0, "somewhere", "keep-me.jpg", True)]
         self.win.image_data = list(existing)
         self.win.take_all_pictures()
         self.assertEqual(self.win.image_data, existing)
 
-    def test_retake_warns_and_does_not_start(self):
+    def test_retake_stops_when_cancelled(self):
         self.win.selected_rows = [1, 2]
         self.win.on_retake_picture_triggered()
-        self.warning.assert_called_once()
+        self.prompt.assert_called_once()
         self.assertFalse(self.win.timer.isActive())
 
-    def test_retake_without_a_selection_does_not_warn(self):
+    def test_retake_runs_when_continued(self):
+        self.answer_continue()
+        self.win.selected_rows = [4, 1]
+        self.win.on_retake_picture_triggered()
+        self.addCleanup(self.win.timer.stop)
+        self.assertTrue(self.win.timer.isActive())
+        self.assertEqual(self.win.current_index, 1)
+
+    def test_retake_without_a_selection_does_not_prompt(self):
         self.win.selected_rows = []
         self.win.on_retake_picture_triggered()
-        self.warning.assert_not_called()
+        self.prompt.assert_not_called()
 
-    def test_test_shot_warns_and_takes_no_picture(self):
+    def test_test_shot_stops_when_cancelled(self):
         with patch.object(PTMGeneratorMainWindow, "take_shot") as shot:
             self.win.test_shot()
-        self.warning.assert_called_once()
+        self.prompt.assert_called_once()
         shot.assert_not_called()
+
+
+class ControllerPromptDialogTests(GuiTestCase):
+    """The dialog itself, with exec() stubbed so nothing blocks."""
+
+    def setUp(self):
+        super().setUp()
+        self.win = self.make_window()
+        self.boxes = []
+        real_init = PTMGenerator2.QMessageBox.__init__
+
+        def record(box, *a, **kw):
+            real_init(box, *a, **kw)
+            self.boxes.append(box)
+
+        init = patch.object(PTMGenerator2.QMessageBox, "__init__", record)
+        init.start()
+        self.addCleanup(init.stop)
+        # exec() would block forever without a user; leave clickedButton() None.
+        ex = patch.object(PTMGenerator2.QMessageBox, "exec", lambda box: 0)
+        ex.start()
+        self.addCleanup(ex.stop)
+
+    def show_dialog(self):
+        result = self.win.confirm_capture_without_controller()
+        return result, self.boxes[-1]
+
+    def test_offers_continue_and_cancel(self):
+        _result, box = self.show_dialog()
+        labels = [b.text() for b in box.buttons()]
+        self.assertEqual(len(labels), 2)
+        self.assertIn("Continue anyway", labels)
+        self.assertIn("Cancel", labels)
+
+    def test_cancel_is_the_default(self):
+        _result, box = self.show_dialog()
+        self.assertEqual(box.defaultButton().text(), "Cancel")
+
+    def test_dismissing_without_choosing_counts_as_cancel(self):
+        result, _box = self.show_dialog()
+        self.assertFalse(result)
+
+    def test_warns_rather_than_merely_informs(self):
+        _result, box = self.show_dialog()
+        self.assertEqual(box.icon(), PTMGenerator2.QMessageBox.Warning)
+
+    def test_message_names_the_preferences_location(self):
+        _result, box = self.show_dialog()
+        self.assertIn("Preferences", box.text())
 
 
 class PauseAndStopTests(GuiTestCase):
