@@ -6,6 +6,19 @@ A desktop application for automated Polynomial Texture Mapping (PTM) image captu
 
 PTMGenerator2 is a PyQt5-based tool designed for archaeological artifact documentation using Polynomial Texture Mapping (PTM) technology. The application automates the process of capturing multiple images under different lighting angles and generates PTM files that can reveal surface details invisible under normal lighting conditions.
 
+An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for each one. The application drives that sequence over a serial link, waits for each photo to land on disk, builds the light-position (`.lp`) file, and hands everything to `PTMfitter.exe` to produce the final `.ptm`.
+
+```
+  PTMGenerator2.py  ──serial (9600 8N1)──▶  Arduino + 7× 74HC595  ──▶  50 LEDs
+        │                                            │
+        │                                            └──▶  DSLR shutter
+        │
+        └── polls the capture directory for the new image file
+                                │
+                                ▼
+                   writes <dirname>.lp  ──▶  PTMfitter.exe -i x.lp -o x.ptm
+```
+
 ## Features
 
 - **Automated Image Capture**: Control DSLR cameras via Arduino-based LED dome systems
@@ -19,15 +32,18 @@ PTMGenerator2 is a PyQt5-based tool designed for archaeological artifact documen
 
 ### Software Dependencies
 
-- Python 3.x
+- Python 3.8+
 - PyQt5
 - pyserial
-- Pillow
 
 Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+Windows in practice — `PTMfitter.exe` is a Windows binary and the DSLR tethering
+software that drops files into the capture directory is Windows-only. The Python
+code itself has no Windows-specific imports and the GUI runs on Linux.
 
 ### Hardware Requirements
 
@@ -45,6 +61,20 @@ pip install -r requirements.txt
 2. Install dependencies: `pip install -r requirements.txt`
 3. Ensure `ptmfitter.exe` is available (configure path in application preferences)
 4. Connect your Arduino LED dome controller via serial port
+
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `PTMGenerator2.py` | **The application.** PyQt5 GUI, serial control, capture loop, PTM generation. |
+| `PTMController/PTMController.ino` | Arduino firmware: shift-register LED driver, shutter, rotary encoder, 7-segment display. |
+| `PTMfitter.exe` | Third-party PTM fitter binary invoked by **Generate PTM**. |
+| `translations/` | Qt i18n — English and Korean (`.ts` sources, `.qm` compiled). |
+| `icons/` | Application icon. |
+| `test_PTMGenerator2.py` | `unittest` suite. |
+| `PTMGenerator2.spec` | PyInstaller build spec. |
+| `devlog/` | Design and implementation notes. |
+| `legacy/` | Superseded code, kept for reference only — see below. |
 
 ## Usage
 
@@ -86,32 +116,100 @@ python PTMGenerator2.py
    - Choose output location and filename
    - The application will create the PTM file using PTMfitter
 
+### Capture sequence internals
+
+For each LED index *i*:
+
+1. Send `<SHOOT,i+1>` over serial — the Arduino turns on LED *i+1* and triggers the shutter.
+2. Wait `preparation_time` (2 s), then poll the capture directory for a file newer than the last checkpoint.
+3. If nothing arrives within `polling_timeout` (5 s), retake up to `RetryCount` times. After that the slot is recorded as `-` and the run moves on.
+4. Show the captured image, record it, advance to the next LED.
+
+When the run finishes, **Generate PTM** converts the LED table (`POLAR_LIGHT_LIST`, polar `[theta, phi]` degrees) into unit light vectors, writes the `.lp` file next to the images, and runs the fitter.
+
 ## Configuration Files
 
 - **image_data.csv**: Auto-generated file tracking captured images (format: index, directory, filename, include)
 - **{project}.lp**: Light position file generated during PTM creation
 - **Settings**: Stored in system-specific location (Windows: `%APPDATA%/PaleoBytes/PTMGenerator2.ini`)
 
+### Preferences reference
+
+Stored via `QSettings` under `PaleoBytes / PTMGenerator2`.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `serial_port` | *(none)* | COM port of the Arduino controller. Must be set before capturing. |
+| `ptm_fitter` | `ptmfitter.exe` | Path to the PTM fitter executable. |
+| `Number_of_LEDs` | 50 | Number of shots in a full sequence. |
+| `RetryCount` | 0 | Automatic retakes before a slot is given up as `-`. |
+| `light_position_adjustment` | 0 | Azimuth offset in degrees, to align the dome's LED #1 with the specimen's orientation. |
+| `post_shutter_polling` | 1.0 | Seconds to wait after the shutter before scanning for the new file. |
+| `language` | `en` | `en` or `ko`. |
+
 ## Building Executable
 
-To create a standalone Windows executable:
+Releases are built with PyInstaller:
 
 ```bash
-pyinstaller --name "PTMGenerator2_v0.1.2.exe" --onefile --noconsole \
-  --add-data "icons/*.png;icons" \
-  --add-data "translations/*.qm;translations" \
-  --icon="icons/PTMGenerator2.png" \
-  PTMGenerator2.py
+pyinstaller PTMGenerator2.spec
 ```
+
+The output name is generated from `PROGRAM_VERSION` in `PTMGenerator2.py` plus the
+build date — e.g. `PTMGenerator2_v0.1.2_20251107.exe` — so bumping the version in
+the source is all that is needed for a new release name. To pin a fixed name
+instead, replace `name=EXE_NAME` in the spec with a literal string.
+
+`build/` and `dist/` are gitignored; the spec is build configuration and is tracked.
 
 ## Arduino Protocol
 
-The application communicates with Arduino using commands wrapped in `<>`:
-- `<ON,{led_number}>`: Turn on specific LED
-- `<SHOOT,{led_number}>`: Trigger camera shutter
-- `<OFF>`: Turn off all LEDs
+Firmware in `PTMController/PTMController.ino`. 9600 baud. The PC sends messages
+framed with `<` and `>`, comma-separated:
 
-LED numbers are 1-based (1-50 for default configuration).
+| Message | Effect |
+| --- | --- |
+| `<ON,n>` | Turn on LED *n* (1-based), all others off. |
+| `<SHOOT,n>` | Turn on LED *n* and trigger the shutter. |
+| `<OFF>` | Turn all LEDs off. Sent when the serial port closes. |
+
+LED numbers are 1-based (1-50 for the default configuration). The Arduino echoes
+human-readable status lines back (`Turn on LED #n`, `Shooting with LED #n turned
+on.`) — informational only; the app does not parse them.
+
+### Pinout
+
+| Signal | Arduino pin |
+| --- | --- |
+| `SER` (74HC595 pin 14) | 8 |
+| `RCLK` (74HC595 pin 12) | 9 |
+| `SRCLK` (74HC595 pin 11) | 10 |
+| Shutter | 19 |
+
+Seven daisy-chained 74HC595 shift registers give 56 outputs, of which 50 drive the
+LEDs. The remaining pins run a 7-segment display showing the current LED index. A
+rotary encoder with a push button allows manual LED selection and manual shooting
+without the PC.
+
+## Translations
+
+```bash
+pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
+linguist translations/PTMGenerator2_ko.ts     # edit
+lrelease translations/PTMGenerator2_ko.ts     # -> .qm
+```
+
+## Tests
+
+```bash
+python -m unittest test_PTMGenerator2.py
+```
+
+Requires PyQt5. On a headless machine, run it under a virtual display:
+
+```bash
+xvfb-run -a python -m unittest test_PTMGenerator2.py
+```
 
 ## Troubleshooting
 
@@ -134,6 +232,19 @@ LED numbers are 1-based (1-50 for default configuration).
 - Verify PTMfitter executable path in Preferences
 - Ensure all required images are present and checked
 - Check that filenames don't contain special characters
+
+### Whole files show as modified with no real changes
+Line endings are normalized by `.gitattributes` (LF in the repository). If phantom
+whole-file diffs appear, run `git add --renormalize .`.
+
+## Legacy code
+
+`legacy/` holds superseded implementations, kept only for reference. They are not
+maintained and are not part of the build:
+
+- `legacy/PTMGenerator.py` — the original Tkinter application (needs `Pillow` and `pywin32`).
+- `legacy/ptmgenerator2_1.py` — an early snapshot of PTMGenerator2 (v0.1.0).
+- `legacy/setup.py` — cx_Freeze build script for the Tkinter app.
 
 ## Version History
 
