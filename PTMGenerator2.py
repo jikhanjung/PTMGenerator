@@ -155,6 +155,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.serial_port = None
         self.serial_exist = False
         self.serial = None
+        self.selected_rows = []
         self.prev_selected_rows = []
 
         self.redirector = OutputRedirector("output.log")
@@ -309,7 +310,8 @@ class PTMGeneratorMainWindow(QMainWindow):
     def test_shot(self):
         #self.turn_on_led(self.number_of_LEDs-1)
         #time.sleep(1)
-        self.openSerial()
+        if not self.ensure_serial_ready():
+            return
         self.take_shot()
         time.sleep(1)
         new_image = None
@@ -528,6 +530,10 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def take_all_pictures(self):
         period = 1000
+        # Checked before clear_image_data() so a refused run leaves the
+        # existing capture table untouched.
+        if not self.ensure_serial_ready():
+            return
         self.last_checked = time.time()
         self.image_index_list = []
         self.btnPauseContinue.setText(self.tr("Pause"))
@@ -538,7 +544,6 @@ class PTMGeneratorMainWindow(QMainWindow):
             #self.image_data.append((i, "-"))
         self.image_list = []
         self.previous_index = -1
-        self.openSerial()
         self.current_index = self.image_index_list.pop(0)
         self.timer.start(period)  # Poll every 1 second
 
@@ -617,12 +622,13 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_index_list = []
         if len(self.selected_rows) == 0:
             return
+        if not self.ensure_serial_ready():
+            return
         self.image_index_list = sorted(self.selected_rows)
         print("Retake picture list:", self.image_index_list)
         self.previous_index = -1
         self.current_index = self.image_index_list.pop(0)
         self.btnPauseContinue.setText(self.tr("Pause"))
-        self.openSerial()
         self.timer.start(period)  # Poll every 1 second
 
     def openSerial(self):
@@ -637,6 +643,30 @@ class PTMGeneratorMainWindow(QMainWindow):
         print("Serial port:", self.serial_port)
         self.serial = serial.Serial(self.serial_port, 9600, timeout=2)
         time.sleep(2)
+
+    def ensure_serial_ready(self):
+        """Open the controller's port, warning the user if there is not one.
+
+        Returns:
+            bool: True when the LEDs and shutter can be driven. When False the
+            caller must not start a capture — without the controller nothing
+            would be photographed.
+        """
+        self.openSerial()
+        if self.serial is not None:
+            return True
+        print("No serial port configured; refusing to start a capture.")
+        self.statusBar.showMessage(self.tr("No serial port configured"), 5000)
+        QMessageBox.warning(
+            self,
+            self.tr("No serial port"),
+            self.tr(
+                "No serial port is configured, so the LEDs and the camera "
+                "shutter cannot be triggered.\n\n"
+                "Choose the controller's port in Edit › Preferences."
+            ),
+        )
+        return False
 
     def closeSerial(self):
         if self.serial is None:

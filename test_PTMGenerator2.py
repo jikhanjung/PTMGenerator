@@ -410,6 +410,10 @@ class NoSerialPortTests(GuiTestCase):
         super().setUp()
         self.win = self.make_window()
         self.assertIsNone(self.win.serial, "a fresh window must start portless")
+        # A real QMessageBox would block the suite forever waiting for a click.
+        warn = patch.object(PTMGenerator2.QMessageBox, "warning")
+        self.warning = warn.start()
+        self.addCleanup(warn.stop)
 
     def test_send_serial_discards_the_message(self):
         self.win.sendSerial("ON,1")  # must not raise
@@ -435,16 +439,23 @@ class NoSerialPortTests(GuiTestCase):
         self.assertEqual(self.win.image_index_list, [])
 
     def test_capture_loop_completion_does_not_crash(self):
-        # take_picture_process() calls closeSerial() once the queue drains.
-        self.win.number_of_LEDs = 1
-        self.win.take_all_pictures()
-        self.addCleanup(self.win.timer.stop)
-        self.win.post_shutter_polling = 0
+        # take_picture_process() calls closeSerial() when the queue drains, so
+        # drive the last slot of a run straight to its timeout.
+        self.win.current_directory = self.workdir
+        self.win.current_index = 0
+        self.win.image_index_list = []
+        self.win.status = "polling"
+        self.win.second_counter = 1
         self.win.polling_timeout = 0
         self.win.auto_retake_maximum = 0
-        for _ in range(4):
-            self.win.take_picture_process()
+        self.win.post_shutter_polling = 0
+        self.win.timer.start(1000)
+        self.addCleanup(self.win.timer.stop)
+
+        self.win.take_picture_process()
+
         self.assertFalse(self.win.timer.isActive())
+        self.assertEqual(self.win.image_data, [(0, "-", "-", False)])
 
 
 class IncomingImagePollingTests(GuiTestCase):
@@ -697,12 +708,23 @@ class GeneratePtmTests(GuiTestCase):
         self.assertFalse(os.path.exists(self.lp_path))
 
 
-class RetakeSelectionTests(GuiTestCase):
+class ConnectedCaptureTestCase(GuiTestCase):
+    """Base for tests that need the app to believe a controller is attached."""
+
     def setUp(self):
         super().setUp()
         self.win = self.make_window()
-        self.win.serial_exist = False
+        self.port = MagicMock()
+        # ensure_serial_ready() calls openSerial(); pretend it found a port.
+        patcher = patch.object(
+            PTMGeneratorMainWindow, "openSerial",
+            lambda win: setattr(win, "serial", self.port),
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
+
+class RetakeSelectionTests(ConnectedCaptureTestCase):
     def test_retake_without_a_selection_does_nothing(self):
         self.win.selected_rows = []
         self.win.on_retake_picture_triggered()
@@ -716,13 +738,13 @@ class RetakeSelectionTests(GuiTestCase):
         self.assertEqual(self.win.image_index_list, [5, 7])
         self.assertTrue(self.win.timer.isActive())
 
+    def test_selected_rows_defaults_to_empty(self):
+        # Retake used to raise AttributeError before any row was ever selected.
+        fresh = self.make_window()
+        self.assertEqual(fresh.selected_rows, [])
 
-class TakeAllPicturesTests(GuiTestCase):
-    def setUp(self):
-        super().setUp()
-        self.win = self.make_window()
-        self.win.serial_exist = False
 
+class TakeAllPicturesTests(ConnectedCaptureTestCase):
     def test_queue_covers_every_led(self):
         self.win.number_of_LEDs = 6
         self.win.take_all_pictures()
@@ -736,6 +758,57 @@ class TakeAllPicturesTests(GuiTestCase):
         self.win.take_all_pictures()
         self.addCleanup(self.win.timer.stop)
         self.assertEqual(self.win.image_data, [])
+
+
+class MissingControllerWarningTests(GuiTestCase):
+    """Starting a capture with no port configured must warn, not proceed."""
+
+    def setUp(self):
+        super().setUp()
+        self.win = self.make_window()
+        self.win.number_of_LEDs = 4
+        warn = patch.object(PTMGenerator2.QMessageBox, "warning")
+        self.warning = warn.start()
+        self.addCleanup(warn.stop)
+
+    def test_ensure_serial_ready_reports_failure(self):
+        self.assertFalse(self.win.ensure_serial_ready())
+        self.warning.assert_called_once()
+
+    def test_ensure_serial_ready_is_quiet_when_a_port_opens(self):
+        with patch.object(PTMGeneratorMainWindow, "openSerial",
+                          lambda win: setattr(win, "serial", MagicMock())):
+            self.assertTrue(self.win.ensure_serial_ready())
+        self.warning.assert_not_called()
+
+    def test_take_all_pictures_warns_and_does_not_start(self):
+        self.win.take_all_pictures()
+        self.warning.assert_called_once()
+        self.assertFalse(self.win.timer.isActive())
+        self.assertEqual(self.win.image_index_list, [])
+
+    def test_refused_run_leaves_the_existing_capture_table_alone(self):
+        existing = [(0, "somewhere", "keep-me.jpg", True)]
+        self.win.image_data = list(existing)
+        self.win.take_all_pictures()
+        self.assertEqual(self.win.image_data, existing)
+
+    def test_retake_warns_and_does_not_start(self):
+        self.win.selected_rows = [1, 2]
+        self.win.on_retake_picture_triggered()
+        self.warning.assert_called_once()
+        self.assertFalse(self.win.timer.isActive())
+
+    def test_retake_without_a_selection_does_not_warn(self):
+        self.win.selected_rows = []
+        self.win.on_retake_picture_triggered()
+        self.warning.assert_not_called()
+
+    def test_test_shot_warns_and_takes_no_picture(self):
+        with patch.object(PTMGeneratorMainWindow, "take_shot") as shot:
+            self.win.test_shot()
+        self.warning.assert_called_once()
+        shot.assert_not_called()
 
 
 class PauseAndStopTests(GuiTestCase):

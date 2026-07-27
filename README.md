@@ -193,11 +193,28 @@ without the PC.
 
 ## Translations
 
+Translating is three steps: extract the strings from the source into the `.ts`
+files, translate them, then compile the `.ts` files into the binary `.qm` files
+the application actually loads at runtime.
+
 ```bash
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
-linguist translations/PTMGenerator2_ko.ts     # edit
-lrelease translations/PTMGenerator2_ko.ts     # -> .qm
+# 1. extract — merges new strings, keeps existing translations
+pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
+
+# 2. translate — Qt Linguist, or edit the .ts XML directly
+linguist translations/PTMGenerator2_ko.ts
+
+# 3. compile — without this the UI still shows the old strings
+pyside6-lrelease translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
 ```
+
+`pylupdate5` comes with PyQt5. `lrelease` does not: it ships with the Qt
+developer tools, so `requirements.txt` pulls in `PySide6-Essentials`, which
+provides it as `pyside6-lrelease` (`sudo apt install qttools5-dev-tools` gives a
+plain `lrelease` instead, if you prefer the system package).
+
+Both `.ts` and `.qm` are tracked — the `.qm` files are what PyInstaller bundles,
+so they must be recompiled and committed whenever a translation changes.
 
 ## Tests
 

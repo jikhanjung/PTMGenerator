@@ -6,6 +6,10 @@ pyserial>=3.5
 # Packaging — builds the Windows .exe from PTMGenerator2.spec
 pyinstaller
 
+# Translation tooling. pylupdate5 comes with PyQt5, but lrelease does not;
+# PySide6-Essentials provides it as `pyside6-lrelease`. Not needed at runtime.
+PySide6-Essentials
+
 # Not imported by PTMGenerator2 as of v0.1.2. Needed only by the legacy Tkinter
 # app in legacy/, which is Windows only.
 # Pillow
