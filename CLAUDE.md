@@ -1,132 +1,113 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) when working in this repository.
 
-## Project Overview
+## Project overview
 
-PTMGenerator2 is a PyQt5-based desktop application for automated Polynomial Texture Mapping (PTM) image capture and generation. The application controls a DSLR camera via serial communication with an Arduino-based LED dome, capturing images under different lighting angles to create PTM files for archaeological artifact documentation.
+PTMGenerator2 automates Polynomial Texture Mapping capture for artefact
+documentation. An Arduino-driven dome lights 50 LEDs one at a time and fires a
+DSLR shutter for each; the application drives that over serial, waits for each
+photo to land on disk, builds the light-position (`.lp`) file, and hands
+everything to `PTMfitter.exe`.
 
-## Core Architecture
+The shipped artifact is a single Windows executable. The Arduino firmware in
+`PTMController/` is a separate concern, flashed with the Arduino IDE.
 
-### Main Application (`PTMGenerator2.py`)
+## Architecture
 
-- **PTMGeneratorMainWindow**: Main application window managing the entire workflow
-  - Image capture sequencing with 50 LED positions (configurable)
-  - Serial communication with Arduino controller for LED/camera control
-  - Image polling and validation with automatic retry logic
-  - CSV-based image tracking with include/exclude checkboxes
-  - PTM file generation via external `ptmfitter.exe` executable
+The boundary that matters is `core/` vs `ui/`. **`core/` imports no PyQt5**, and
+`tests/test_smoke.py` asserts that in a subprocess. Keep it that way — it is what
+makes the capture policy, the serial protocol and the file formats testable
+without a display, a QApplication or a controller attached.
 
-- **PreferencesWindow**: Settings dialog for configuration
-  - Serial port selection
-  - PTM fitter executable path
-  - Number of LEDs, retry count, polling delays
-  - Light position adjustment (angular offset)
-  - Multi-language support (English, Korean)
+| Module | Responsibility |
+|---|---|
+| `core/serial_controller.py` | `<ON,n>` / `<SHOOT,n>` / `<OFF>` framing, 9600 baud, port lifecycle. Every method tolerates there being no port |
+| `core/capture_session.py` | Sequencing: preparation, polling, retakes, giving up. Takes the shutter and the file poll as arguments |
+| `core/light_positions.py` | `POLAR_LIGHT_LIST` (measured off the rig) to unit vectors |
+| `core/image_data.py` | `CaptureSlot`, `image_data.csv`, rebuilding a table from a directory, polling for a new file |
+| `core/ptm_builder.py` | `.lp` content, and running PTMfitter |
+| `core/resources.py` | Bundled-file lookup, frozen or not |
+| `core/settings.py` | Preference keys, defaults, coercion from QSettings strings |
+| `ui/main_window.py` | Widgets, the one-second timer, rendering what the session decides |
+| `ui/preferences_window.py` | The Edit > Preferences dialog |
+| `PTMGenerator2.py` | Entry point |
+| `version.py` | **Single source of truth for the version** |
 
-### Key Components
+### The capture loop
 
-- **Serial Communication**: Controls Arduino via serial protocol with `<COMMAND>` format
-  - `ON,{led_index}`: Turn on specific LED
-  - `SHOOT,{led_index}`: Trigger camera shutter
-  - `OFF`: Turn off all LEDs
+`ui.main_window.take_picture_process` is the timer tick. It asks the session
+what to do and renders the result; it decides nothing itself:
 
-- **Image Polling**: Monitors directory for new image files after shutter trigger
-  - Configurable post-shutter polling delay (default 1 second)
-  - Timeout-based failure detection (5 seconds default)
-  - Automatic retry with configurable maximum attempts
-
-- **Light Positions**: `POLAR_LIGHT_LIST` defines 50 dome positions as (theta, phi) polar coordinates
-  - Converted to Cartesian (x,y,z) for PTM generation
-  - Adjustable angular offset for dome alignment corrections
-
-## Development Commands
-
-### Running the Application
-
-```bash
-python PTMGenerator2.py
+```python
+result = session.step(shoot=self.serial.shoot, poll=self.poll_for_image)
 ```
 
-### Running Tests
+`CaptureSession` walks `idle -> preparing -> polling -> (recorded | retake)` per
+slot and finishes when the queue drains. To test capture behaviour, drive
+`CaptureSession` directly with fakes — do not construct a window and wait out
+real one-second ticks.
+
+### Missing shots
+
+A shot that never arrives is recorded as `CaptureSlot(i, "-", "-", False)`. That
+keeps the LED index aligned with `light_vectors()`, so a partial run still
+produces a correct `.lp`. Do not compact the list.
+
+## Commands
 
 ```bash
-python test_PTMGenerator2.py
+make install-dev     # dependencies + pre-commit hooks
+make test            # 125 tests, ~1.3s, no display needed
+make test-cov        # with a coverage report
+make lint            # ruff check + ruff format --check
+make type-check      # mypy over core/
+make run             # run the application
+make build           # PyInstaller -> dist/PTMGenerator2_v<version>_<date>.exe
+make translations    # pylupdate5 extract + pyside6-lrelease compile
+make lock            # regenerate the per-platform lockfiles
 ```
 
-### Building Executable (Windows)
+Tests select Qt's offscreen platform plugin themselves, so **no xvfb is needed**
+and none should be added.
 
-```bash
-pyinstaller --name "PTMGenerator2_v{VERSION}_{DATE}.exe" --onefile --noconsole \
-  --add-data "icons/*.png;icons" \
-  --add-data "translations/*.qm;translations" \
-  --icon="icons/PTMGenerator2.png" \
-  PTMGenerator2.py
-```
+## Conventions
 
-### Translation Workflow
+- **Never edit `version.py` by hand.** Use `python scripts/bump_version.py
+  <part>`; it rolls `CHANGELOG.md`, commits and tags. See `VERSION_MANAGEMENT.md`.
+- **ruff is pinned to an exact version** in three places that must move
+  together: `pyproject.toml`, `.pre-commit-config.yaml`, and the lint job in
+  `.github/workflows/test.yml`.
+- **`.qm` files are committed** and PyInstaller bundles them. Editing a `.ts`
+  without running `make translations` ships stale strings; CI checks for drift.
+- **Qt-mirroring attribute names** (`btnOkay`, `edtPtmFitter`, `Okay`) are
+  deliberate. Do not rename them to snake_case.
+- **The `›` in "Edit › Preferences"** is U+203A and is the key the `.ts` files
+  are indexed on. Changing it orphans the Korean translation.
+- Record deferred work in `TODOs.md`, and add a `devlog/` entry when the
+  reasoning behind a change would not be obvious later. See `devlog/README.md`.
 
-```bash
-# Extract translatable strings to .ts files
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_en.ts
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts
+## Gotchas
 
-# Edit translations with Qt Linguist
-linguist
+- **`initialize_variables()` replaces `sys.stdout`** with an `OutputRedirector`
+  writing `output.log` in the current directory. Tests that build a window run
+  in a temp cwd and restore stdout — see `tests/conftest.py`.
+- **QSettings is global.** Tests redirect it per test with `QSettings.setPath`.
+  Any script that constructs a window will otherwise write to the developer's
+  real preferences; this has happened.
+- **A QApplication must outlive its widgets.** PyQt5 destroys it as soon as the
+  last Python reference goes, so the `qapp` fixture is session-scoped.
+- **`app.translator` and `app.language`** are attached to the QApplication by the
+  entry point, and `read_settings()` expects them to exist.
+- **`detect_irregular_intervals`** rebuilds a capture table from files on disk;
+  the name is historical and kept because it is referenced from the docs.
 
-# Compile .ts to .qm files (done automatically by linguist)
-```
+## Release
 
-## Application State Machine
+1. Describe the change under `## [Unreleased]` in `CHANGELOG.md`.
+2. `python scripts/bump_version.py patch` (or `minor`, `preminor beta`, …).
+3. `git push && git push origin v<version>`.
 
-The image capture process uses a state-based timer (`take_picture_process`):
-
-1. **idle**: Initialize capture, send SHOOT command
-2. **preparing picture**: Wait for preparation time (default 2 seconds)
-3. **polling**: Poll directory for new image, handle retry logic
-4. Returns to **idle** for next image or stops when complete
-
-## File Organization
-
-- `PTMGenerator2.py`: Main application (current version)
-- `PTMGenerator.py`, `ptmgenerator2_1.py`: Legacy versions
-- `interval.py`: Standalone utility for detecting irregular image time intervals
-- `test_PTMGenerator2.py`: Unit tests for core functions
-- `setup.py`: cx_Freeze build configuration (legacy)
-- `image_data.csv`: Auto-generated tracking file (format: index, directory, filename, include)
-- `{project}.lp`: Light position file generated for PTM fitting
-
-## Critical Implementation Details
-
-### Image Detection Logic
-
-The application detects new images by monitoring file modification times (`st_mtime`) in the working directory. Only files created after `self.last_checked` timestamp are considered. Supported formats: PNG, JPG, JPEG, GIF, BMP, TIFF.
-
-### Irregular Interval Detection
-
-The `detect_irregular_intervals` method analyzes time gaps between images to identify missing captures. It determines the typical interval from existing images and inserts placeholder entries (`"-"`) for missing positions, ensuring the final dataset has exactly 50 entries aligned with LED positions.
-
-### Settings Persistence
-
-Application settings are stored using `QSettings` in INI format under `COMPANY_NAME="PaleoBytes"` and `PROGRAM_NAME="PTMGenerator2"`. Settings include window geometry, serial port, language, LED count, and retry behavior.
-
-### Resource Path Resolution
-
-The `resource_path()` function handles both development and PyInstaller frozen executable contexts by checking for `sys._MEIPASS` to locate bundled resources (icons, translations).
-
-## Dependencies
-
-- **PyQt5**: GUI framework
-- **pyserial**: Arduino communication
-- **Pillow**: Image handling
-- **pyinstaller**: Executable packaging
-
-External: `ptmfitter.exe` (PTM generation binary, not included in repository)
-
-## Important Constraints
-
-- The application expects exactly `number_of_LEDs` (default 50) images for PTM generation
-- LED indices are 1-based when communicating with Arduino but 0-based internally
-- Serial communication requires 2-second initialization delay after port open
-- Image filenames are converted to lowercase extensions before PTM generation
-- The CSV format changed between versions - code supports both 3-field (legacy) and 4-field (with include flag) formats
+`release.yml` refuses the tag if it disagrees with `version.py`, gates on the
+full test matrix, builds the Windows executable, and publishes a release whose
+notes come from the matching `CHANGELOG.md` section.
