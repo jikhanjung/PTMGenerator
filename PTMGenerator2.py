@@ -92,6 +92,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         previous_index (int): The index of the previously selected image.
         serial_port (str): The serial port for communication with external devices.
         serial_exist (bool): Flag indicating whether a serial port is available.
+        serial (serial.Serial): The open port, or None when none is open.
         prev_selected_rows (list): A list of previously selected row indices in the image table.
         redirector (OutputRedirector): An instance of the OutputRedirector class for redirecting stdout.
         table_view (QTableView): The table view widget for displaying image data.
@@ -153,6 +154,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.previous_index = -1
         self.serial_port = None
         self.serial_exist = False
+        self.serial = None
         self.prev_selected_rows = []
 
         self.redirector = OutputRedirector("output.log")
@@ -637,15 +639,25 @@ class PTMGeneratorMainWindow(QMainWindow):
         time.sleep(2)
 
     def closeSerial(self):
+        if self.serial is None:
+            return
         self.sendSerial("OFF")
         self.serial.close()
+        self.serial = None
 
     def sendSerial(self,msg):
         msg = "<" + msg + ">"
+        # openSerial() returns without creating a port when none is configured,
+        # so every caller has to cope with there being nothing to write to.
+        if self.serial is None:
+            print("No serial port open, discarding:", msg)
+            return
         print( msg )
         self.serial.write( msg.encode() )
 
     def receiveSerial(self):
+        if self.serial is None:
+            return None
         return_msg = self.serial.readline()
         print( return_msg )
         return return_msg

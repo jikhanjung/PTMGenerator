@@ -352,10 +352,12 @@ class SerialProtocolTests(GuiTestCase):
     def setUp(self):
         super().setUp()
         self.win = self.make_window()
-        self.win.serial = MagicMock()
+        # Held separately: closeSerial() drops the window's reference.
+        self.port = MagicMock()
+        self.win.serial = self.port
 
     def sent(self):
-        return [call.args[0] for call in self.win.serial.write.call_args_list]
+        return [call.args[0] for call in self.port.write.call_args_list]
 
     def test_send_serial_wraps_in_markers(self):
         self.win.sendSerial("PING")
@@ -374,19 +376,75 @@ class SerialProtocolTests(GuiTestCase):
     def test_close_serial_turns_the_leds_off_first(self):
         self.win.closeSerial()
         self.assertEqual(self.sent(), [b"<OFF>"])
-        self.win.serial.close.assert_called_once_with()
+        self.port.close.assert_called_once_with()
+
+    def test_close_serial_releases_the_port(self):
+        self.win.closeSerial()
+        self.assertIsNone(self.win.serial)
 
     def test_open_serial_is_a_no_op_without_a_configured_port(self):
+        self.win.serial = None
         self.win.serial_exist = True
         self.win.serial_port = "None"  # QSettings round-trips None as this
         with patch.object(PTMGenerator2.serial, "Serial") as fake_serial:
             self.win.openSerial()
         fake_serial.assert_not_called()
         self.assertFalse(self.win.serial_exist)
+        self.assertIsNone(self.win.serial)
 
     def test_receive_serial_returns_the_line(self):
         self.win.serial.readline.return_value = b"Turn on LED #1\n"
         self.assertEqual(self.win.receiveSerial(), b"Turn on LED #1\n")
+
+
+class NoSerialPortTests(GuiTestCase):
+    """Nothing may raise when no controller is connected.
+
+    openSerial() returns without creating a port whenever none is configured,
+    so every path that talks to the Arduino has to tolerate self.serial
+    being None. It used to raise AttributeError instead — pressing Stop with
+    no port configured crashed the application.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.win = self.make_window()
+        self.assertIsNone(self.win.serial, "a fresh window must start portless")
+
+    def test_send_serial_discards_the_message(self):
+        self.win.sendSerial("ON,1")  # must not raise
+
+    def test_turn_on_led_is_safe(self):
+        self.win.turn_on_led(0)
+
+    def test_take_shot_is_safe(self):
+        self.win.current_index = 0
+        self.win.take_shot()
+
+    def test_close_serial_is_safe(self):
+        self.win.closeSerial()
+
+    def test_receive_serial_returns_none(self):
+        self.assertIsNone(self.win.receiveSerial())
+
+    def test_stop_process_does_not_crash(self):
+        self.win.timer.start(1000)
+        self.win.image_index_list = [1, 2, 3]
+        self.win.stop_process()
+        self.assertFalse(self.win.timer.isActive())
+        self.assertEqual(self.win.image_index_list, [])
+
+    def test_capture_loop_completion_does_not_crash(self):
+        # take_picture_process() calls closeSerial() once the queue drains.
+        self.win.number_of_LEDs = 1
+        self.win.take_all_pictures()
+        self.addCleanup(self.win.timer.stop)
+        self.win.post_shutter_polling = 0
+        self.win.polling_timeout = 0
+        self.win.auto_retake_maximum = 0
+        for _ in range(4):
+            self.win.take_picture_process()
+        self.assertFalse(self.win.timer.isActive())
 
 
 class IncomingImagePollingTests(GuiTestCase):
@@ -693,16 +751,15 @@ class PauseAndStopTests(GuiTestCase):
         self.win.pause_continue_process()
         self.assertTrue(self.win.timer.isActive())
 
-    def test_stop_halts_the_timer_and_clears_the_queue(self):
-        # stop_process() unconditionally calls closeSerial(), so a serial object
-        # has to be present — see openSerial() for how it is normally created.
-        self.win.serial = MagicMock()
+    def test_stop_halts_the_timer_and_turns_the_leds_off(self):
+        port = MagicMock()
+        self.win.serial = port
         self.win.timer.start(1000)
         self.win.image_index_list = [3, 4, 5]
         self.win.stop_process()
         self.assertFalse(self.win.timer.isActive())
         self.assertEqual(self.win.image_index_list, [])
-        self.win.serial.write.assert_called_once_with(b"<OFF>")
+        port.write.assert_called_once_with(b"<OFF>")
 
 
 class PreferencesWindowTests(GuiTestCase):
