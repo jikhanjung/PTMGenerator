@@ -27,7 +27,7 @@ MISSING = "-"
 class CaptureSlot(NamedTuple):
     """One LED's shot. A plain tuple, so existing unpacking keeps working."""
 
-    index: int
+    led_index: int
     directory: str
     filename: str
     include: bool

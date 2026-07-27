@@ -1,0 +1,214 @@
+name: Tests
+
+# The shipped artifact is a Windows executable, but the test matrix covers all
+# three operating systems: the Qt platform plugins, path handling and wheel
+# availability differ between them, and those are exactly what breaks.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_call:  # so release.yml can gate a release on this workflow
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint / format / type — once, not per-OS.
+  # Gating: ruff check, ruff format --check, mypy over core/.
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint (ruff, mypy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements*.lock
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --require-hashes -r requirements-dev-linux.lock
+
+      # The ruff version comes from the lockfile, which pins it exactly;
+      # .pre-commit-config.yaml pins the same version so a contributor's hooks
+      # and CI never disagree about formatting.
+      - name: ruff check
+        run: ruff check --output-format=github .
+
+      - name: ruff format --check
+        run: ruff format --check --diff .
+
+      # Scope is core/ — the Qt-free half, which has per-module settings in
+      # pyproject.toml. Widen to ui/ a module at a time, each one clean before
+      # it is added. Tracked in TODOs.md.
+      - name: mypy (core)
+        run: mypy --config-file pyproject.toml core/
+
+  # Fast fail: if a module does not import or the window does not construct on
+  # a platform, there is no point running the full suite there.
+  smoke:
+    name: Smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements*.lock
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-xfixes0 libxcb-shape0 \
+            libxcb-cursor0 libegl1 libgl1
+
+      - name: Install Python dependencies
+        # bash, not the Windows default pwsh, so one script serves all three legs.
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          case "${{ runner.os }}" in
+            Linux)   LOCK=requirements-dev-linux.lock ;;
+            Windows) LOCK=requirements-dev-windows.lock ;;
+            macOS)   LOCK=requirements-dev-macos.lock ;;
+            *)       echo "No lockfile for runner OS ${{ runner.os }}"; exit 1 ;;
+          esac
+          pip install --require-hashes -r "$LOCK"
+
+      # No xvfb: tests/conftest.py selects Qt's offscreen platform plugin.
+      - name: Run smoke tests
+        run: pytest tests/test_smoke.py -m smoke --timeout=120
+
+  test:
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements*.lock
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-xfixes0 libxcb-shape0 \
+            libxcb-cursor0 libegl1 libgl1
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          case "${{ runner.os }}" in
+            Linux)   LOCK=requirements-dev-linux.lock ;;
+            Windows) LOCK=requirements-dev-windows.lock ;;
+            macOS)   LOCK=requirements-dev-macos.lock ;;
+            *)       echo "No lockfile for runner OS ${{ runner.os }}"; exit 1 ;;
+          esac
+          pip install --require-hashes -r "$LOCK"
+
+      # Linux is the reference leg: it is the one that measures coverage and
+      # enforces the gate. 85% is a ratchet floor -- raise it as coverage
+      # improves, never lower it to make a red build green.
+      - name: Run tests with coverage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pytest tests/ \
+            --cov=core --cov=ui \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=85 \
+            --timeout=60
+
+      - name: Run tests (Windows/macOS)
+        if: runner.os != 'Linux'
+        run: pytest tests/ --timeout=60
+
+      - name: Upload coverage
+        if: always() && runner.os == 'Linux'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: false
+
+  # The .qm files are committed, and PyInstaller bundles them, so a .ts edit
+  # that was never compiled ships stale strings. Recompile and diff.
+  translations:
+    name: Translations are compiled
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements*.lock
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --require-hashes -r requirements-dev-linux.lock
+
+      - name: Recompile and check for drift
+        run: |
+          pyside6-lrelease translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
+          git diff --exit-code -- 'translations/*.qm' \
+            || { echo "::error::translations/*.qm are out of date. Run 'make translations' and commit."; exit 1; }
+
+  test-summary:
+    name: Summary
+    needs: [lint, smoke, test, translations]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Summarize
+        run: |
+          echo "## Test results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint (ruff, mypy) | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke (3 OS) | ${{ needs.smoke.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests (3 OS) | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Translations | ${{ needs.translations.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.lint.result }}" != "success" ] \
+          || [ "${{ needs.smoke.result }}" != "success" ] \
+          || [ "${{ needs.test.result }}" != "success" ] \
+          || [ "${{ needs.translations.result }}" != "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "One or more required jobs failed." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All platforms green." >> $GITHUB_STEP_SUMMARY

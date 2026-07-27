@@ -1,0 +1,64 @@
+name: Security
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Weekly, so a CVE published against a pinned dependency surfaces without
+    # waiting for someone to open a PR.
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: pip-audit (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # The locks are per-platform and can resolve different versions, so a
+        # vulnerable pin can hide on one platform. Audit all three from Linux;
+        # pip-audit reads the lockfile, it does not need to install it.
+        platform: [linux, windows, macos]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Audit runtime dependencies
+        run: pip-audit --requirement requirements-${{ matrix.platform }}.lock --strict
+
+  lockfiles-current:
+    name: Lockfiles match pyproject.toml
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      # A dependency range changed in pyproject.toml without regenerating the
+      # locks means CI keeps installing the old resolution and nobody notices.
+      - name: Regenerate and diff
+        run: |
+          make lock
+          git diff --exit-code -- 'requirements*.lock' \
+            || { echo "::error::Lockfiles are out of date. Run 'make lock' and commit the result."; exit 1; }

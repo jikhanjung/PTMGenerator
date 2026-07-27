@@ -93,7 +93,7 @@ def test_single_image_yields_no_intervals(tmp_path):
 
 def test_evenly_spaced_images_map_one_to_one(tmp_path):
     slots = run_detection(tmp_path, ["a.jpg", "b.jpg", "c.jpg"], [1000, 1010, 1020])
-    assert [s.index for s in slots] == [0, 1, 2]
+    assert [s.led_index for s in slots] == [0, 1, 2]
     assert [s.filename for s in slots] == ["a.jpg", "b.jpg", "c.jpg"]
     assert all(s.include for s in slots)
     assert all(s.directory == str(tmp_path) for s in slots)
@@ -116,7 +116,7 @@ def test_triple_gap_inserts_two_placeholders(tmp_path):
 
 def test_indices_stay_contiguous_across_a_gap(tmp_path):
     slots = run_detection(tmp_path, ["a.jpg", "b.jpg", "c.jpg", "d.jpg"], [1000, 1010, 1030, 1040])
-    assert [s.index for s in slots] == [0, 1, 2, 3, 4]
+    assert [s.led_index for s in slots] == [0, 1, 2, 3, 4]
 
 
 def test_non_image_files_are_ignored(tmp_path):

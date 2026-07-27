@@ -1,0 +1,28 @@
+version: 2
+
+updates:
+  # Dependabot bumps the ranges in pyproject.toml. The lockfiles are generated
+  # from those ranges, so a bump leaves them stale until `make lock` is run --
+  # the `lockfiles-current` job in security.yml is what catches that.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    groups:
+      # One PR for the test and lint toolchain rather than five.
+      dev-tooling:
+        patterns: ["pytest*", "ruff", "mypy", "pre-commit"]
+    ignore:
+      # Pinned deliberately: a newer ruff formats code the pinned one accepted,
+      # which turns every unrelated PR red. Bump it by hand, together with
+      # .pre-commit-config.yaml and the lint job in test.yml.
+      - dependency-name: "ruff"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels: ["dependencies", "github-actions"]
