@@ -1,0 +1,19 @@
+# Normalize line endings: store LF in the repository, check out native.
+# Added because the working tree drifted to CRLF (WSL/Windows mix), which made
+# every file show as fully modified in `git diff` with zero real changes.
+* text=auto
+
+# Explicit text types
+*.py    text diff=python
+*.ino   text
+*.txt   text
+*.csv   text
+*.md    text
+*.ts    text
+*.spec  text
+
+# Binary — never touch these
+*.exe   binary
+*.png   binary
+*.qm    binary
+*.pyc   binary
