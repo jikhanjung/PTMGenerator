@@ -202,14 +202,13 @@ lrelease translations/PTMGenerator2_ko.ts     # -> .qm
 ## Tests
 
 ```bash
-python -m unittest test_PTMGenerator2.py
+python -m unittest test_PTMGenerator2 -v
 ```
 
-Requires PyQt5. On a headless machine, run it under a virtual display:
-
-```bash
-xvfb-run -a python -m unittest test_PTMGenerator2.py
-```
+Requires PyQt5 but no display: the suite selects Qt's `offscreen` platform
+plugin, so it runs over SSH and in CI as-is. QSettings is redirected to a
+temporary directory per test, so running the suite never touches your real
+preferences.
 
 ## Troubleshooting
 
