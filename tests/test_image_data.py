@@ -246,3 +246,48 @@ def test_utf8_is_preferred_over_the_fallbacks(tmp_path):
     slots = [CaptureSlot(0, KOREAN_DIR, KOREAN_FILE, True)]
     write_csv(path, slots)
     assert read_csv(path) == slots
+
+
+# -- recursive polling -----------------------------------------------------
+#
+# Tethering software files images into a dated subfolder that does not exist
+# before the day's first shot, so the folder a user can pick when starting a
+# session is often the parent of the one that ends up holding the run.
+
+
+def test_non_recursive_search_ignores_subdirectories(tmp_path):
+    nested = tmp_path / "2026-07-28"
+    nested.mkdir()
+    touch(nested, "shot.jpg", 3000)
+    assert find_newest_image(str(tmp_path), 2000)[0] is None
+
+
+def test_recursive_search_finds_a_shot_in_a_subdirectory(tmp_path):
+    nested = tmp_path / "2026-07-28"
+    nested.mkdir()
+    expected = touch(nested, "shot.jpg", 3000)
+    assert find_newest_image(str(tmp_path), 2000, recursive=True)[0] == expected
+
+
+def test_recursive_search_reaches_further_down(tmp_path):
+    nested = tmp_path / "2026-07-28" / "raw"
+    nested.mkdir(parents=True)
+    expected = touch(nested, "shot.jpg", 3000)
+    assert find_newest_image(str(tmp_path), 2000, recursive=True)[0] == expected
+
+
+def test_recursive_search_still_picks_the_newest_across_folders(tmp_path):
+    old = tmp_path / "2026-07-27"
+    new = tmp_path / "2026-07-28"
+    old.mkdir()
+    new.mkdir()
+    touch(old, "yesterday.jpg", 2500)
+    newest = touch(new, "today.jpg", 3500)
+    assert find_newest_image(str(tmp_path), 2000, recursive=True)[0] == newest
+
+
+def test_recursive_search_ignores_non_images_in_subdirectories(tmp_path):
+    nested = tmp_path / "2026-07-28"
+    nested.mkdir()
+    touch(nested, "notes.txt", 3000)
+    assert find_newest_image(str(tmp_path), 2000, recursive=True)[0] is None

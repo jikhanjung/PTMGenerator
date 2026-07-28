@@ -188,6 +188,7 @@ ignore = [
     # .lp files); a pathlib conversion is a separate, testable change. Tracked
     # in TODOs.md.
     "PTH118", "PTH120", "PTH123", "PTH110", "PTH100", "PTH103", "PTH119", "PTH208",
+    "PTH107", "PTH122", "PTH202",
     # The one subprocess call launches the user's configured PTMfitter with a
     # fixed argument list and no shell. S603 fires on every subprocess call
     # regardless; S607 wants an absolute path, but the whole point of the

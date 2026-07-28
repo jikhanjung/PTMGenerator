@@ -104,8 +104,11 @@ python PTMGenerator2.py
    - Adjust retry count and polling delays as needed
 
 2. **Open Working Directory** (File → Open Directory):
-   - Choose a folder where captured images will be stored
-   - The application will create an `image_data.csv` file to track captures
+   - Choose the folder your tethering software writes into. **It is watched
+     recursively until the first shot arrives**, so you can pick the parent
+     when the software files into a dated subfolder that does not exist yet.
+   - Whichever folder the first shot lands in becomes the working folder for
+     that run, and `image_data.csv` is written there.
 
 3. **Test Shot**:
    - Click "Test Shot" to verify camera and LED communication

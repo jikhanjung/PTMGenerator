@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"POT-Creation-Date: 2026-07-28 11:56+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -315,75 +315,298 @@ msgid ""
 msgstr ""
 
 #: core.image_data.find_newest_image:1 of
-msgid "The most recent image in `directory` created after `newer_than`."
+msgid "The most recent image under `directory` modified after `newer_than`."
 msgstr ""
 
 #: core.image_data.find_newest_image:3 of
+msgid "Where to look."
+msgstr ""
+
+#: core.image_data.find_newest_image:5 of
+msgid "Only files strictly newer than this are considered."
+msgstr ""
+
+#: core.image_data.find_newest_image:7 of
 msgid ""
-"Returns (path, mtime), or (None, newer_than) if nothing new has landed. "
-"Not recursive: the tethering software drops files in one directory, and "
-"walking subdirectories made every poll slower for no gain."
+"Search subdirectories too. Needed while waiting for the first shot of a "
+"run, because tethering software — Canon's EOS Utility among others — "
+"files images into a dated subfolder that does not exist until that first "
+"shot lands. Once a shot has arrived the caller knows which directory to "
+"watch and can stop walking the tree, which matters at one poll per "
+"second."
+msgstr ""
+
+#: core.image_data.find_newest_image:15 of
+msgid "(path, mtime), or (None, newer_than) if nothing new has landed."
 msgstr ""
 
 #: core.ptm_builder:1 of
-msgid "Producing the .lp file and handing it to PTMfitter."
+msgid "Producing the .lp file and driving PTMfitter."
 msgstr ""
 
 #: core.ptm_builder:3 of
 msgid ""
-"PTMfitter takes a light-position file: a count, then one line per image "
-"giving its path and the unit vector of the light that was on. This module"
-" builds that text and runs the fitter; choosing the output path is the "
-"UI's job."
+"PTMfitter is a Hewlett-Packard binary from around 2001 and it is "
+"particular about paths. Measured against the shipped `PTMfitter.exe` with"
+" nine images:"
+msgstr ""
+
+#: core.ptm_builder:7 of
+msgid ".lp lists bare filenames, run with cwd = the image directory"
+msgstr ""
+
+#: core.ptm_builder:7 core.ptm_builder:8 core.ptm_builder:9 core.ptm_builder:10
+#: core.ptm_builder:11 core.ptm_builder:16 core.ptm_builder:18 of
+msgid "works"
+msgstr ""
+
+#: core.ptm_builder:8 of
+msgid "... directory name contains a space"
+msgstr ""
+
+#: core.ptm_builder:9 of
+msgid "... directory name contains Hangul"
+msgstr ""
+
+#: core.ptm_builder:10 of
+msgid "... directory path is very long"
+msgstr ""
+
+#: core.ptm_builder:11 of
+msgid ".lp lists absolute paths, ASCII, no spaces"
+msgstr ""
+
+#: core.ptm_builder:12 of
+msgid ".lp lists absolute paths containing a space"
+msgstr ""
+
+#: core.ptm_builder:12 core.ptm_builder:13 core.ptm_builder:14
+#: core.ptm_builder:15 core.ptm_builder:17 of
+msgid "FAILS"
+msgstr ""
+
+#: core.ptm_builder:13 of
+msgid ".lp lists absolute paths containing Hangul"
+msgstr ""
+
+#: core.ptm_builder:14 of
+msgid "a filename inside the .lp contains a space"
+msgstr ""
+
+#: core.ptm_builder:15 of
+msgid "-o is an absolute path containing a space and Hangul"
+msgstr ""
+
+#: core.ptm_builder:16 of
+msgid "-o is a relative ASCII name"
+msgstr ""
+
+#: core.ptm_builder:17 of
+msgid "a Hangul filename, .lp written as UTF-8"
+msgstr ""
+
+#: core.ptm_builder:18 of
+msgid "a Hangul filename, .lp written as CP949"
+msgstr ""
+
+#: core.ptm_builder:21 of
+msgid "Two separate constraints come out of that:"
+msgstr ""
+
+#: core.ptm_builder:23 of
+msgid ""
+"**It splits each .lp line on whitespace**, so anything containing a space"
+" is read as part of the light vector. No amount of encoding fixes this."
+msgstr ""
+
+#: core.ptm_builder:25 of
+msgid ""
+"**It reads the .lp in the machine's ANSI codepage**, not UTF-8 — which is"
+" what a 2001 Windows binary using `fopen` would do. So a Hangul filename "
+"works when the file is written as CP949 on a Korean Windows, and fails as"
+" UTF-8."
+msgstr ""
+
+#: core.ptm_builder:29 of
+msgid ""
+"Where the process happens to be running does not matter at all; only what"
+" it parses does. So the .lp lists bare filenames, is written in the local"
+" ANSI codepage, the output name handed to it is relative ASCII, and cwd "
+"is set to the images. Python then moves the result wherever the user "
+"asked, having no such difficulty. A filename it could not read either way"
+" — one containing a space — is worked around by staging the images under "
+"safe names."
+msgstr ""
+
+#: core.ptm_builder:36 of
+msgid ""
+"In practice neither arises: the images come straight off the camera as "
+"IMG_9999.JPG. This is here so that a renamed file produces a working fit "
+"or a clear error, rather than a silently wrong one."
+msgstr ""
+
+#: core.ptm_builder:40 of
+msgid ""
+"Note also that **the fitter returns 1 on success**, so its exit status "
+"cannot be used to tell whether it worked; the output file is checked "
+"instead."
+msgstr ""
+
+#: core.ptm_builder.UNSAFE_FILENAME:1 of
+msgid ""
+"The fitter tokenises .lp lines on whitespace, so a name containing any is"
+" unusable whatever the encoding."
+msgstr ""
+
+#: core.ptm_builder.STAGED_LP:1 of
+msgid "Names used while the fitter runs, before the result is moved into place."
 msgstr ""
 
 #: core.ptm_builder.PtmFitterNotFoundError:1 of
-msgid "Raised when the configured PTMfitter executable is not on disk."
+msgid "The configured PTMfitter executable is not on disk."
+msgstr ""
+
+#: core.ptm_builder.PtmFitterFailedError:1 of
+msgid "PTMfitter ran but produced no output."
+msgstr ""
+
+#: core.ptm_builder.PtmFitterFailedError:3 of
+msgid ""
+"The message names what was run and where to look, which is what the user "
+"has to act on -- the fitter itself reports almost nothing."
+msgstr ""
+
+#: core.ptm_builder.NoImagesToFitError:1 of
+msgid "Every slot is missing or unchecked."
+msgstr ""
+
+#: core.ptm_builder.lp_encoding:1 of
+msgid "The encoding PTMfitter reads a .lp in: the machine's ANSI codepage."
+msgstr ""
+
+#: core.ptm_builder.lp_encoding:3 of
+msgid ""
+"`mbcs` is that codepage on Windows, which is where the fitter runs. Off "
+"Windows there is no such thing, so the platform's preferred encoding "
+"stands in — only the test suite exercises that path."
+msgstr ""
+
+#: core.ptm_builder.is_safe_filename:1 of
+msgid "True if PTMfitter can read this name out of a .lp file."
+msgstr ""
+
+#: core.ptm_builder.is_safe_filename:3 of
+msgid ""
+"Two ways it cannot: whitespace, which its parser splits on, and a "
+"character absent from the codepage it reads the file in."
+msgstr ""
+
+#: core.ptm_builder.usable_slots:1 of
+msgid "The slots that belong in a .lp: captured, and included by the user."
+msgstr ""
+
+#: core.ptm_builder.normalise_extension:1 of
+msgid "Lowercase the extension."
+msgstr ""
+
+#: core.ptm_builder.normalise_extension:3 of
+msgid ""
+"Tethering software writes .JPG as often as .jpg and the fitter is case-"
+"sensitive about what it is given."
 msgstr ""
 
 #: core.ptm_builder.build_lp_content:1 of
-msgid "Render the .lp file for a capture table."
+msgid "Render the .lp file."
 msgstr ""
 
 #: core.ptm_builder.build_lp_content:3 of
 msgid ""
-"Shots that failed, and shots the user unchecked, are left out — both of "
-"the count on the first line and of the body."
+"The capture table. Shots that failed and shots the user unchecked are "
+"left out of both the count and the body."
 msgstr ""
 
-#: core.ptm_builder.build_lp_content:6 of
-msgid "The capture table."
-msgstr ""
-
-#: core.ptm_builder.build_lp_content:8 of
+#: core.ptm_builder.build_lp_content:6 core.ptm_builder.generate:5 of
 msgid "Unit vectors, indexed by LED."
 msgstr ""
 
-#: core.ptm_builder.build_lp_content:11 of
-msgid "The complete file contents."
+#: core.ptm_builder.build_lp_content:8 of
+msgid ""
+"One filename per usable slot, when the images have been staged under "
+"different names. Defaults to each slot's own."
+msgstr ""
+
+#: core.ptm_builder.build_lp_content:12 of
+msgid ""
+"The complete file contents. Filenames only, never paths -- see the module"
+" docstring for why."
 msgstr ""
 
 #: core.ptm_builder.lp_path_for:1 of
-msgid "Where the .lp goes: beside the images, named after their directory."
+msgid "Where the kept .lp goes: beside the images, named after their directory."
 msgstr ""
 
-#: core.ptm_builder.run_fitter:1 of
-msgid "Invoke PTMfitter."
+#: core.ptm_builder.write_lp:1 of
+msgid "Write a .lp for the fitter, in the codepage it reads."
 msgstr ""
 
-#: core.ptm_builder.run_fitter:3 of
+#: core.ptm_builder.write_lp:3 of
 msgid ""
-"Seam for tests, so the suite never launches a real process. Resolved at "
-"call time rather than bound as a default, so patching "
-"`core.ptm_builder.subprocess.call` works."
+"Strict on purpose: if this raises, the staging check has a hole in it. "
+"Failing loudly beats writing a file the fitter silently misreads."
+msgstr ""
+
+#: core.ptm_builder.write_reference_lp:1 of
+msgid "Write the .lp kept beside the images, for a human to look at."
+msgstr ""
+
+#: core.ptm_builder.write_reference_lp:3 of
+msgid ""
+"This one records the real filenames, which may be non-ASCII, so it is "
+"written as utf-8 and is not what the fitter is given."
+msgstr ""
+
+#: core.ptm_builder.generate:1 of
+msgid "Build the .lp, run PTMfitter, and put the .ptm where it was asked for."
+msgstr ""
+
+#: core.ptm_builder.generate:3 of
+msgid "The capture table."
+msgstr ""
+
+#: core.ptm_builder.generate:7 of
+msgid "The PTMfitter executable."
+msgstr ""
+
+#: core.ptm_builder.generate:9 of
+msgid ""
+"Where the finished .ptm should end up. May contain anything -- spaces, "
+"Hangul -- because Python moves it there."
+msgstr ""
+
+#: core.ptm_builder.generate:12 of
+msgid "Seam for tests. Called as runner(command, cwd=...)."
+msgstr ""
+
+#: core.ptm_builder.generate:14 of
+msgid ""
+"The .lp written beside the images, kept for inspection when a fit looks "
+"wrong."
 msgstr ""
 
 #: ../../api.rst
 msgid "Raises"
 msgstr ""
 
-#: core.ptm_builder.run_fitter:7 of
-msgid "If `fitter_path` does not exist."
+#: core.ptm_builder.generate:18 of
+msgid "The executable is missing."
+msgstr ""
+
+#: core.ptm_builder.generate:19 of
+msgid "Nothing to fit."
+msgstr ""
+
+#: core.ptm_builder.generate:20 of
+msgid "It ran but produced no .ptm."
 msgstr ""
 
 #: core.settings:1 of
@@ -429,4 +652,62 @@ msgstr ""
 #: core.resources.translation_path:1 of
 msgid "Absolute path to a compiled .qm for `language` (\"en\", \"ko\")."
 msgstr ""
+
+#~ msgid "The most recent image in `directory` created after `newer_than`."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Returns (path, mtime), or (None, "
+#~ "newer_than) if nothing new has landed."
+#~ " Not recursive: the tethering software "
+#~ "drops files in one directory, and "
+#~ "walking subdirectories made every poll "
+#~ "slower for no gain."
+#~ msgstr ""
+
+#~ msgid "Producing the .lp file and handing it to PTMfitter."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "PTMfitter takes a light-position file:"
+#~ " a count, then one line per "
+#~ "image giving its path and the unit"
+#~ " vector of the light that was "
+#~ "on. This module builds that text "
+#~ "and runs the fitter; choosing the "
+#~ "output path is the UI's job."
+#~ msgstr ""
+
+#~ msgid "Raised when the configured PTMfitter executable is not on disk."
+#~ msgstr ""
+
+#~ msgid "Render the .lp file for a capture table."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Shots that failed, and shots the "
+#~ "user unchecked, are left out — "
+#~ "both of the count on the first "
+#~ "line and of the body."
+#~ msgstr ""
+
+#~ msgid "The complete file contents."
+#~ msgstr ""
+
+#~ msgid "Where the .lp goes: beside the images, named after their directory."
+#~ msgstr ""
+
+#~ msgid "Invoke PTMfitter."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Seam for tests, so the suite never"
+#~ " launches a real process. Resolved at"
+#~ " call time rather than bound as "
+#~ "a default, so patching "
+#~ "`core.ptm_builder.subprocess.call` works."
+#~ msgstr ""
+
+#~ msgid "If `fitter_path` does not exist."
+#~ msgstr ""
 

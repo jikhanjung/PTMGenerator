@@ -148,17 +148,27 @@ def detect_irregular_intervals(directory_path, getctime=os.path.getctime):
     return slots
 
 
-def find_newest_image(directory, newer_than):
-    """The most recent image in `directory` created after `newer_than`.
+def find_newest_image(directory, newer_than, recursive=False):
+    """The most recent image under `directory` modified after `newer_than`.
 
-    Returns (path, mtime), or (None, newer_than) if nothing new has landed.
-    Not recursive: the tethering software drops files in one directory, and
-    walking subdirectories made every poll slower for no gain.
+    Args:
+        directory (str): Where to look.
+        newer_than (float): Only files strictly newer than this are considered.
+        recursive (bool): Search subdirectories too. Needed while waiting for
+            the first shot of a run, because tethering software — Canon's EOS
+            Utility among others — files images into a dated subfolder that
+            does not exist until that first shot lands. Once a shot has arrived
+            the caller knows which directory to watch and can stop walking the
+            tree, which matters at one poll per second.
+
+    Returns:
+        tuple[str | None, float]: (path, mtime), or (None, newer_than) if
+        nothing new has landed.
     """
     from pathlib import Path
 
     newest_path, newest_time = None, newer_than
-    for candidate in Path(directory).glob("*"):
+    for candidate in Path(directory).glob("**/*" if recursive else "*"):
         if not candidate.is_file():
             continue
         if candidate.suffix.lower() not in IMAGE_EXTENSIONS:

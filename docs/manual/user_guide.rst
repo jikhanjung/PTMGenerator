@@ -16,6 +16,17 @@ Workflow
    otherwise the directory is scanned and a table is rebuilt from the files
    found there.
 
+   **The folder you pick is watched, not assumed.** Canon's EOS Utility — and
+   most tethering software — files images into a dated subfolder that does not
+   exist until the day's first shot, so at the moment you start a session the
+   only folder you can pick is the parent. Everything beneath it is searched
+   until a shot arrives; whichever folder that shot lands in becomes the
+   working folder for the run, and ``image_data.csv`` is written there. The
+   directory field updates to show it.
+
+   Once the folder is known the search narrows to it, so a root holding a
+   season of dated folders costs nothing per poll.
+
 3. **Test Shot**
 
    Fires a single frame. Use it to check the camera, the exposure and the serial

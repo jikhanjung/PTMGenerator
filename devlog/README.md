@@ -28,6 +28,7 @@ renumbered, because commits reference them by name.
 | 006 | 2026-07-28 | [Acting on the R01 audit, and publishing the manual](20260728_006_audit_fixes_and_pages.md) |
 | 007 | 2026-07-28 | [Building before tagging, and the first two releases](20260728_007_first_releases.md) |
 | 008 | 2026-07-28 | [Translating the manual](20260728_008_korean_manual.md) |
+| 009 | 2026-07-28 | [Watching for the capture folder, and what PTMfitter actually tolerates](20260728_009_capture_folder_and_ptmfitter_quirks.md) |
 
 R-series entries (`R01`, `R02`, …) are audits rather than changes: a review of
 the whole tree against a standard, with the state found recorded separately from

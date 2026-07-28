@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"POT-Creation-Date: 2026-07-28 11:30+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: ko <LL@li.org>\n"
@@ -56,30 +56,51 @@ msgstr ""
 "불러오고, 없으면 디렉토리를 훑어 파일로부터 목록을 다시 구성합니다."
 
 #: ../../user_guide.rst:19
+msgid ""
+"**The folder you pick is watched, not assumed.** Canon's EOS Utility — and "
+"most tethering software — files images into a dated subfolder that does not "
+"exist until the day's first shot, so at the moment you start a session the "
+"only folder you can pick is the parent. Everything beneath it is searched "
+"until a shot arrives; whichever folder that shot lands in becomes the "
+"working folder for the run, and ``image_data.csv`` is written there. The "
+"directory field updates to show it."
+msgstr ""
+"**고른 폴더는 감시 대상이지, 사진이 거기 있다고 가정하지 않습니다.** Canon EOS Utility를 비롯한 대부분의 테더링 "
+"소프트웨어는 사진을 날짜별 하위 폴더에 넣는데, 그 폴더는 그날 첫 촬영 전까지 존재하지 않습니다. 그래서 촬영을 시작하는 시점에 고를 "
+"수 있는 것은 상위 폴더뿐입니다. 첫 사진이 도착할 때까지 그 아래 전체를 탐색하고, 사진이 떨어진 폴더가 그 촬영의 작업 폴더가 되며 "
+"``image_data.csv`` 도 거기에 저장됩니다. 디렉토리 표시줄이 그 폴더로 바뀝니다."
+
+#: ../../user_guide.rst:27
+msgid ""
+"Once the folder is known the search narrows to it, so a root holding a "
+"season of dated folders costs nothing per poll."
+msgstr "폴더가 정해진 뒤에는 그 폴더만 탐색하므로, 한 시즌 분량의 날짜 폴더가 쌓여 있어도 폴링 비용이 늘지 않습니다."
+
+#: ../../user_guide.rst:30
 msgid "**Test Shot**"
 msgstr "**시험 촬영**"
 
-#: ../../user_guide.rst:21
+#: ../../user_guide.rst:32
 msgid ""
 "Fires a single frame. Use it to check the camera, the exposure and the "
 "serial link before committing to a full run."
 msgstr "한 장만 촬영합니다. 전체 촬영에 들어가기 전에 카메라·노출·시리얼 연결을 확인하는 데 쓰세요."
 
-#: ../../user_guide.rst:24
+#: ../../user_guide.rst:35
 msgid "**Take All Pictures**"
 msgstr "**전체 촬영**"
 
-#: ../../user_guide.rst:26
+#: ../../user_guide.rst:37
 msgid ""
 "Runs the full sequence. **Pause/Continue** and **Stop** control the run "
 "while it is in progress."
 msgstr "전체 순서를 실행합니다. 진행 중에는 **일시정지/계속** 과 **촬영 중지** 로 제어합니다."
 
-#: ../../user_guide.rst:29
+#: ../../user_guide.rst:40
 msgid "**Review**"
 msgstr "**검토**"
 
-#: ../../user_guide.rst:31
+#: ../../user_guide.rst:42
 msgid ""
 "Select a row to preview that image. Uncheck any shot you do not want in the "
 "final PTM. **Retake Picture** re-shoots the selected rows."
@@ -87,29 +108,29 @@ msgstr ""
 "행을 선택하면 해당 사진을 미리 봅니다. 최종 PTM에 넣고 싶지 않은 사진은 체크를 해제하세요. **재촬영** 은 선택한 행을 다시 "
 "찍습니다."
 
-#: ../../user_guide.rst:34
+#: ../../user_guide.rst:45
 msgid "**Generate PTM**"
 msgstr "**PTM파일 만들기**"
 
-#: ../../user_guide.rst:36
+#: ../../user_guide.rst:47
 msgid ""
 "Writes the ``.lp`` file beside the images and runs PTMfitter. You are "
 "prompted for the output ``.ptm`` path."
 msgstr "사진 옆에 ``.lp`` 파일을 만들고 PTMfitter를 실행합니다. 저장할 ``.ptm`` 경로를 묻습니다."
 
-#: ../../user_guide.rst:40
+#: ../../user_guide.rst:51
 msgid "What a run does per LED"
 msgstr "LED 한 개마다 일어나는 일"
 
-#: ../../user_guide.rst:51
+#: ../../user_guide.rst:62
 msgid "One tick is one second."
 msgstr "1틱은 1초입니다."
 
-#: ../../user_guide.rst:54
+#: ../../user_guide.rst:65
 msgid "Missing shots"
 msgstr "빠진 사진"
 
-#: ../../user_guide.rst:56
+#: ../../user_guide.rst:67
 msgid ""
 "A shot that never arrives is recorded with ``-`` for its filename. The slot "
 "is kept rather than removed, so the remaining images keep their original LED"
@@ -119,15 +140,15 @@ msgstr ""
 "끝내 도착하지 않은 사진은 파일명이 ``-`` 로 기록됩니다. 해당 슬롯을 지우지 않고 남기기 때문에 나머지 사진들이 원래의 LED "
 "번호를 유지하고 올바른 광원 벡터를 받습니다. 빠진 자리가 있어도 PTM은 정상적으로 만들어집니다. 사진 수가 줄어들 뿐입니다."
 
-#: ../../user_guide.rst:61
+#: ../../user_guide.rst:72
 msgid "Use **Retake Picture** on those rows to fill them in."
 msgstr "그 행들을 선택해 **재촬영** 으로 채우면 됩니다."
 
-#: ../../user_guide.rst:64
+#: ../../user_guide.rst:75
 msgid "Running without the controller"
 msgstr "컨트롤러 없이 실행하기"
 
-#: ../../user_guide.rst:66
+#: ../../user_guide.rst:77
 msgid ""
 "Starting a capture with no serial port configured asks whether to continue. "
 "Cancelling is the default, because without the controller the LEDs and "
@@ -137,40 +158,40 @@ msgstr ""
 "시리얼 포트를 설정하지 않은 채 촬영을 시작하면 계속할지 묻습니다. 기본값은 취소입니다. 컨트롤러가 없으면 LED와 셔터가 전혀 작동하지"
 " 않아 모든 슬롯이 타임아웃되기 때문입니다. 그대로 진행하는 선택지는 하드웨어 없이 화면만 확인해 보고 싶을 때를 위한 것입니다."
 
-#: ../../user_guide.rst:72
+#: ../../user_guide.rst:83
 msgid "Files a run produces"
 msgstr "촬영이 만드는 파일"
 
-#: ../../user_guide.rst:75
+#: ../../user_guide.rst:86
 msgid "``image_data.csv``"
 msgstr "``image_data.csv``"
 
-#: ../../user_guide.rst:75
+#: ../../user_guide.rst:86
 msgid ""
 "The capture table: index, directory, filename, included. Written into the "
 "capture directory"
 msgstr "촬영 목록: 번호, 디렉토리, 파일명, 포함 여부. 촬영 디렉토리에 저장됩니다"
 
-#: ../../user_guide.rst:77
+#: ../../user_guide.rst:88
 msgid "``<dirname>.lp``"
 msgstr "``<dirname>.lp``"
 
-#: ../../user_guide.rst:77
+#: ../../user_guide.rst:88
 msgid "Light positions, generated by **Generate PTM**"
 msgstr "광원 위치. **PTM파일 만들기** 가 생성합니다"
 
-#: ../../user_guide.rst:78
+#: ../../user_guide.rst:89
 msgid "``<chosen name>.ptm``"
 msgstr "``<chosen name>.ptm``"
 
-#: ../../user_guide.rst:78
+#: ../../user_guide.rst:89
 msgid "The output, produced by PTMfitter"
 msgstr "결과물. PTMfitter가 생성합니다"
 
-#: ../../user_guide.rst:79
+#: ../../user_guide.rst:90
 msgid "``output.log``"
 msgstr "``output.log``"
 
-#: ../../user_guide.rst:79
+#: ../../user_guide.rst:90
 msgid "Console output, next to the executable"
 msgstr "콘솔 출력. 실행파일 옆에 생깁니다"

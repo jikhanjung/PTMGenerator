@@ -6,6 +6,30 @@ later. **This file is the plan**; `HANDOFF.md` is the current state, and
 
 ---
 
+## Do the PTM fitting in-process
+
+`PTMfitter.exe` is a 32-bit binary from 2001 and its address space is the
+ceiling. Measured (devlog 009):
+
+    6000x4000 = 24MP x 9 images    OK
+    6000x4000 = 24MP x 50 images   OK
+    8000x6000 = 48MP x 9 images    FAIL: "Memory Allocation error. size: 48"
+
+**Image size, not count.** A 45MP body is already over the line, so this is not
+theoretical. It also drives the path workarounds in `core/ptm_builder.py`, all
+of which would go away.
+
+The fit itself is a per-pixel least squares of a biquadratic in the light
+direction — six coefficients — which numpy does in a few lines, tiled so the
+whole set is never resident. The work is in the `.ptm` container format (PTM
+1.2, LRGB and RGB variants) and in proving the output is right.
+
+There is a good verification route: `PTMfitter.exe` handles 24MP, so a native
+implementation can be checked against it byte for byte on sets that size before
+being trusted on the ones it cannot do.
+
+---
+
 ## Verify the alpha against real hardware — blocks `stage beta`
 
 Every test mocks `serial.Serial`, so three changes from the last cycle have
@@ -21,6 +45,11 @@ than everything else on this list.
   still suit a real shutter and a real card write.
 - **The utf-8 fallback** — open an `image_data.csv` actually written by an
   earlier build on Korean Windows, not a synthesised one.
+- **The capture folder discovery** — start a session before the day's first
+  shot, with EOS Utility pointed at the parent, and confirm the dated subfolder
+  is picked up and shown above the list.
+- **PTM generation from a Korean path** — the `.lp` codepage handling was
+  measured under WSL interop, not on a Korean Windows desktop.
 
 Once that passes: `python scripts/bump_version.py stage beta`.
 

@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **PTM generation no longer breaks on a path containing a space or Hangul.**
+  The `.lp` file listed absolute paths, and PTMfitter splits each line on
+  whitespace, so a space in the path was read as a light coordinate. It also
+  reads the file in the machine's ANSI codepage rather than UTF-8. The `.lp`
+  now lists bare filenames, is written in that codepage, and the fitter runs in
+  the image folder; the `.ptm` is moved to wherever you asked for it afterwards.
+  Measured against the shipped `PTMfitter.exe` — see `core/ptm_builder.py`.
+- **A failed fit is reported.** PTMfitter exits 1 on success, so its status
+  cannot be used; the application now checks that a `.ptm` actually appeared
+  and says so when it did not, instead of reporting success.
+
+### Changed
+- **The chosen folder is now watched recursively until the first shot lands.**
+  Tethering software commonly files images into a dated subfolder that does not
+  exist before the day's first shot, so the only folder you could pick was the
+  parent — and shots landing one level down were never seen. Whichever folder
+  the first shot arrives in becomes the working folder for that run, and
+  `image_data.csv` is written there. Later polls look only in that folder, so
+  a root holding many dated folders costs nothing per poll. A new run
+  rediscovers it, so a session started after midnight does not keep writing
+  into yesterday's folder. Both folders are shown: the field at the top is what
+  is being watched, and the line above the capture list is where shots are
+  going.
+
 ## [0.2.0-alpha.2] - 2026-07-28
 ### Added
 - **The manual is available in Korean**, at

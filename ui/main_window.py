@@ -82,7 +82,15 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def initialize_variables(self):
         self.image_data = []
-        self.current_directory = "."
+        #: The folder the user chose. Watched, including everything beneath it,
+        #: until a shot lands.
+        self.monitor_root = "."
+        #: The folder shots are actually arriving in, discovered from the first
+        #: one. None until then. Tethering software commonly files images into
+        #: a dated subfolder that does not exist before the day's first shot,
+        #: so the folder the user can pick is often the parent of the one that
+        #: ends up holding the run.
+        self.capture_directory = None
         self.csv_file = "image_data.csv"
         self.last_checked = time.time()
         self.session = None
@@ -100,10 +108,24 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.table_view = QTableView()
         self.image_view = QLabel()
 
+        # The directory field at the top shows what is being *watched*; shots
+        # can land in a subfolder of it, so where they are actually going needs
+        # its own line, next to the list of what has arrived.
+        self.lblCaptureDirectory = QLabel()
+        self.lblCaptureDirectory.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lblCaptureDirectory.setWordWrap(True)
+
+        self.capture_list_widget = QWidget()
+        self.capture_list_layout = QVBoxLayout()
+        self.capture_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.capture_list_widget.setLayout(self.capture_list_layout)
+        self.capture_list_layout.addWidget(self.lblCaptureDirectory)
+        self.capture_list_layout.addWidget(self.table_view)
+
         self.image_list_widget = QWidget()
         self.image_list_layout = QHBoxLayout()
         self.image_list_widget.setLayout(self.image_list_layout)
-        self.image_list_layout.addWidget(self.table_view, 1)
+        self.image_list_layout.addWidget(self.capture_list_widget, 1)
         self.image_list_layout.addWidget(self.image_view, 4)
 
         self.image_model = QStandardItemModel()
@@ -122,7 +144,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.btnOpenDirectory.clicked.connect(self.on_action_open_directory_triggered)
         self.edtDirectory = QLineEdit()
         self.edtDirectory.setReadOnly(True)
-        self.edtDirectory.setText(self.current_directory)
+        self.edtDirectory.setText(self.monitor_root)
 
         self.directory_widget = QWidget()
         self.directory_layout = QHBoxLayout()
@@ -182,6 +204,8 @@ class PTMGeneratorMainWindow(QMainWindow):
 
         self.m_app = QApplication.instance()
         self.read_settings()
+
+        self.update_capture_directory_label()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.take_picture_process)
@@ -297,6 +321,9 @@ class PTMGeneratorMainWindow(QMainWindow):
         if not self.ensure_serial_ready():
             return
         self.clear_image_data()
+        # Rediscover where shots land. The dated subfolder changes daily, and a
+        # run started after midnight must not keep writing into yesterday's.
+        self.capture_directory = None
         self._start_session(range(self.number_of_LEDs))
 
     def on_retake_picture_triggered(self):
@@ -323,10 +350,53 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.statusBar.showMessage(f"New image detected: {new_image}", 1000)
         self.serial.close()
 
+    def update_capture_directory_label(self):
+        """Show where shots are going, and whether that is the watched folder."""
+        if self.capture_directory is None:
+            self.lblCaptureDirectory.setText(
+                self.tr("Waiting for the first shot — watching {root} and below").format(
+                    root=self.monitor_root
+                )
+            )
+        else:
+            self.lblCaptureDirectory.setText(
+                self.tr("Capture folder: {directory}").format(directory=self.capture_directory)
+            )
+
+    @property
+    def working_directory(self):
+        """Where this run's files belong: the adopted folder, else the root."""
+        return self.capture_directory or self.monitor_root
+
+    def adopt_capture_directory(self, directory):
+        """Treat `directory` as the working folder for the rest of the run."""
+        if self.capture_directory == directory:
+            return
+        self.capture_directory = directory
+        self.update_capture_directory_label()
+        print(f"Capturing into {directory}")
+        self.statusBar.showMessage(
+            self.tr("Capturing into {directory}").format(directory=directory), 5000
+        )
+
     def poll_for_image(self):
-        """Look for a shot newer than the last one we accepted."""
+        """Look for a shot newer than the last one we accepted.
+
+        Until the first shot of a run arrives there is no way to know which
+        folder the camera software will file it into, so the whole tree under
+        the monitored root is searched. After that the folder is known and the
+        search narrows to it — this runs once a second, and walking a season's
+        worth of dated subfolders every time would not.
+        """
         time.sleep(self.post_shutter_polling)
-        path, mtime = image_data.find_newest_image(self.current_directory, self.last_checked)
+        if self.capture_directory is None:
+            path, mtime = image_data.find_newest_image(
+                self.monitor_root, self.last_checked, recursive=True
+            )
+            if path is not None:
+                self.adopt_capture_directory(os.path.dirname(path))
+        else:
+            path, mtime = image_data.find_newest_image(self.capture_directory, self.last_checked)
         if path is not None:
             self.last_checked = mtime
         return path
@@ -421,7 +491,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.table_view.selectRow(0)
 
     def load_image_files(self):
-        slots = image_data.detect_irregular_intervals(self.current_directory)
+        slots = image_data.detect_irregular_intervals(self.working_directory)
         if len(slots) == self.number_of_LEDs:
             self.image_data.extend(slots)
             self.update_csv()
@@ -443,7 +513,7 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def update_csv(self):
         self.sync_checkbox_states_to_image_data()
-        image_data.write_csv(os.path.join(self.current_directory, self.csv_file), self.image_data)
+        image_data.write_csv(os.path.join(self.working_directory, self.csv_file), self.image_data)
 
     def on_selection_changed(self, selected, deselected):
         self.selected_rows = sorted(
@@ -467,8 +537,11 @@ class PTMGeneratorMainWindow(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Open Directory"))
         if not directory:
             return
-        self.current_directory = directory
+        self.monitor_root = directory
+        # A previous run's folder is not this run's folder.
+        self.capture_directory = None
         self.edtDirectory.setText(directory)
+        self.update_capture_directory_label()
         self.clear_image_data()
         if os.path.exists(os.path.join(directory, self.csv_file)):
             self.load_csv_data()
@@ -488,31 +561,35 @@ class PTMGeneratorMainWindow(QMainWindow):
     # -- PTM ----------------------------------------------------------------
 
     def generatePTM(self):
-        """Write the .lp file and hand it to PTMfitter."""
-        if not os.path.exists(self.ptm_fitter):
-            self.statusBar.showMessage(f"PTM fitter not found: {self.ptm_fitter}", 5000)
-            QMessageBox.critical(self, self.tr("Error"), f"PTM fitter not found: {self.ptm_fitter}")
-            return
-
+        """Ask where the .ptm goes, then hand the run to PTMfitter."""
         self.sync_checkbox_states_to_image_data()
-        if not self.image_data:
-            QMessageBox.critical(self, self.tr("Error"), self.tr("No images to process."))
-            return
-
-        vectors = light_vectors(self.light_position_adjustment)
-        content = ptm_builder.build_lp_content(self.image_data, vectors)
-        image_directory = self.image_data[0].directory
-        lp_path = ptm_builder.lp_path_for(image_directory)
-        ptm_builder.write_lp(lp_path, content)
 
         ptm_filename, _ = QFileDialog.getSaveFileName(
             self,
             self.tr("Save PTM file"),
-            str(self.current_directory),
+            str(self.working_directory),
             "PTM files (*.ptm);;All files (*)",
         )
-        if ptm_filename:
-            ptm_builder.run_fitter(self.ptm_fitter, lp_path, ptm_filename)
+        if not ptm_filename:
+            return
+
+        vectors = light_vectors(self.light_position_adjustment)
+        try:
+            lp_path = ptm_builder.generate(self.image_data, vectors, self.ptm_fitter, ptm_filename)
+        except ptm_builder.PtmFitterNotFoundError as error:
+            self.report_error(self.tr("PTM fitter not found: {path}").format(path=error))
+        except ptm_builder.NoImagesToFitError:
+            self.report_error(self.tr("No images to process."))
+        except ptm_builder.PtmFitterFailedError as error:
+            self.report_error(str(error))
+        else:
+            self.statusBar.showMessage(self.tr("Saved {path}").format(path=ptm_filename), 5000)
+            print(f"Wrote {ptm_filename} (light positions: {lp_path})")
+
+    def report_error(self, message):
+        print(message)
+        self.statusBar.showMessage(message, 5000)
+        QMessageBox.critical(self, self.tr("Error"), message)
 
     # -- i18n ---------------------------------------------------------------
 
@@ -544,4 +621,5 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.edit_menu.setTitle(self.tr("Edit"))
         self.help_menu.setTitle(self.tr("Help"))
         self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
+        self.update_capture_directory_label()
         self.update()

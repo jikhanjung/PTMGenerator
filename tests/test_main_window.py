@@ -10,6 +10,7 @@ from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 import version
+from core import ptm_builder
 from core.image_data import MISSING, CaptureSlot
 from ui.main_window import PTMGeneratorMainWindow
 
@@ -48,7 +49,7 @@ def test_selected_rows_defaults_to_empty(main_window):
 
 @pytest.fixture
 def window_in(main_window, workdir):
-    main_window.current_directory = str(workdir)
+    main_window.monitor_root = str(workdir)
     main_window.edtDirectory.setText(str(workdir))
     return main_window
 
@@ -214,7 +215,7 @@ def test_a_tick_with_no_session_stops_the_timer(main_window):
 
 def test_finishing_a_run_writes_the_csv_and_releases_the_port(connected, workdir):
     window, _port = connected
-    window.current_directory = str(workdir)
+    window.monitor_root = str(workdir)
     window.number_of_LEDs = 1
     window.post_shutter_polling = 0
     window.auto_retake_maximum = 0
@@ -343,60 +344,199 @@ class TestPromptDialog:
 def ready_to_generate(main_window, workdir):
     capture_dir = workdir / "specimen01"
     capture_dir.mkdir()
+    for i in range(3):
+        (capture_dir / f"IMG_000{i}.JPG").write_bytes(b"jpeg")
     fitter = workdir / "ptmfitter.exe"
     fitter.touch()
-    main_window.current_directory = str(capture_dir)
+    main_window.monitor_root = str(capture_dir)
     main_window.ptm_fitter = str(fitter)
     main_window.light_position_adjustment = 0
+    main_window.image_data = [
+        CaptureSlot(i, str(capture_dir), f"IMG_000{i}.JPG", True) for i in range(3)
+    ]
     return main_window, capture_dir, str(fitter)
 
 
-def test_generate_writes_the_lp_and_runs_the_fitter(ready_to_generate):
-    window, capture_dir, fitter = ready_to_generate
-    window.image_data = [
-        CaptureSlot(0, str(capture_dir), "a.jpg", True),
-        CaptureSlot(1, MISSING, MISSING, False),
-        CaptureSlot(2, str(capture_dir), "c.jpg", False),
-    ]
-    out = str(capture_dir / "specimen01.ptm")
+def fitter_that_works(command, cwd):
+    """Stands in for PTMfitter, writing its output where it was told."""
+    with open(os.path.join(cwd, ptm_builder.STAGED_PTM), "wb") as fh:
+        fh.write(b"ptm")
+
+
+def test_generate_writes_the_lp_and_delivers_the_ptm(ready_to_generate, workdir):
+    window, capture_dir, _fitter = ready_to_generate
+    out = str(workdir / "결과.ptm")
     with (
         patch.object(QFileDialog, "getSaveFileName", return_value=(out, "")),
-        patch("core.ptm_builder.subprocess.call") as call,
+        patch.object(ptm_builder, "_subprocess_runner", fitter_that_works),
     ):
         window.generatePTM()
 
-    lp_path = capture_dir / "specimen01.lp"
-    assert lp_path.exists()
-    lines = lp_path.read_text().splitlines()
-    assert lines[0] == "1", "only the checked, captured shot belongs in the .lp"
-    assert "a.jpg" in lines[1]
-    call.assert_called_once_with([fitter, "-i", str(lp_path), "-o", out])
+    assert (capture_dir / "specimen01.lp").exists()
+    assert os.path.exists(out), "the .ptm must reach a destination the fitter never saw"
 
 
-def test_cancelling_the_save_dialog_skips_the_fitter(ready_to_generate):
+def test_the_lp_lists_bare_filenames(ready_to_generate, workdir):
     window, capture_dir, _fitter = ready_to_generate
-    window.image_data = [CaptureSlot(0, str(capture_dir), "a.jpg", True)]
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "o.ptm"), "")),
+        patch.object(ptm_builder, "_subprocess_runner", fitter_that_works),
+    ):
+        window.generatePTM()
+    lines = (capture_dir / "specimen01.lp").read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "3"
+    assert lines[1].startswith("IMG_0000.jpg ")
+    assert str(capture_dir) not in lines[1]
+
+
+def test_cancelling_the_save_dialog_runs_nothing(ready_to_generate, workdir):
+    window, capture_dir, _fitter = ready_to_generate
     with (
         patch.object(QFileDialog, "getSaveFileName", return_value=("", "")),
-        patch("core.ptm_builder.subprocess.call") as call,
+        patch.object(ptm_builder, "_subprocess_runner") as runner,
     ):
         window.generatePTM()
-    call.assert_not_called()
-
-
-def test_missing_fitter_aborts_before_writing_anything(ready_to_generate, workdir):
-    window, capture_dir, _fitter = ready_to_generate
-    window.ptm_fitter = str(workdir / "does-not-exist.exe")
-    window.image_data = [CaptureSlot(0, str(capture_dir), "a.jpg", True)]
-    with patch.object(QMessageBox, "critical") as critical:
-        window.generatePTM()
-    critical.assert_called_once()
+    runner.assert_not_called()
     assert not (capture_dir / "specimen01.lp").exists()
 
 
-def test_generate_with_an_empty_table_warns(ready_to_generate):
+def test_a_missing_fitter_is_reported(ready_to_generate, workdir):
     window, _capture_dir, _fitter = ready_to_generate
-    window.image_data = []
-    with patch.object(QMessageBox, "critical") as critical:
+    window.ptm_fitter = str(workdir / "does-not-exist.exe")
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "o.ptm"), "")),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
         window.generatePTM()
     critical.assert_called_once()
+
+
+def test_a_fitter_that_produces_nothing_is_reported(ready_to_generate, workdir):
+    window, _capture_dir, _fitter = ready_to_generate
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "o.ptm"), "")),
+        patch.object(ptm_builder, "_subprocess_runner", lambda command, cwd: None),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
+        window.generatePTM()
+    critical.assert_called_once()
+    assert "no output" in critical.call_args.args[2]
+
+
+def test_an_empty_table_is_reported(ready_to_generate, workdir):
+    window, _capture_dir, _fitter = ready_to_generate
+    window.image_data = []
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "o.ptm"), "")),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
+        window.generatePTM()
+    critical.assert_called_once()
+
+
+class TestCaptureDirectoryAdoption:
+    """The chosen folder is watched; the folder shots land in becomes the working one.
+
+    Canon's EOS Utility (and others) file images into a dated subfolder that
+    does not exist until the day's first shot. So at the moment a session
+    starts, the only folder the user can pick is the parent, and the run's
+    images end up one level down.
+    """
+
+    @pytest.fixture
+    def watching(self, main_window, workdir):
+        main_window.monitor_root = str(workdir)
+        main_window.capture_directory = None
+        main_window.post_shutter_polling = 0
+        main_window.last_checked = 1000
+        return main_window, workdir
+
+    @staticmethod
+    def shoot_into(directory, name="IMG_0001.JPG", mtime=5000):
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / name
+        path.touch()
+        os.utime(path, (mtime, mtime))
+        return str(path)
+
+    def test_a_shot_in_a_dated_subfolder_is_found(self, watching):
+        window, root = watching
+        expected = self.shoot_into(root / "2026-07-28")
+        assert window.poll_for_image() == expected
+
+    def test_that_subfolder_becomes_the_working_directory(self, watching):
+        window, root = watching
+        self.shoot_into(root / "2026-07-28")
+        window.poll_for_image()
+        assert window.capture_directory == str(root / "2026-07-28")
+        assert window.working_directory == str(root / "2026-07-28")
+
+    def test_the_working_directory_is_the_root_until_something_lands(self, watching):
+        window, root = watching
+        assert window.working_directory == str(root)
+
+    def test_the_capture_folder_is_shown_above_the_list(self, watching):
+        window, root = watching
+        self.shoot_into(root / "2026-07-28")
+        window.poll_for_image()
+        assert str(root / "2026-07-28") in window.lblCaptureDirectory.text()
+
+    def test_before_anything_lands_the_label_says_so(self, watching):
+        window, root = watching
+        window.update_capture_directory_label()
+        text = window.lblCaptureDirectory.text()
+        assert "Waiting" in text
+        assert str(root) in text
+
+    def test_the_top_field_keeps_showing_the_watched_folder(self, watching):
+        window, root = watching
+        window.edtDirectory.setText(str(root))
+        self.shoot_into(root / "2026-07-28")
+        window.poll_for_image()
+        assert window.edtDirectory.text() == str(root), (
+            "the monitored root must stay visible once a subfolder is adopted"
+        )
+
+    def test_later_polls_stay_in_the_adopted_folder(self, watching):
+        window, root = watching
+        self.shoot_into(root / "2026-07-28", "IMG_0001.JPG", 5000)
+        window.poll_for_image()
+        # A stray image elsewhere under the root must not be picked up now that
+        # the run's folder is known.
+        self.shoot_into(root / "elsewhere", "IMG_9999.JPG", 6000)
+        assert window.poll_for_image() is None
+
+    def test_the_csv_goes_to_the_adopted_folder(self, watching):
+        window, root = watching
+        self.shoot_into(root / "2026-07-28")
+        window.poll_for_image()
+        window.image_data = [CaptureSlot(0, window.capture_directory, "IMG_0001.jpg", True)]
+        window.update_csv()
+        assert (root / "2026-07-28" / "image_data.csv").exists()
+        assert not (root / "image_data.csv").exists()
+
+    def test_a_shot_directly_in_the_root_still_works(self, watching):
+        window, root = watching
+        expected = self.shoot_into(root)
+        assert window.poll_for_image() == expected
+        assert window.capture_directory == str(root)
+
+    def test_a_new_run_rediscovers_the_folder(self, main_window, workdir):
+        # The dated folder changes daily; a run started after midnight must not
+        # keep writing into yesterday's.
+        main_window.monitor_root = str(workdir)
+        main_window.capture_directory = str(workdir / "2026-07-27")
+        main_window.serial._serial = MagicMock()
+        main_window.number_of_LEDs = 2
+        main_window.take_all_pictures()
+        try:
+            assert main_window.capture_directory is None
+        finally:
+            main_window.timer.stop()
+
+    def test_opening_a_directory_clears_a_previous_adoption(self, main_window, workdir):
+        main_window.capture_directory = str(workdir / "old")
+        with patch.object(QFileDialog, "getExistingDirectory", return_value=str(workdir)):
+            main_window.on_action_open_directory_triggered()
+        assert main_window.capture_directory is None
+        assert main_window.monitor_root == str(workdir)
