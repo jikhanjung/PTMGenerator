@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QStatusBar,
     QTableView,
@@ -22,7 +23,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from core import image_data, ptm_builder
+from core import image_data, ptm_builder, ptm_fitter
 from core import settings as prefs
 from core.capture_session import CaptureSession
 from core.image_data import MISSING, CaptureSlot
@@ -34,6 +35,10 @@ from version import COMPANY_NAME, PROGRAM_NAME, __version__
 
 #: One capture tick per second.
 TICK_MS = 1000
+
+
+class PtmFitCancelledError(Exception):
+    """The user cancelled the fit from the progress dialog."""
 
 
 class OutputRedirector(QObject):
@@ -233,6 +238,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.m_app.language = prefs.read_str(s, prefs.LANGUAGE)
         self.serial.port = self.m_app.serial_port
         self.ptm_fitter = prefs.read_str(s, prefs.PTM_FITTER)
+        self.fitter = prefs.read_str(s, prefs.FITTER)
         self.number_of_LEDs = prefs.read_int(s, prefs.NUMBER_OF_LEDS)
         self.auto_retake_maximum = prefs.read_int(s, prefs.RETRY_COUNT)
         self.light_position_adjustment = prefs.read_int(s, prefs.LIGHT_POSITION_ADJUSTMENT)
@@ -561,7 +567,12 @@ class PTMGeneratorMainWindow(QMainWindow):
     # -- PTM ----------------------------------------------------------------
 
     def generatePTM(self):
-        """Ask where the .ptm goes, then hand the run to PTMfitter."""
+        """Ask where the .ptm goes, then fit it.
+
+        Which fitter runs is a preference: the built-in one by default, or
+        PTMfitter.exe for anyone who wants the old behaviour. See
+        `core.settings.FITTER`.
+        """
         self.sync_checkbox_states_to_image_data()
 
         ptm_filename, _ = QFileDialog.getSaveFileName(
@@ -575,16 +586,58 @@ class PTMGeneratorMainWindow(QMainWindow):
 
         vectors = light_vectors(self.light_position_adjustment)
         try:
-            lp_path = ptm_builder.generate(self.image_data, vectors, self.ptm_fitter, ptm_filename)
+            if self.fitter == prefs.FITTER_NATIVE:
+                lp_path = self.generate_ptm_natively(vectors, ptm_filename)
+            else:
+                lp_path = ptm_builder.generate(
+                    self.image_data, vectors, self.ptm_fitter, ptm_filename
+                )
         except ptm_builder.PtmFitterNotFoundError as error:
             self.report_error(self.tr("PTM fitter not found: {path}").format(path=error))
         except ptm_builder.NoImagesToFitError:
             self.report_error(self.tr("No images to process."))
         except ptm_builder.PtmFitterFailedError as error:
             self.report_error(str(error))
+        except ptm_fitter.FitError as error:
+            self.report_error(
+                self.tr("The images could not be fitted: {reason}").format(reason=error)
+            )
+        except PtmFitCancelledError:
+            self.statusBar.showMessage(self.tr("PTM generation cancelled"), 5000)
         else:
             self.statusBar.showMessage(self.tr("Saved {path}").format(path=ptm_filename), 5000)
             print(f"Wrote {ptm_filename} (light positions: {lp_path})")
+
+    def generate_ptm_natively(self, vectors, destination):
+        """Fit in-process, showing progress.
+
+        The fit reads every capture, which for fifty full-size images is tens
+        of seconds -- long enough that the window must not simply freeze.
+
+        The progress callback pumps the event loop rather than running the fit
+        on a worker thread. That is the smaller change and it keeps the dialog
+        responsive; a worker thread is the better answer and is in TODOs.md.
+        """
+        total = len(ptm_builder.usable_slots(self.image_data))
+        dialog = QProgressDialog(self.tr("Fitting the PTM..."), self.tr("Cancel"), 0, total, self)
+        dialog.setWindowModality(Qt.WindowModal)
+        dialog.setMinimumDuration(0)
+
+        def report(done, count):
+            dialog.setValue(done)
+            dialog.setLabelText(
+                self.tr("Fitting the PTM: image {done} of {count}").format(done=done, count=count)
+            )
+            QApplication.processEvents()
+            if dialog.wasCanceled():
+                raise PtmFitCancelledError
+
+        try:
+            return ptm_builder.generate_native(
+                self.image_data, vectors, destination, progress=report
+            )
+        finally:
+            dialog.close()
 
     def report_error(self, message):
         print(message)

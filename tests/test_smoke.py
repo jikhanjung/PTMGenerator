@@ -8,6 +8,8 @@ import importlib
 
 import pytest
 
+from core import settings as prefs
+
 pytestmark = pytest.mark.smoke
 
 CORE_MODULES = [
@@ -53,8 +55,24 @@ def test_main_window_constructs(main_window):
 
 def test_preferences_window_constructs(prefs_window):
     assert prefs_window.windowTitle() == "Preferences"
-    # Language, serial port, fitter, LED count, retries, polling, adjustment, OK
-    assert prefs_window.layout.rowCount() == 8
+    # Language, serial port, engine, fitter path, LED count, retries, polling,
+    # adjustment, OK
+    assert prefs_window.layout.rowCount() == 9
+
+
+def test_the_fitter_choice_round_trips(prefs_window, main_window):
+    """Picking PTMfitter.exe must survive being written and read back --
+    the built-in fitter is the default, so this is the escape hatch."""
+    prefs_window.comboFitter.setCurrentIndex(
+        prefs_window.comboFitter.findData(prefs.FITTER_EXTERNAL)
+    )
+    prefs_window.save_settings()
+    main_window.read_settings()
+    assert main_window.fitter == prefs.FITTER_EXTERNAL
+
+
+def test_the_fitter_choice_defaults_to_the_builtin(prefs_window):
+    assert prefs_window.comboFitter.currentData() == prefs.FITTER_NATIVE
 
 
 def test_entry_point_is_callable():

@@ -1,4 +1,9 @@
-"""Producing the .lp file and driving PTMfitter.
+"""Producing a .ptm, either in-process or by driving PTMfitter.exe.
+
+`generate_native` is the default and does the fit here — see
+`core.ptm_fitter`. `generate` shells out to the external `PTMfitter.exe`,
+which is kept selectable while the native path proves itself on real captures,
+and which is why the rest of this module exists at all.
 
 PTMfitter is a Hewlett-Packard binary from around 2001 and it is particular
 about paths. Measured against the shipped `PTMfitter.exe` with nine images:
@@ -48,6 +53,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+import numpy as np
+
+from core import ptm_fitter, ptm_format
 
 #: The fitter tokenises .lp lines on whitespace, so a name containing any is
 #: unusable whatever the encoding.
@@ -257,3 +266,53 @@ def _run(fitter_path, cwd, runner=None):
 
 def _subprocess_runner(command, cwd):
     subprocess.run(command, cwd=cwd, check=False)
+
+
+def load_image(path):
+    """Decode one capture as an (height, width, 3) uint8 array."""
+    from PIL import Image
+
+    with Image.open(path) as image:
+        return np.asarray(image.convert("RGB"))
+
+
+def generate_native(slots, light_vectors, destination, progress=None, loader=load_image):
+    """Fit the PTM in-process and write it to `destination`.
+
+    Unlike `generate` this has no opinion about paths: nothing shells out, so
+    spaces and non-ASCII anywhere are simply not a problem. It also has no
+    size ceiling beyond available memory, which is the reason it exists —
+    `PTMfitter.exe` is 32-bit and fails above about 24 megapixels.
+
+    Args:
+        slots (list[CaptureSlot]): The capture table.
+        light_vectors (list[list[float]]): Unit vectors, indexed by LED.
+        destination (str): Where the .ptm goes.
+        progress: Optional `progress(done, total)`, called per image. The fit
+            reads every capture, so this is not instant.
+        loader: Seam for tests; called with a path, returns an image array.
+
+    Returns:
+        str: The .lp written beside the images. Not needed by the fit — kept
+        because it is the record of which light each shot was taken under.
+
+    Raises:
+        NoImagesToFitError: Nothing to fit.
+    """
+    usable = usable_slots(slots)
+    if not usable:
+        raise NoImagesToFitError("no captured, included images")
+
+    kept_lp = lp_path_for(usable[0].directory)
+    write_reference_lp(kept_lp, build_lp_content(slots, light_vectors))
+
+    paths = [os.path.join(slot.directory, slot.filename) for slot in usable]
+    lights = [light_vectors[slot.led_index] for slot in usable]
+    ptm = ptm_fitter.fit_streaming(
+        lambda index: loader(paths[index]),
+        lights,
+        count=len(paths),
+        progress=progress,
+    )
+    ptm_format.write(destination, ptm)
+    return kept_lp

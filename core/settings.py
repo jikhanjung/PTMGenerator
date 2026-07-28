@@ -13,6 +13,7 @@ RETRY_COUNT = "RetryCount"
 LIGHT_POSITION_ADJUSTMENT = "light_position_adjustment"
 POST_SHUTTER_POLLING = "post_shutter_polling"
 LANGUAGE = "language"
+FITTER = "fitter"
 
 DEFAULTS = {
     SERIAL_PORT: None,
@@ -22,7 +23,16 @@ DEFAULTS = {
     LIGHT_POSITION_ADJUSTMENT: 0,
     POST_SHUTTER_POLLING: 1.0,
     LANGUAGE: "en",
+    FITTER: "native",
 }
+
+#: How the .ptm is produced. "native" fits in-process and has no size limit
+#: beyond memory; "external" shells out to PTMfitter.exe, which is 32-bit and
+#: fails above about 24 megapixels. External is kept selectable while the
+#: native path proves itself against real captures.
+FITTER_NATIVE = "native"
+FITTER_EXTERNAL = "external"
+SUPPORTED_FITTERS = [("Built-in", FITTER_NATIVE), ("PTMfitter.exe", FITTER_EXTERNAL)]
 
 SUPPORTED_LANGUAGES = [("English", "en"), ("한국어", "ko")]
 

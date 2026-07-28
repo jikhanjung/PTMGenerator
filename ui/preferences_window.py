@@ -55,6 +55,17 @@ class PreferencesWindow(QDialog):
         self.comboSerialPort = QComboBox()
         self._populate_serial_ports()
 
+        self.lblFitter = QLabel(self.tr("PTM Engine"))
+        self.comboFitter = QComboBox()
+        for label, code in prefs.SUPPORTED_FITTERS:
+            self.comboFitter.addItem(label, code)
+        self.comboFitter.setToolTip(
+            self.tr(
+                "Built-in has no image size limit. PTMfitter.exe is 32-bit and "
+                "fails on images above about 24 megapixels."
+            )
+        )
+
         self.lblPtmFitter = QLabel(self.tr("PTM Fitter"))
         self.edtPtmFitter = QLineEdit()
         self.btnPtmFitter = QPushButton(self.tr("Browse"))
@@ -91,6 +102,7 @@ class PreferencesWindow(QDialog):
         self.layout = QFormLayout()
         self.layout.addRow(self.language_label, self.language_combobox)
         self.layout.addRow(self.lblSerialPort, self.comboSerialPort)
+        self.layout.addRow(self.lblFitter, self.comboFitter)
         self.layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
         self.layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
         self.layout.addRow(self.lblRetryCount, self.edtRetryCount)
@@ -107,6 +119,7 @@ class PreferencesWindow(QDialog):
 
         self.language_combobox.setCurrentIndex(self.language_combobox.findData(self.language))
         self.comboSerialPort.setCurrentIndex(self.comboSerialPort.findData(self.serial_port))
+        self.comboFitter.setCurrentIndex(self.comboFitter.findData(self.fitter))
         self.edtPtmFitter.setText(self.ptm_fitter)
         self.edtNumberOfLEDs.setText(str(self.number_of_LEDs))
         self.edtRetryCount.setText(str(self.retry_count))
@@ -157,6 +170,7 @@ class PreferencesWindow(QDialog):
         self.retry_count = prefs.read_int(s, prefs.RETRY_COUNT)
         self.light_position_adjustment = prefs.read_int(s, prefs.LIGHT_POSITION_ADJUSTMENT)
         self.post_shutter_polling = prefs.read_float(s, prefs.POST_SHUTTER_POLLING)
+        self.fitter = prefs.read_str(s, prefs.FITTER)
         self.language = prefs.read_str(s, prefs.LANGUAGE)
         self.prev_language = self.language
         self.update_language(self.language)
@@ -167,6 +181,7 @@ class PreferencesWindow(QDialog):
         s.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
         s.setValue(prefs.LANGUAGE, self.language_combobox.currentData())
         s.setValue(prefs.SERIAL_PORT, self.comboSerialPort.currentData())
+        s.setValue(prefs.FITTER, self.comboFitter.currentData())
         s.setValue(prefs.PTM_FITTER, self.edtPtmFitter.text())
         s.setValue(prefs.NUMBER_OF_LEDS, str(self.edtNumberOfLEDs.text()))
         s.setValue(prefs.RETRY_COUNT, str(self.edtRetryCount.text()))
@@ -193,6 +208,7 @@ class PreferencesWindow(QDialog):
         self.setWindowTitle(self.tr("Preferences"))
         self.language_label.setText(self.tr("Language"))
         self.lblSerialPort.setText(self.tr("Serial Port"))
+        self.lblFitter.setText(self.tr("PTM Engine"))
         self.lblPtmFitter.setText(self.tr("PTM Fitter"))
         self.btnPtmFitter.setText(self.tr("Browse"))
         self.lblNumberOfLEDs.setText(self.tr("Number of LEDs"))

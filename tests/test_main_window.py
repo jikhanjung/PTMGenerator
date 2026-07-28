@@ -4,14 +4,18 @@ import csv
 import os
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
+from PIL import Image
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QProgressDialog
 
 import version
-from core import ptm_builder
+from core import ptm_builder, ptm_format
+from core import settings as prefs
 from core.image_data import MISSING, CaptureSlot
+from core.light_positions import light_vectors
 from ui.main_window import PTMGeneratorMainWindow
 
 pytestmark = pytest.mark.ui
@@ -350,6 +354,9 @@ def ready_to_generate(main_window, workdir):
     fitter.touch()
     main_window.monitor_root = str(capture_dir)
     main_window.ptm_fitter = str(fitter)
+    # These exercise the external fitter specifically. The built-in one is the
+    # default, and has its own section below.
+    main_window.fitter = prefs.FITTER_EXTERNAL
     main_window.light_position_adjustment = 0
     main_window.image_data = [
         CaptureSlot(i, str(capture_dir), f"IMG_000{i}.JPG", True) for i in range(3)
@@ -540,3 +547,118 @@ class TestCaptureDirectoryAdoption:
             main_window.on_action_open_directory_triggered()
         assert main_window.capture_directory is None
         assert main_window.monitor_root == str(workdir)
+
+
+# -- which fitter runs -----------------------------------------------------
+
+
+@pytest.fixture
+def ready_to_fit_natively(main_window, workdir):
+    """A capture of real, if tiny, JPEGs -- the built-in fitter decodes them."""
+    capture_dir = workdir / "specimen02"
+    capture_dir.mkdir()
+    lights = light_vectors()
+    slots = []
+    rng = np.random.default_rng(0)
+    base = rng.integers(40, 200, size=(4, 6, 3)).astype(float)
+    for index in range(8):
+        u, v, _w = lights[index]
+        name = f"IMG_100{index}.JPG"
+        shaded = np.clip(base * (0.5 + 0.4 * u + 0.3 * v), 0, 255).astype(np.uint8)
+        Image.fromarray(shaded).save(capture_dir / name, subsampling=0, quality=95)
+        slots.append(CaptureSlot(index, str(capture_dir), name, True))
+    main_window.monitor_root = str(capture_dir)
+    main_window.light_position_adjustment = 0
+    main_window.image_data = slots
+    main_window.fitter = prefs.FITTER_NATIVE
+    return main_window, capture_dir
+
+
+def test_the_builtin_fitter_is_the_default():
+    assert prefs.DEFAULTS[prefs.FITTER] == prefs.FITTER_NATIVE
+
+
+def test_the_builtin_fitter_never_runs_the_external_one(ready_to_fit_natively, workdir):
+    """The whole point: no subprocess, so no 24-megapixel ceiling."""
+    window, _capture_dir = ready_to_fit_natively
+    out = str(workdir / "native.ptm")
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(out, "")),
+        patch.object(ptm_builder, "_subprocess_runner") as runner,
+    ):
+        window.generatePTM()
+    runner.assert_not_called()
+    assert ptm_format.read(out).width == 6
+
+
+def test_the_builtin_fitter_writes_the_lp_beside_the_images(ready_to_fit_natively, workdir):
+    """Kept for the record even though nothing external reads it now."""
+    window, capture_dir = ready_to_fit_natively
+    with patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "n.ptm"), "")):
+        window.generatePTM()
+    lines = (capture_dir / "specimen02.lp").read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "8"
+    assert lines[1].startswith("IMG_1000.jpg ")
+
+
+def test_the_builtin_fitter_ignores_the_ptmfitter_path(ready_to_fit_natively, workdir):
+    """A missing PTMfitter.exe must not stop the built-in path."""
+    window, _capture_dir = ready_to_fit_natively
+    window.ptm_fitter = str(workdir / "nowhere.exe")
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "n.ptm"), "")),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
+        window.generatePTM()
+    critical.assert_not_called()
+    assert (workdir / "n.ptm").exists()
+
+
+def test_too_few_images_for_a_fit_is_reported(ready_to_fit_natively, workdir):
+    """Six coefficients need six images; the message must say so rather than
+    surfacing a numpy error."""
+    window, _capture_dir = ready_to_fit_natively
+    window.image_data = window.image_data[:4]
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "n.ptm"), "")),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
+        window.generatePTM()
+    critical.assert_called_once()
+    assert "at least 6" in critical.call_args.args[2]
+
+
+def test_an_empty_table_is_reported_by_the_builtin_fitter(ready_to_fit_natively, workdir):
+    window, _capture_dir = ready_to_fit_natively
+    window.image_data = []
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "n.ptm"), "")),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
+        window.generatePTM()
+    critical.assert_called_once()
+
+
+def test_cancelling_the_progress_dialog_abandons_the_fit(ready_to_fit_natively, workdir):
+    """Cancel must not leave a half-written .ptm behind, and must not raise."""
+    window, _capture_dir = ready_to_fit_natively
+    out = workdir / "cancelled.ptm"
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(out), "")),
+        patch.object(QProgressDialog, "wasCanceled", return_value=True),
+        patch.object(QMessageBox, "critical") as critical,
+    ):
+        window.generatePTM()
+    critical.assert_not_called()
+    assert not out.exists()
+
+
+def test_progress_reaches_the_dialog(ready_to_fit_natively, workdir):
+    """Fifty full-size images take tens of seconds; the count must move."""
+    window, _capture_dir = ready_to_fit_natively
+    with (
+        patch.object(QFileDialog, "getSaveFileName", return_value=(str(workdir / "n.ptm"), "")),
+        patch.object(QProgressDialog, "setValue") as set_value,
+    ):
+        window.generatePTM()
+    assert [call.args[0] for call in set_value.call_args_list] == list(range(1, 9))
