@@ -2,6 +2,9 @@
 
 A desktop application for automated Polynomial Texture Mapping (PTM) image capture and generation.
 
+**Manual:** <https://jikhanjung.github.io/PTMGenerator/> — built from
+`docs/manual/` and published on every push to `main`.
+
 ## Overview
 
 PTMGenerator2 is a PyQt5-based tool designed for archaeological artifact documentation using Polynomial Texture Mapping (PTM) technology. The application automates the process of capturing multiple images under different lighting angles and generates PTM files that can reveal surface details invisible under normal lighting conditions.

@@ -9,6 +9,13 @@ on:
 permissions:
   contents: read
 
+# One deployment at a time. Cancelling an in-progress *run* would be wrong
+# here — a half-finished Pages deployment is worse than a slightly stale one —
+# so queue instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Manual builds
@@ -24,9 +31,9 @@ jobs:
           cache: 'pip'
 
       # Installs docs/manual/requirements.txt rather than naming packages here.
-      # A job that lists its own subset is how a docs build comes to fail for
-      # weeks while a green tick says otherwise -- conf.py imports version.py,
-      # which needs semver, and that is easy to leave out.
+      # A job that lists its own subset is how a docs build comes to fail
+      # quietly -- conf.py imports version.py, which needs semver, and api.rst
+      # autodocs core.serial_controller, which imports pyserial.
       - name: Install
         run: pip install -r docs/manual/requirements.txt
 
@@ -36,8 +43,34 @@ jobs:
       - name: Build
         run: make -C docs/manual clean html
 
-      - uses: actions/upload-artifact@v4
+      # Sphinx writes _static/ and _sources/; without this Pages runs the
+      # output through Jekyll, which skips every path beginning with an
+      # underscore and serves the manual with no CSS.
+      - name: Disable Jekyll
+        run: touch docs/manual/_build/html/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: manual-html
           path: docs/manual/_build/html
-          retention-days: 14
+
+  # Publishes to https://jikhanjung.github.io/PTMGenerator/. Pull requests
+  # build but do not deploy: a PR from a fork must not be able to replace the
+  # published manual.
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
