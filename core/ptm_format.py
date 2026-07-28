@@ -44,6 +44,14 @@ COEFFICIENTS = 6
 #: matrix, and as documentation of the ordering.
 TERM_NAMES = ("u2", "v2", "uv", "u", "v", "1")
 
+#: Decimal places the header gives each scale. rti-builder writes them with
+#: plain "%f", so this is the format's precision, not a choice made here — and
+#: it is why `quantise` rounds the scale before using it. Quantising against a
+#: scale the file cannot store would make the written file disagree with the
+#: values it was built from.
+SCALE_DECIMALS = 6
+SMALLEST_SCALE = 10.0**-SCALE_DECIMALS
+
 
 class PtmFormatError(Exception):
     """The file is not a PTM this module can read."""
@@ -157,7 +165,7 @@ def write(path, ptm):
     `ptm.coefficients` and `ptm.rgb` are top row first, as `read` returns them;
     the flip back to the file's bottom-up order happens here.
     """
-    scales = " ".join(f"{s:.6f}" for s in ptm.scale)
+    scales = " ".join(f"{s:.{SCALE_DECIMALS}f}" for s in ptm.scale)
     biases = " ".join(str(int(b)) for b in ptm.bias)
     header = f"{VERSION}\n{FORMAT_LRGB}\n{ptm.width}\n{ptm.height}\n{scales} \n{biases} \n"
     with open(path, "wb") as fh:
@@ -188,7 +196,15 @@ def quantise(coefficients):
     # of 0 for such a plane, which round-trips the value unchanged.
     degenerate = spread == 0
     scale = np.where(degenerate, 1.0, spread / 256.0)
-    bias = np.where(degenerate, 0.0, -256.0 / np.where(degenerate, 1.0, spread) * minimum)
+
+    # Round to what the header can actually hold, and quantise against that, so
+    # the file is self-consistent: reading it back gives the values it was
+    # built from. A range too narrow to express at this precision is floored
+    # rather than divided by zero -- such a coefficient is flat to within what
+    # the format can represent anyway.
+    scale = np.maximum(np.round(scale, SCALE_DECIMALS), SMALLEST_SCALE)
+
+    bias = np.where(degenerate, 0.0, -minimum / scale)
     bias = np.rint(bias).astype(np.int64)
 
     quantised = np.rint(coefficients / scale + bias)
