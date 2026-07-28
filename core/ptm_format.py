@@ -180,32 +180,63 @@ def quantise(coefficients):
     Follows `ptm_scale_coefficients` in rti-builder: the range of each
     coefficient across the *whole image* sets its scale and bias.
 
+    The input is left alone; `quantise_planes` is the in-place variant, for the
+    streaming path where a full-resolution copy is the thing being avoided.
+
     Args:
         coefficients (np.ndarray): (height, width, 6) float.
 
     Returns:
         tuple: (bytes (h, w, 6) uint8, scale (6,) float, bias (6,) int)
     """
-    flat = coefficients.reshape(-1, COEFFICIENTS)
-    minimum = flat.min(axis=0)
-    maximum = flat.max(axis=0)
-    spread = maximum - minimum
+    height, width, _ = coefficients.shape
+    planes = np.array(coefficients.reshape(-1, COEFFICIENTS).T, dtype=np.float64)
+    quantised, scale, bias = quantise_planes(planes)
+    return quantised.T.reshape(height, width, COEFFICIENTS), scale, bias
 
-    # A coefficient that is constant over the image has no range to map. The
-    # reference divides by zero here; PTMfitter emits a scale of 1 and a bias
-    # of 0 for such a plane, which round-trips the value unchanged.
-    degenerate = spread == 0
-    scale = np.where(degenerate, 1.0, spread / 256.0)
 
-    # Round to what the header can actually hold, and quantise against that, so
-    # the file is self-consistent: reading it back gives the values it was
-    # built from. A range too narrow to express at this precision is floored
-    # rather than divided by zero -- such a coefficient is flat to within what
-    # the format can represent anyway.
-    scale = np.maximum(np.round(scale, SCALE_DECIMALS), SMALLEST_SCALE)
+def quantise_planes(planes, out=None):
+    """Quantise coefficients held one plane per row.
 
-    bias = np.where(degenerate, 0.0, -minimum / scale)
-    bias = np.rint(bias).astype(np.int64)
+    Works a plane at a time. Doing the whole array at once allocates half a
+    dozen full-resolution float temporaries, which at 48 megapixels is more
+    memory than everything else in the fit put together.
 
-    quantised = np.rint(coefficients / scale + bias)
-    return np.clip(quantised, 0, 255).astype(np.uint8), scale, bias
+    Args:
+        planes (np.ndarray): (6, pixels) float. **Modified in place.**
+        out (np.ndarray | None): (6, pixels) uint8 to write into.
+
+    Returns:
+        tuple: (bytes (6, pixels) uint8, scale (6,) float, bias (6,) int)
+    """
+    if out is None:
+        out = np.empty(planes.shape, dtype=np.uint8)
+    scale = np.empty(COEFFICIENTS, dtype=np.float64)
+    bias = np.empty(COEFFICIENTS, dtype=np.int64)
+
+    for k in range(COEFFICIENTS):
+        plane = planes[k]
+        minimum = float(plane.min())
+        spread = float(plane.max()) - minimum
+
+        # A coefficient that is constant over the image has no range to map.
+        # The reference divides by zero here; PTMfitter emits a scale of 1 and
+        # a bias of 0 for such a plane, which round-trips it unchanged.
+        #
+        # The scale is rounded to what the header can hold *before* being used,
+        # so reading a written file gives back the values it was built from. A
+        # range too narrow to express at that precision is floored rather than
+        # divided by zero.
+        if spread == 0:
+            scale[k], bias[k] = 1.0, 0
+        else:
+            scale[k] = max(round(spread / 256.0, SCALE_DECIMALS), SMALLEST_SCALE)
+            bias[k] = int(np.rint(-minimum / scale[k]))
+
+        plane /= scale[k]
+        plane += bias[k]
+        np.rint(plane, out=plane)
+        np.clip(plane, 0, 255, out=plane)
+        out[k] = plane
+
+    return out, scale, bias

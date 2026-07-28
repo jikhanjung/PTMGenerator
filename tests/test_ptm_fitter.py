@@ -197,3 +197,125 @@ def test_a_pixel_black_in_every_image_does_not_divide_by_zero():
     result = ptm_fitter.fit(images, lights)
     assert np.all(np.isfinite(result.rgb))
     assert np.all(np.isfinite(result.scale))
+
+
+# -- streaming, which is how a real capture is fitted ----------------------
+#
+# The plan called for horizontal banding. Streaming replaces it: the least
+# squares decomposes into one rank-1 update per image, so memory is bounded
+# *and* each image is decoded exactly once, where banding re-decodes every
+# image once per band. Decoding is about 96% of the runtime.
+
+
+def test_streaming_agrees_with_the_batch_fit(capture):
+    images, lights, _names = capture
+    batch = ptm_fitter.fit(images, lights)
+    streamed = ptm_fitter.fit_streaming(list(images), lights)
+    assert np.array_equal(streamed.coefficients, batch.coefficients)
+    assert np.array_equal(streamed.rgb, batch.rgb)
+
+
+def test_streaming_scale_matches_to_the_formats_precision(capture):
+    """Not byte-identical: the accumulators are float32, so the derived scale
+    can differ in the last digit the header stores. The quantised coefficients
+    are the same, which is what the reconstruction depends on."""
+    images, lights, _names = capture
+    batch = ptm_fitter.fit(images, lights)
+    streamed = ptm_fitter.fit_streaming(list(images), lights)
+    assert streamed.scale == pytest.approx(batch.scale, rel=1e-4)
+    assert np.array_equal(streamed.bias, batch.bias)
+
+
+def test_streaming_reconstructs_the_inputs(capture):
+    images, lights, _names = capture
+    ptm = ptm_fitter.fit_streaming(list(images), lights)
+    for image, (u, v, _w) in zip(images, lights, strict=True):
+        rendered = ptm_fitter.reconstruct(ptm, u, v)
+        assert np.corrcoef(rendered.ravel(), image.astype(float).ravel())[0, 1] > 0.99
+
+
+def test_each_image_is_read_exactly_once(capture):
+    """The property that distinguishes this from banding."""
+    images, lights, _names = capture
+    reads = []
+
+    def loader(index):
+        reads.append(index)
+        return images[index]
+
+    ptm_fitter.fit_streaming(loader, lights, count=len(images))
+    assert reads == list(range(len(images)))
+
+
+def test_only_one_image_is_alive_at_a_time(capture):
+    """A loader that hands out a fresh array each call, checking the previous
+    one has been released. If the fit accumulated images instead of folding
+    them in, they would all still be referenced."""
+    import weakref
+
+    images, lights, _names = capture
+    handed_out = []
+
+    def loader(index):
+        for reference in handed_out:
+            assert reference() is None, "an earlier image is still referenced"
+        fresh = np.array(images[index])
+        handed_out.append(weakref.ref(fresh))
+        return fresh
+
+    ptm_fitter.fit_streaming(loader, lights, count=len(images))
+
+
+def test_progress_is_reported(capture):
+    images, lights, _names = capture
+    seen = []
+    ptm_fitter.fit_streaming(list(images), lights, progress=lambda i, n: seen.append((i, n)))
+    assert seen == [(i + 1, len(images)) for i in range(len(images))]
+
+
+def test_memory_estimate_counts_every_full_resolution_buffer():
+    """Guards against the estimate drifting from what is allocated. It was
+    once half the measured figure, which is worse than not estimating."""
+    per_pixel = ptm_fitter.memory_estimate(1000, 1000, dtype=np.float32) / 1e6
+    # 11 float32 planes and 12 byte planes, per the accumulators in use.
+    assert per_pixel == pytest.approx((11 * 4 + 12), rel=0.01)
+
+
+def test_memory_does_not_grow_with_the_number_of_images():
+    assert ptm_fitter.memory_estimate(100, 100) == ptm_fitter.memory_estimate(100, 100)
+
+
+def test_a_callable_loader_needs_a_count(capture):
+    _images, lights, _names = capture
+    with pytest.raises(FitError, match="count is required"):
+        ptm_fitter.fit_streaming(lambda i: None, lights)
+
+
+def test_mismatched_image_shapes_are_refused():
+    lights = np.array(light_vectors()[:6])
+    images = [np.zeros((4, 4, 3), np.uint8)] * 5 + [np.zeros((5, 4, 3), np.uint8)]
+    with pytest.raises(FitError, match="but the first was"):
+        ptm_fitter.fit_streaming(images, lights)
+
+
+def test_streaming_refuses_too_few_images():
+    with pytest.raises(FitError, match="at least 6"):
+        ptm_fitter.fit_streaming([np.zeros((2, 2, 3), np.uint8)] * 3, np.array(light_vectors()[:3]))
+
+
+# -- the in-place contract, which is easy to trip over ---------------------
+
+
+def test_quantise_leaves_its_input_alone():
+    values = np.random.default_rng(0).uniform(-1, 1, (4, 5, COEFFICIENTS))
+    before = values.copy()
+    ptm_format.quantise(values)
+    assert np.array_equal(values, before)
+
+
+def test_quantise_planes_works_in_place():
+    """Deliberate, and the reason the streaming path can hold what it does."""
+    planes = np.random.default_rng(0).uniform(-1, 1, (COEFFICIENTS, 20))
+    before = planes.copy()
+    ptm_format.quantise_planes(planes)
+    assert not np.array_equal(planes, before)
