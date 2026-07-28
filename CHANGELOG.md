@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-alpha.2] - 2026-07-28
 ### Added
 - **The manual is available in Korean**, at
   <https://jikhanjung.github.io/PTMGenerator/ko/>, with a language switcher on
