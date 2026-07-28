@@ -1,11 +1,13 @@
 """Preference keys, defaults and coercion.
 
-QSettings stores everything as text in an .ini file, so a value written as an
-int comes back as a string. The defaults and the coercion live here so the two
-windows that read preferences cannot drift apart on either.
+The defaults live here so the two windows that read preferences cannot drift
+apart on them. The coercion is here for the same reason, and is still needed
+even though `core.preferences` stores JSON and keeps types: a value migrated
+from the old QSettings ``.ini`` arrives as the string it was written as, and so
+does anything the Preferences dialog writes through ``str()``.
 """
 
-# Preference keys, as they appear in the .ini.
+# Preference keys, as they appear in preferences.json.
 SERIAL_PORT = "serial_port"
 PTM_FITTER = "ptm_fitter"
 NUMBER_OF_LEDS = "Number_of_LEDs"

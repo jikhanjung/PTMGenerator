@@ -16,6 +16,8 @@ import traceback
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
+from core.paths import log_path
+
 #: Set while a dialog is up, so a fault inside the reporting path cannot start
 #: an endless stack of dialogs.
 _reporting = False
@@ -35,7 +37,7 @@ def handle_exception(exc_type, exc_value, exc_tb, show_dialog=True):
 
     text = format_exception(exc_type, exc_value, exc_tb)
     # stdout is the OutputRedirector once a window exists, so this reaches
-    # output.log as well as the console.
+    # today's log file as well as the console.
     print("Unhandled exception:\n" + text)
 
     if not show_dialog or _reporting or QApplication.instance() is None:
@@ -48,8 +50,8 @@ def handle_exception(exc_type, exc_value, exc_tb, show_dialog=True):
             "PTMGenerator2",
             "Something went wrong and the operation was stopped.\n\n"
             f"{exc_type.__name__}: {exc_value}\n\n"
-            "The application is still running. Details have been written to "
-            "output.log.",
+            "The application is still running. Details have been written to\n"
+            f"{log_path()}",
         )
     finally:
         _reporting = False
