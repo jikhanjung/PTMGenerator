@@ -201,7 +201,23 @@ construction. The comparison has to be on what the file *means*:
 **reconstruct the image at each input light direction from both files, and
 compare those.** That is invariant to where the normalisation was put.
 
+### Probing is available if it is needed
+
+`rti-builder` is the specification and the implementation follows it. The
+black-box probing above is a **tool held in reserve**, not a required phase —
+reach for it when something about PTMfitter's behaviour has to be known and
+reading `rti-builder` does not answer it.
+
+The method is already demonstrated and worth keeping: generate images whose
+content is known exactly, write them at 4:4:4 so the encoder does not alter
+them on the way in, run the fitter, and read the coefficients back through the
+header's scale and bias. One such experiment established the RGB convention and
+the luminance normalisation. Any of the unknowns below could be settled the
+same way.
+
 ### Still to characterise
+
+Only if it turns out to matter. None of these blocks starting.
 
 - **Whether the fit is weighted or regularised**, and what happens with fewer
   images than coefficients.
