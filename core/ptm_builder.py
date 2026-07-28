@@ -48,7 +48,9 @@ def lp_path_for(image_directory):
 
 
 def write_lp(path, content):
-    with open(path, "w") as fh:
+    # utf-8 explicitly: the file is a list of image paths, which for this
+    # application are routinely non-ASCII, and PTMfitter reads it back.
+    with open(path, "w", encoding="utf-8") as fh:
         fh.write(content)
 
 

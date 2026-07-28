@@ -28,24 +28,48 @@ class SerialController:
         self.port = port
         self._serial = None
         self._log = log
+        #: Why the last open() failed, or None. Set when a port is configured
+        #: but could not be opened, which the UI reports differently from
+        #: there being no port at all.
+        self.last_error = None
 
     @property
     def is_open(self):
         return self._serial is not None
 
+    @property
+    def is_configured(self):
+        """True when a port name is set, whether or not it can be opened."""
+        # QSettings round-trips an unset value as the string "None".
+        return self.port not in (None, "", "None")
+
     def open(self):
-        """Open the configured port. Returns True if there is one to talk to."""
+        """Open the configured port. Returns True if there is one to talk to.
+
+        Never raises. The port name is stored in preferences, so the
+        application will eventually try one that has gone away — the board
+        unplugged, the Arduino IDE's serial monitor holding it, a USB port
+        re-enumerated to a different number, or the preferences carried to
+        another machine. That used to let a SerialException escape into a Qt
+        slot, which aborts the process with no message.
+        """
         self._log("Opening serial port...")
+        self.last_error = None
         # Checked before the port name: once a port is open it stays usable
         # even if the configured name is later cleared in Preferences.
         if self._serial is not None:
             return True
-        # QSettings round-trips an unset value as the string "None".
-        if self.port in (None, "", "None"):
+        if not self.is_configured:
             self._log("No serial port configured.")
             return False
         self._log(f"Serial port: {self.port}")
-        self._serial = serial.Serial(self.port, self.BAUD_RATE, timeout=self.READ_TIMEOUT)
+        try:
+            self._serial = serial.Serial(self.port, self.BAUD_RATE, timeout=self.READ_TIMEOUT)
+        except (serial.SerialException, OSError) as error:
+            self.last_error = str(error)
+            self._serial = None
+            self._log(f"Could not open {self.port}: {error}")
+            return False
         time.sleep(self.RESET_DELAY)
         return True
 

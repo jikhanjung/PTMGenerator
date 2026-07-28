@@ -224,8 +224,12 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     # -- serial -------------------------------------------------------------
 
-    def confirm_capture_without_controller(self):
+    def confirm_capture_without_controller(self, reason=None):
         """Ask whether to run a capture with no controller attached.
+
+        Args:
+            reason (str | None): Why the configured port could not be opened,
+                if one was configured at all.
 
         Returns:
             bool: True if the user chose to go ahead anyway. Defaults to
@@ -233,15 +237,31 @@ class PTMGeneratorMainWindow(QMainWindow):
         """
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Warning)
-        box.setWindowTitle(self.tr("No serial port"))
-        box.setText(
-            self.tr(
-                "No serial port is configured, so the LEDs and the camera "
-                "shutter cannot be triggered. Nothing will be photographed.\n\n"
-                "Choose the controller's port in Edit › Preferences, or "
-                "continue anyway to try out the interface without hardware."
+        if reason:
+            # A port is configured but the OS would not give it to us: the
+            # board is unplugged, something else holds it, or the saved name is
+            # stale. Naming the port and the reason is the difference between a
+            # user fixing it and a user filing a bug.
+            box.setWindowTitle(self.tr("Serial port unavailable"))
+            box.setText(
+                self.tr(
+                    "{port} could not be opened, so the LEDs and the camera "
+                    "shutter cannot be triggered. Nothing will be photographed.\n\n"
+                    "{reason}\n\n"
+                    "Check the controller is connected and not in use by another "
+                    "program, or choose a different port in Edit › Preferences."
+                ).format(port=self.serial.port, reason=reason)
             )
-        )
+        else:
+            box.setWindowTitle(self.tr("No serial port"))
+            box.setText(
+                self.tr(
+                    "No serial port is configured, so the LEDs and the camera "
+                    "shutter cannot be triggered. Nothing will be photographed.\n\n"
+                    "Choose the controller's port in Edit › Preferences, or "
+                    "continue anyway to try out the interface without hardware."
+                )
+            )
         proceed = box.addButton(self.tr("Continue anyway"), QMessageBox.AcceptRole)
         cancel = box.addButton(self.tr("Cancel"), QMessageBox.RejectRole)
         box.setDefaultButton(cancel)
@@ -249,12 +269,17 @@ class PTMGeneratorMainWindow(QMainWindow):
         return box.clickedButton() is proceed
 
     def ensure_serial_ready(self):
-        """Open the controller's port, prompting the user if there is not one."""
+        """Open the controller's port, prompting the user if it is unusable."""
         if self.serial.open():
             return True
-        print("No serial port configured; asking whether to continue.")
-        self.statusBar.showMessage(self.tr("No serial port configured"), 5000)
-        return self.confirm_capture_without_controller()
+        reason = self.serial.last_error
+        if reason:
+            self.statusBar.showMessage(
+                self.tr("Could not open {port}").format(port=self.serial.port), 5000
+            )
+        else:
+            self.statusBar.showMessage(self.tr("No serial port configured"), 5000)
+        return self.confirm_capture_without_controller(reason)
 
     # -- capture ------------------------------------------------------------
 

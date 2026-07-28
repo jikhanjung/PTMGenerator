@@ -11,7 +11,6 @@ of a run is missing.
 
 import csv
 import os
-from datetime import datetime
 from typing import NamedTuple
 
 # One list, used both when polling for an incoming shot and when rebuilding a
@@ -43,11 +42,15 @@ def read_csv(path):
 
     Accepts the 3-column format written before include flags existed; those
     rows default to included.
+
+    Read as utf-8-sig: utf-8 to match what write_csv produces regardless of
+    platform, and -sig so a file someone opened and re-saved in Excel, which
+    prefixes a byte-order mark, still parses its first column as a number.
     """
     if not os.path.exists(path):
         return []
     slots = []
-    with open(path, newline="") as fh:
+    with open(path, newline="", encoding="utf-8-sig") as fh:
         for row in csv.reader(fh):
             if len(row) == 3:
                 index, directory, filename = row
@@ -62,8 +65,14 @@ def read_csv(path):
 
 
 def write_csv(path, slots):
-    """Write the capture table, overwriting whatever was there."""
-    with open(path, "w", newline="") as fh:
+    """Write the capture table, overwriting whatever was there.
+
+    utf-8 explicitly, not the platform default. The table holds directory and
+    file names, which for this application are routinely non-ASCII, and it is
+    written into the capture directory to be read back later — possibly on a
+    machine whose default encoding is cp949 rather than utf-8.
+    """
+    with open(path, "w", newline="", encoding="utf-8") as fh:
         csv.writer(fh).writerows(slots)
 
 
@@ -91,8 +100,12 @@ def detect_irregular_intervals(directory_path, getctime=os.path.getctime):
         try:
             first = getctime(os.path.join(directory_path, image_files[i - 1]))
             second = getctime(os.path.join(directory_path, image_files[i]))
-            gap = datetime.fromtimestamp(second) - datetime.fromtimestamp(first)
-            intervals.append(round(gap.total_seconds()))
+            # Subtracted as timestamps, not datetimes. The old code converted
+            # both with datetime.fromtimestamp() and subtracted those, which
+            # produces naive local datetimes: across a DST transition the
+            # difference is an hour out, and a normal gap reads as several
+            # missed shots. Seconds since the epoch have no such discontinuity.
+            intervals.append(round(second - first))
         except FileNotFoundError:
             print(f"Error: Image file not found: {image_files[i]}")
 

@@ -170,3 +170,51 @@ def test_subdirectories_are_not_searched(tmp_path):
     nested.mkdir()
     touch(nested, "deep.jpg", 3000)
     assert find_newest_image(str(tmp_path), 2000)[0] is None
+
+
+# -- encoding --------------------------------------------------------------
+#
+# image_data.csv is written into the capture directory and read back to reopen
+# a session, so it travels between machines. Written in the platform default
+# encoding it was cp949 on Korean Windows and utf-8 on Linux, and a run
+# captured on one could not be reopened on the other.
+
+KOREAN_DIR = "삼엽충_표본"
+KOREAN_FILE = "표본01.jpg"
+
+
+def test_csv_round_trips_non_ascii_names(tmp_path):
+    path = str(tmp_path / "image_data.csv")
+    slots = [CaptureSlot(0, KOREAN_DIR, KOREAN_FILE, True)]
+    write_csv(path, slots)
+    assert read_csv(path) == slots
+
+
+def test_csv_is_written_as_utf8_whatever_the_platform_default(tmp_path):
+    path = tmp_path / "image_data.csv"
+    write_csv(str(path), [CaptureSlot(0, KOREAN_DIR, KOREAN_FILE, True)])
+    # Decodes as utf-8 by construction, not by luck of the runner's locale.
+    assert KOREAN_DIR in path.read_bytes().decode("utf-8")
+
+
+def test_csv_with_a_byte_order_mark_still_parses(tmp_path):
+    # What a spreadsheet writes back after someone opens the file to look at it.
+    path = tmp_path / "image_data.csv"
+    path.write_text("0,/shots,a.jpg,True\r\n", encoding="utf-8-sig")
+    slots = read_csv(str(path))
+    assert slots == [CaptureSlot(0, "/shots", "a.jpg", True)]
+
+
+# -- interval arithmetic ---------------------------------------------------
+
+
+def test_a_dst_transition_does_not_invent_missing_shots(tmp_path):
+    # Timestamps are seconds since the epoch and have no DST discontinuity, but
+    # the old code converted them to naive local datetimes before subtracting,
+    # which put a whole extra hour into one gap and read it as ~360 missed
+    # shots. Straddle a spring-forward instant to pin the arithmetic.
+    spring_forward = 1710054000  # 2024-03-10 02:00 America/New_York
+    names = ["a.jpg", "b.jpg", "c.jpg"]
+    ctimes = [spring_forward - 10, spring_forward, spring_forward + 10]
+    slots = run_detection(tmp_path, names, ctimes)
+    assert [s.filename for s in slots] == names, "no placeholders should be inserted"

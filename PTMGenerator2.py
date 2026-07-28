@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import QApplication
 
 from core.resources import icon_path, translation_path
 from core.settings import LANGUAGE, read_str
+from ui import error_handling
 from ui.main_window import PTMGeneratorMainWindow
 from version import COMPANY_NAME, PROGRAM_NAME
 
@@ -25,6 +26,9 @@ from version import COMPANY_NAME, PROGRAM_NAME
 def main(argv=None):
     argv = sys.argv if argv is None else argv
     app = QApplication(argv)
+    # Before any window exists: an exception escaping a Qt slot otherwise
+    # aborts the process with nothing on screen and nothing in the log.
+    error_handling.install()
     app.translator = None
     app.setWindowIcon(QIcon(icon_path("app")))
     app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
