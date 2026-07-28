@@ -81,10 +81,10 @@ msgstr "`릴리스 페이지 <https://github.com/jikhanjung/PTMGenerator/release
 #: ../../installation.rst:27
 msgid ""
 "It installs per user, so there is no administrator prompt, into "
-"``%LOCALAPPDATA%\\PaleoBytes\\PTMGenerator2``. A Start Menu shortcut is "
+"``%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2``. A Start Menu shortcut is "
 "created under **PaleoBytes**; a desktop shortcut is offered and off by "
 "default."
-msgstr "사용자 단위로 설치되므로 관리자 권한을 묻지 않으며, 설치 위치는 ``%LOCALAPPDATA%\\PaleoBytes\\PTMGenerator2`` 입니다. 시작 메뉴의 **PaleoBytes** 아래에 바로가기가 만들어지고, 바탕화면 바로가기는 선택 사항이며 기본값은 꺼짐입니다."
+msgstr "사용자 단위로 설치되므로 관리자 권한을 묻지 않으며, 설치 위치는 ``%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2`` 입니다. 시작 메뉴의 **PaleoBytes** 아래에 바로가기가 만들어지고, 바탕화면 바로가기는 선택 사항이며 기본값은 꺼짐입니다."
 
 #: ../../installation.rst:31
 msgid ""

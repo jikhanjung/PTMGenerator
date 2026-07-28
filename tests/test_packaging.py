@@ -93,7 +93,7 @@ def test_the_installer_has_a_stable_app_id():
 
 def test_the_installer_is_published_under_paleobytes():
     assert "AppPublisher=PaleoBytes" in INSTALLER
-    assert r"DefaultDirName={localappdata}\PaleoBytes\PTMGenerator2" in INSTALLER
+    assert r"DefaultDirName={userpf}\PaleoBytes\PTMGenerator2" in INSTALLER
 
 
 def test_the_installer_needs_no_administrator():

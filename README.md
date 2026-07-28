@@ -37,7 +37,7 @@ An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for
 ### Software Dependencies
 
 - Python 3.12+
-- PyQt5, pyserial, semver — declared in `pyproject.toml`
+- PyQt5, pyserial, semver, numpy, pillow — declared in `pyproject.toml`
 
 ```bash
 pip install -e .            # runtime
@@ -69,7 +69,7 @@ handles images the 32-bit `PTMfitter.exe` cannot.
 `PTMGenerator2_v<version>_build<n>_Installer.exe` from the
 [releases page](https://github.com/jikhanjung/PTMGenerator/releases) and run it.
 It installs per user (no administrator prompt) into
-`%LOCALAPPDATA%\PaleoBytes\PTMGenerator2`, with a Start Menu shortcut under
+`%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2`, with a Start Menu shortcut under
 **PaleoBytes**.
 
 **From source**
@@ -124,7 +124,8 @@ python PTMGenerator2.py
 
 1. **Configure Settings** (Edit → Preferences):
    - Select serial port for Arduino communication
-   - Set PTM fitter executable path
+   - Choose the PTM engine (built-in by default; the *PTM Fitter* path applies
+     only if you pick `PTMfitter.exe`)
    - Configure number of LEDs (default: 50)
    - Adjust retry count and polling delays as needed
 
@@ -170,11 +171,13 @@ When the run finishes, **Generate PTM** converts the LED table (`POLAR_LIGHT_LIS
 
 - **image_data.csv**: Auto-generated file tracking captured images (format: index, directory, filename, include)
 - **{project}.lp**: Light position file generated during PTM creation
-- **Settings**: Stored in system-specific location (Windows: `%APPDATA%/PaleoBytes/PTMGenerator2.ini`)
+- **preferences.json**: Every setting, in `%USERPROFILE%\PaleoBytes\PTMGenerator2`
 
 ### Preferences reference
 
-Stored via `QSettings` under `PaleoBytes / PTMGenerator2`.
+Stored as JSON in `%USERPROFILE%\PaleoBytes\PTMGenerator2\preferences.json`
+(`~/PaleoBytes/PTMGenerator2/preferences.json` elsewhere). An `.ini` written by
+an earlier version is imported on first run.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
@@ -184,30 +187,34 @@ Stored via `QSettings` under `PaleoBytes / PTMGenerator2`.
 | `RetryCount` | 3 | Automatic retakes before a slot is given up as `-`. |
 | `light_position_adjustment` | 0 | Azimuth offset in degrees, to align the dome's LED #1 with the specimen's orientation. |
 | `post_shutter_polling` | 1.0 | Seconds to wait after the shutter before scanning for the new file. |
+| `fitter` | `native` | Which fitter **Generate PTM** runs: `native` (built in, no size limit) or `external` (`PTMfitter.exe`). |
 | `language` | `en` | `en` or `ko`. |
 
-## Building Executable
+## Building the installer
 
-Releases are built with PyInstaller:
+Two steps, both run by CI:
 
 ```bash
-pyinstaller PTMGenerator2.spec
+pyinstaller PTMGenerator2.spec      # -> dist/PTMGenerator2/PTMGenerator2.exe
+ISCC installer/PTMGenerator2.iss    # -> PTMGenerator2_v<version>_build<n>_Installer.exe
 ```
 
-The output name is generated from `__version__` in `version.py` plus the build
-date — e.g. `PTMGenerator2_v0.2.0-alpha.2_20260728.exe` — so there is no second version
-number to keep in step. Bump with `python scripts/bump_version.py <part>`; see
+A onedir build, so the installer ships the directory. The `.iss` is generated
+from `installer/PTMGenerator2.iss.template` by the build workflow, which fills
+in the version from `version.py` — there is no second version number to keep in
+step. Bump with `python scripts/bump_version.py <part>`; see
 `VERSION_MANAGEMENT.md`.
 
 Check a build before shipping it:
 
 ```bash
-dist/PTMGenerator2_v<version>_<date>.exe --self-test
+dist/PTMGenerator2/PTMGenerator2.exe --self-test
 ```
 
 It starts the application headlessly, verifies every bundled icon and
 translation resolves, constructs the main window and exits non-zero if anything
-is missing. `release.yml` runs it against every build.
+is missing. `reusable_build.yml` runs it against the frozen build before Inno
+Setup packages it, so both `build.yml` and `release.yml` get it.
 
 To build on a Windows runner without releasing anything — which is how a build
 should be checked before a version tag is pushed — run the **Build** workflow:
@@ -256,7 +263,7 @@ the application actually loads at runtime.
 
 ```bash
 # 1. extract — merges new strings, keeps existing translations
-pylupdate5 PTMGenerator2.py -ts translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
+pylupdate5 PTMGenerator2.py core/*.py ui/*.py -ts translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
 
 # 2. translate — Qt Linguist, or edit the .ts XML directly
 linguist translations/PTMGenerator2_ko.ts
@@ -282,9 +289,10 @@ make test-cov      # with a coverage report
 ```
 
 Requires PyQt5 but no display: the suite selects Qt's `offscreen` platform
-plugin, so it runs over SSH and in CI as-is. QSettings is redirected to a
-temporary directory per test, so running the suite never touches your real
-preferences.
+plugin, so it runs over SSH and in CI as-is. Any test that touches preferences
+or the log takes the `settings_dir` fixture, which points
+`PTMGENERATOR2_DATA_DIR` at a temp directory — so running the suite never
+touches your real ones.
 
 ## Troubleshooting
 

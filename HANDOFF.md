@@ -16,16 +16,18 @@ since the tag and neither is released yet:
    **Preferences → PTM Engine**.
 2. **A Windows installer, and a data directory** (devlog 011). onefile became
    onedir, releases ship an Inno Setup installer, and settings and logs moved to
-   `%USERPROFILE%\PaleoBytes\PTMGenerator2`. **The installer has never been
-   built on Windows** — run `gh workflow run build.yml` before tagging.
+   `%USERPROFILE%\PaleoBytes\PTMGenerator2`. Built on Windows and the artifact
+   checked (`PTMGenerator2_v0.2.0-alpha.2_build16_Installer.exe`, 43 MB, a valid
+   Inno Setup binary) — but **nobody has run it**. See `TODOs.md`.
 
 | | |
 |---|---|
-| Tests | **308 passed**, ~6 s, no display needed |
-| Coverage | **92%** overall, `core/` 94–100% (gate: 85%) |
-| Lint / types | ruff 20 rule groups, mypy over `core/` + `ui/` — all clean, all gating |
-| CI | 5 workflows, all green: test, build, release, docs, security, codeql |
+| Tests | **331 passed**, ~6 s, no display needed |
+| Coverage | **93%** overall (gate: 85%). `core/self_test.py` is the outlier at 29% — it checks the frozen bundle, which the suite is not |
+| Lint / types | ruff 20 rule groups, mypy over `core/` — all clean, all gating |
+| CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
 | Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2` — both built and self-tested on Windows |
+| Artifact | Inno Setup installer, per-user, `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2` |
 | Manual | published, English + Korean |
 
 - Application: <https://github.com/jikhanjung/PTMGenerator/releases>
@@ -59,7 +61,7 @@ is smaller than this.
 
 ```bash
 make install-dev     # deps + pre-commit hooks
-make test            # 308 tests, ~6 s
+make test            # 331 tests, ~6 s
 make lint type-check
 ```
 
@@ -101,9 +103,9 @@ no working test suite to the process the sibling projects run.
 
 | | Before | Now |
 |---|---|---|
-| Largest file | 1,217 lines | 530 (`ui/main_window.py`) |
-| Tests | 0 that completed | 308 |
-| Coverage | — | 92% |
+| Largest file | 1,217 lines | 687 (`ui/main_window.py`) |
+| Tests | 0 that completed | 331 |
+| Coverage | — | 93% |
 | ruff rule groups | 0 | 20 |
 | CI workflows | 0 | 5 |
 | Releases | 0 | 2 |

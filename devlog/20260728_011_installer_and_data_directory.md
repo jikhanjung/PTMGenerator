@@ -110,9 +110,17 @@ which is the cleanest of the three:
 - `PrivilegesRequired=lowest` — per user, so `{localappdata}` and
   `{userprograms}` resolve to the invoking user rather than to whoever consented
   to the UAC prompt.
-- `DefaultDirName={localappdata}\PaleoBytes\PTMGenerator2` — Local, not Roaming:
-  a 198 MB payload would otherwise sync with the profile on domain-joined
-  machines.
+- `DefaultDirName={userpf}\PaleoBytes\PTMGenerator2` — `{userpf}` is the
+  per-user Program Files, `%LOCALAPPDATA%\Programs`, which is where Windows
+  itself installs per-user applications. Local rather than Roaming, so a 198 MB
+  payload does not sync with the profile on domain-joined machines. It needs
+  Inno Setup 6.3 or newer, and the workflow pins 6.7.3.
+
+  This started as plain `{localappdata}\PaleoBytes\PTMGenerator2`, matching
+  what Modan2 and CTHarvester do today. `{userpf}` is the better answer for all
+  of them: `%LOCALAPPDATA%` proper is for application *data*, and putting a
+  program directly in it sits alongside the caches rather than with the other
+  installed programs.
 - `Compression=lzma/normal`, `SolidCompression=no` — solid LZMA trips antivirus
   heuristics more often, and an installer quarantined on the user's machine is
   worse than a larger one.
@@ -139,7 +147,30 @@ One test asserts the installer never writes under `%USERPROFILE%`: whatever it
 installs there it would also remove, and that directory is precisely the one
 that has to survive.
 
+## What Windows caught that Linux could not
+
+Two of the new geometry tests set a window size and asserted it came back. The
+central layout has a minimum size hint, so on Windows the widget is 1308 wide
+where it was asked for 800 — both passed on Linux and failed on the Windows leg.
+
+The tests were wrong, not the code: what they are about is the encoding and the
+round trip, so they now compare against the window's own geometry. The general
+version of the mistake is asserting a value Qt never promised, and it is the
+third time the 3-OS matrix has paid for itself (devlog 007 has the other two).
+
+## The build
+
+`gh workflow run build.yml` on Windows: PyInstaller produced
+`dist/PTMGenerator2/PTMGenerator2.exe` (5.2 MB plus `_internal`), the frozen
+build passed `--self-test`, ISCC compiled, and the artifact is
+`PTMGenerator2_v0.2.0-alpha.2_build16_Installer.exe` — 43 MB, and a valid Inno
+Setup PE32 when inspected.
+
+**Nobody has run it.** Compiling is not installing: the upgrade path, the Start
+Menu entry, and above all that uninstalling leaves
+`%USERPROFILE%\PaleoBytes\PTMGenerator2` alone are all unverified. That is in
+`TODOs.md` with the alpha's other hardware checks.
+
 ## State
 
-308 tests, ruff and mypy clean, manual updated in both languages. Not yet built
-on Windows — `gh workflow run build.yml` before any tag, per devlog 007.
+331 tests, 93% coverage, ruff and mypy clean, manual updated in both languages.

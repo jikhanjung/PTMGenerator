@@ -24,10 +24,14 @@ AppPublisher=PaleoBytes
 AppPublisherURL=https://github.com/jikhanjung/PTMGenerator
 AppSupportURL=https://github.com/jikhanjung/PTMGenerator/issues
 AppUpdatesURL=https://github.com/jikhanjung/PTMGenerator/releases
-; Local, not Roaming: the onedir payload would otherwise sync with the user
+; {userpf} is the per-user Program Files -- %LOCALAPPDATA%\Programs -- which is
+; where a per-user application belongs, and where Windows itself installs them.
+; Local rather than Roaming, so the onedir payload does not sync with the user
 ; profile on domain-joined machines. Grouped under PaleoBytes to match Modan2,
 ; CTHarvester and PaperMeister.
-DefaultDirName={localappdata}\PaleoBytes\PTMGenerator2
+;
+; Requires Inno Setup 6.3 or newer for {userpf}; the workflow pins 6.7.3.
+DefaultDirName={userpf}\PaleoBytes\PTMGenerator2
 ; Per-user: no elevation, so {localappdata} and {userprograms} always resolve to
 ; the invoking user rather than to whoever consented to the UAC prompt.
 PrivilegesRequired=lowest

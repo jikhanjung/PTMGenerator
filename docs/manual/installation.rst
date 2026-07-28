@@ -25,7 +25,7 @@ Download ``PTMGenerator2_v<version>_build<n>_Installer.exe`` from the `releases
 page <https://github.com/jikhanjung/PTMGenerator/releases>`_ and run it.
 
 It installs per user, so there is no administrator prompt, into
-``%LOCALAPPDATA%\PaleoBytes\PTMGenerator2``. A Start Menu shortcut is created
+``%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2``. A Start Menu shortcut is created
 under **PaleoBytes**; a desktop shortcut is offered and off by default.
 
 Installing a newer version over an older one replaces it in place. Uninstall

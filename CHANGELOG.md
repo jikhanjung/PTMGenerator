@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A Windows installer.** Releases now ship
   `PTMGenerator2_v<version>_build<n>_Installer.exe` instead of a bare
   executable. It installs per user, so there is no administrator prompt, into
-  `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2`, adds a Start Menu shortcut under
+  `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2` — the per-user Program
+  Files, where Windows itself installs per-user applications — adds a Start Menu
+  shortcut under
   **PaleoBytes**, and can be uninstalled from Settings › Apps. Built with Inno
   Setup, matching Modan2, CTHarvester and PaperMeister.
 - **Settings and logs have a home of their own**, in
@@ -32,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   applies only to it.
 
 ### Fixed
+- **The crash dialog names a log file that exists.** It pointed at `output.log`,
+  which moved with the rest of the application's data; it now shows the real
+  path.
 - **PTM generation no longer breaks on a path containing a space or Hangul.**
   The `.lp` file listed absolute paths, and PTMfitter splits each line on
   whitespace, so a space in the path was read as a light coordinate. It also
