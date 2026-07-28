@@ -59,23 +59,59 @@ coefficients.
 
 ## The file format
 
-Read off an actual output (8×6 pixels, 9 images, 541 bytes):
+The HP technical report (HPL-2001-104) is the nominal specification, but the HP
+Labs site is gone. What settles it instead is a **working C implementation**:
+`cceh/rti`'s `rti-builder` (`ptmlib.c`, `ptm-encoder.c`), which both reads and
+writes PTMs. That is better than the PDF for this purpose — it is what actually
+produces files the viewers accept.
+
+Confirmed from `ptm_write_header` and cross-checked against a real 8×6 output
+from the shipped `PTMfitter.exe`:
 
     PTM_1.2\n
     PTM_FORMAT_LRGB\n
-    8\n                                                    width
-    6\n                                                    height
-    16.000000 16.000000 0.015625 0.003906 0.007813 16.000000 \n    6 scales
-    141 141 183 118 243 0 \n                                       6 biases
+    <width>\n
+    <height>\n
+    <6 floats>  \n      scale, one per coefficient
+    <6 ints>    \n      bias,  one per coefficient
     <binary payload>
 
-The payload is 433 bytes for 48 pixels, which is consistent with 6 quantised
-coefficients plus 3 RGB bytes per pixel (48 × 9 = 432) and one byte unaccounted
-for. **That last byte, the coefficient ordering, the row order, and how the
-scale/bias quantisation maps to floats all have to be established from the
-data rather than assumed** — see verification below. The published PTM 1.2
-specification should be obtained and used as the primary reference; this
-observation is a cross-check on it, not a substitute.
+**Coefficient order** is fixed by `ptm_coefficients_t`:
+
+    cu²  cv²  cuv  cu  cv  c1
+
+**Payload layout** for LRGB: all six coefficients interleaved per pixel for
+`width × height × 6` bytes, then RGB interleaved per pixel for
+`width × height × 3`. Two blocks, not nine bytes per pixel throughout.
+
+**Rows run bottom to top.** `ptm-encoder.c` flips each source image
+vertically while reading it:
+
+```c
+size_t flipped_y = (info.height - y - 1);
+```
+
+This is exactly the sort of thing that produces a plausible but upside-down
+result, silently.
+
+**Quantisation** is per coefficient, over the whole image, from
+`ptm_scale_coefficients`:
+
+```c
+scale[i] = (max[i] - min[i]) / 256.0f;
+bias[i]  = -256.0f / (max[i] - min[i]) * min[i];
+...
+*s = CLIP ((*u * inv_scale[n]) + bias[n]);
+```
+
+So the encoder needs the min and max of each coefficient across every pixel
+before it can write any of them — which constrains the banding strategy below:
+either two passes, or accumulate the coefficients unquantised and scale at the
+end.
+
+The reference also uses LAPACK least squares with the pseudo-inverse computed
+once and applied per pixel with `sgemv` — the same shape as the numpy plan
+here, which is reassuring.
 
 ## Verification
 
@@ -129,7 +165,8 @@ guessing the next one right.
 
 1. **Read the format.** A `.ptm` reader, checked against outputs from the real
    fitter. Reading first because it is how everything later is verified, and it
-   is useful on its own for inspecting a bad fit.
+   is useful on its own for inspecting a bad fit. Much cheaper than it was
+   before `rti-builder` was found — this is now transcription, not discovery.
 2. **Fit, unbanded.** Whole-image least squares for images small enough to hold.
    Byte-compare against the reference on synthetic sets. This is the phase that
    establishes correctness.
@@ -146,11 +183,10 @@ what the `core/` boundary is for.
 
 ## Risks
 
-- **The format is not fully known.** The single unaccounted byte above is the
-  visible edge of that. Phase 1 exists to close it before anything depends on a
-  guess; if the specification cannot be obtained and the format cannot be
-  established from the data, the plan stops there rather than shipping a file
-  that some viewers reject.
+- ~~**The format is not fully known.**~~ **Resolved 2026-07-28.** `cceh/rti`'s
+  `rti-builder` is a working C reader *and* writer; the header, coefficient
+  order, block layout, row order and quantisation are all read off it above.
+  This was the largest risk in the plan and it is gone.
 - **"Byte-identical" may be unachievable** for reasons that do not matter —
   summation order, `float` vs `double` in the original. Decide the tolerance
   when the first comparison is run, and write down the reasoning.
@@ -177,10 +213,20 @@ what the `core/` boundary is for.
 
 ## Open questions
 
-- Where does the PTM 1.2 specification live, and does it cover the quantisation
-  exactly? Everything above assumes it can be obtained.
-- Do the PTM viewers actually in use accept a file that differs from
-  PTMfitter's byte-for-byte but is spec-conformant? Worth checking early, since
-  it determines how strict phase 2 has to be.
-- Is the fit weighted at all? The scale/bias line suggests per-coefficient
-  normalisation, which needs to be reproduced exactly, not approximated.
+- ~~Where does the specification live?~~ Answered: `cceh/rti` (`rti-builder/`)
+  is a working implementation and is the reference. HPL-2001-104 is the nominal
+  spec but HP Labs is offline; a copy exists in the Internet Archive if the
+  prose is ever needed.
+- ~~Is the fit weighted, and how is scale/bias derived?~~ Answered above:
+  per-coefficient min/max across the whole image, mapped onto 0–255.
+- **Byte-identical to which implementation?** There are now two references that
+  need not agree with each other: the shipped `PTMfitter.exe` and `rti-builder`.
+  They will differ at least in floating-point details, and possibly in the
+  min/max derivation. Decide early which one is the target — `PTMfitter.exe`,
+  since it is what has produced every existing capture.
+- **Does the quantisation need the whole image first?** Yes, per the formula
+  above, which the banding design has to accommodate. Accumulating float
+  coefficients for 48MP is 48e6 × 6 × 4 bytes ≈ 1.1 GB, which is affordable but
+  not free; a two-pass alternative trades memory for time. Measure both.
+- Do the viewers in use accept a spec-conformant file that is not byte-identical
+  to PTMfitter's? Worth checking before phase 2 sets its acceptance criterion.
