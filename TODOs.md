@@ -28,6 +28,10 @@ There is a good verification route: `PTMfitter.exe` handles 24MP, so a native
 implementation can be checked against it byte for byte on sets that size before
 being trusted on the ones it cannot do.
 
+**Planned in `devlog/20260728_P02_NativePtmFitter.md`** — phases, verification
+ladder, memory strategy, risks and open questions. Read that before starting.
+It should not share a cycle with anything else.
+
 ---
 
 ## Verify the alpha against real hardware — blocks `stage beta`

@@ -29,6 +29,12 @@ renumbered, because commits reference them by name.
 | 007 | 2026-07-28 | [Building before tagging, and the first two releases](20260728_007_first_releases.md) |
 | 008 | 2026-07-28 | [Translating the manual](20260728_008_korean_manual.md) |
 | 009 | 2026-07-28 | [Watching for the capture folder, and what PTMfitter actually tolerates](20260728_009_capture_folder_and_ptmfitter_quirks.md) |
+| P02 | 2026-07-28 | [Plan: fitting PTMs in-process](20260728_P02_NativePtmFitter.md) |
+
+P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
+yet, written down before starting so the approach and the verification strategy
+can be argued with. An entry describing work that *did* happen gets a number
+instead.
 
 R-series entries (`R01`, `R02`, …) are audits rather than changes: a review of
 the whole tree against a standard, with the state found recorded separately from
