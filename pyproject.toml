@@ -27,6 +27,12 @@ classifiers = [
 dependencies = [
     "pyqt5>=5.15.0,<6.0.0",
     "pyserial>=3.5,<4.0.0",
+    # The PTM fitter: the whole image is one matrix multiplication against a
+    # precomputed pseudo-inverse, which numpy hands to BLAS. See
+    # devlog/20260728_P02_NativePtmFitter.md.
+    "numpy>=2.0.0,<3.0.0",
+    # Decoding the captured JPEGs for that fit.
+    "pillow>=10.0.0,<13.0.0",
     # version.py parses __version__ with it, so it is a runtime dependency and
     # not a tooling one.
     "semver>=3.0.0,<4.0.0",
