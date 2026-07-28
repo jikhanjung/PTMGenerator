@@ -154,15 +154,29 @@ extend-exclude = ["legacy", "build", "dist"]
 # Grown incrementally, the way the reference projects did it: add a group, fix
 # the tree, then commit. Anything not listed here is not yet clean.
 select = [
-    "E",    # pycodestyle errors
-    "F",    # pyflakes
-    "I",    # import sorting
-    "UP",   # pyupgrade
-    "B",    # bugbear
-    "C4",   # comprehensions
-    "SIM",  # simplify
-    "PTH",  # prefer pathlib
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # import sorting
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # bugbear
+    "C4",     # comprehensions
+    "SIM",    # simplify
+    "PTH",    # prefer pathlib
     "RUF",
+    # Added 2026-07-28 after the audit in devlog R01. The groups the shared
+    # code-quality guide names as catching real desktop bugs; all but DTZ were
+    # already at zero violations, so this is a ratchet, not a cleanup.
+    "DTZ",    # naive datetimes -- the DST bug in interval detection was one
+    "S",      # bandit: eval/exec, shell=True, unsafe parsing
+    "TRY",    # exception anti-patterns
+    "LOG",    # logging anti-patterns
+    "G",      # logging format
+    "RET",    # dead returns
+    "PIE",    # misc lint
+    "PERF",   # obvious performance mistakes
+    "A",      # shadowed builtins
+    "C90",    # mccabe complexity -- see mccabe below
 ]
 ignore = [
     # The Qt API is camelCase and the widget attributes mirror it (btnOkay,
@@ -172,12 +186,31 @@ ignore = [
     # .lp files); a pathlib conversion is a separate, testable change. Tracked
     # in TODOs.md.
     "PTH118", "PTH120", "PTH123", "PTH110", "PTH100", "PTH103", "PTH119", "PTH208",
+    # The one subprocess call launches the user's configured PTMfitter with a
+    # fixed argument list and no shell. S603 fires on every subprocess call
+    # regardless; S607 wants an absolute path, but the whole point of the
+    # PTM Fitter preference is that the user chooses where it lives.
+    "S603", "S607",
 ]
 
+[tool.ruff.lint.mccabe]
+# The guide's threshold. Nothing in the tree reaches it since the core/ui
+# split; before it, take_picture_process and setup_ui were both well over.
+max-complexity = 15
+
 [tool.ruff.lint.per-file-ignores]
-# Tests reach into private attributes to stage a fake serial port, and assert
-# on os.path results rather than rewriting the assertion in pathlib terms.
-"tests/*" = ["SLF001", "PTH117"]
+# S101 is `assert`, which is what a test is made of -- 162 of the 165 S findings
+# were this. SLF001: tests reach into private attributes to stage a fake serial
+# port. PTH117: assertions about os.path results, not code under test.
+# TRY: raising inline is how a test stages the failure it is about; abstracting
+# it into a helper would hide the thing under test.
+"tests/*" = ["S101", "SLF001", "PTH117", "TRY003", "TRY301"]
+# Sphinx requires the module-level name `copyright`; it is not our choice.
+"docs/manual/conf.py" = ["A001"]
+# DTZ011: the release date stamped into CHANGELOG.md is a local calendar date
+# on the maintainer's machine, which is what a changelog entry means. A UTC
+# date would be wrong for anyone releasing in the evening east of Greenwich.
+"scripts/bump_version.py" = ["DTZ011"]
 # conftest sets QT_QPA_PLATFORM before importing PyQt5, which has to happen
 # after the os import and before anything Qt-related.
 "tests/conftest.py" = ["E402"]

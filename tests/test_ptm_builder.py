@@ -7,7 +7,7 @@ import pytest
 from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
 from core.ptm_builder import (
-    PtmFitterNotFound,
+    PtmFitterNotFoundError,
     build_lp_content,
     lp_path_for,
     run_fitter,
@@ -96,12 +96,12 @@ def test_run_fitter_builds_the_command(tmp_path):
 
 
 def test_missing_fitter_raises(tmp_path):
-    with pytest.raises(PtmFitterNotFound):
+    with pytest.raises(PtmFitterNotFoundError):
         run_fitter(str(tmp_path / "nope.exe"), "/x.lp", "/x.ptm", runner=lambda cmd: None)
 
 
 def test_missing_fitter_runs_nothing(tmp_path):
     calls = []
-    with pytest.raises(PtmFitterNotFound):
+    with pytest.raises(PtmFitterNotFoundError):
         run_fitter(str(tmp_path / "nope.exe"), "/x.lp", "/x.ptm", runner=calls.append)
     assert calls == []

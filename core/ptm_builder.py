@@ -9,7 +9,7 @@ import os
 import subprocess
 
 
-class PtmFitterNotFound(Exception):
+class PtmFitterNotFoundError(Exception):
     """Raised when the configured PTMfitter executable is not on disk."""
 
 
@@ -63,10 +63,10 @@ def run_fitter(fitter_path, lp_path, ptm_path, runner=None):
             `core.ptm_builder.subprocess.call` works.
 
     Raises:
-        PtmFitterNotFound: If `fitter_path` does not exist.
+        PtmFitterNotFoundError: If `fitter_path` does not exist.
     """
     if not os.path.exists(fitter_path):
-        raise PtmFitterNotFound(fitter_path)
+        raise PtmFitterNotFoundError(fitter_path)
     if runner is None:
         runner = subprocess.call
     command = [str(fitter_path), "-i", str(lp_path), "-o", str(ptm_path)]

@@ -127,8 +127,7 @@ def detect_irregular_intervals(directory_path, getctime=os.path.getctime):
             continue
         if interval > 1.5 * typical:
             missed = round(interval / typical) - 1
-            for j in range(missed):
-                slots.append(CaptureSlot(i + j + 1, MISSING, MISSING, False))
+            slots.extend(CaptureSlot(i + j + 1, MISSING, MISSING, False) for j in range(missed))
             span += missed
         slots.append(CaptureSlot(i + span + 1, directory_path, image_files[i + 1], True))
     return slots
