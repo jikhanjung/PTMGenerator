@@ -55,6 +55,7 @@ import sys
 import tempfile
 
 import numpy as np
+from PIL import Image
 
 from core import ptm_fitter, ptm_format
 
@@ -270,8 +271,6 @@ def _subprocess_runner(command, cwd):
 
 def load_image(path):
     """Decode one capture as an (height, width, 3) uint8 array."""
-    from PIL import Image
-
     with Image.open(path) as image:
         return np.asarray(image.convert("RGB"))
 

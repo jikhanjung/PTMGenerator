@@ -6,6 +6,9 @@ myst-parser>=2.0.0
 # conf.py imports version.py, which parses __version__ with semver.
 semver>=3.0.0
 # api.rst autodocs core/, and autodoc imports what it documents:
-# core.serial_controller imports pyserial. PyQt5 is not needed, because ui/ is
-# not autodocumented -- which is the core/ui boundary paying off again.
+# core.serial_controller imports pyserial, and core.ptm_fitter imports numpy
+# and Pillow. PyQt5 is not needed, because ui/ is not autodocumented -- which
+# is the core/ui boundary paying off again.
 pyserial>=3.5
+numpy>=1.26
+pillow>=10.0
