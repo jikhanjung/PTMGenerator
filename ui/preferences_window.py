@@ -2,7 +2,7 @@
 
 import os
 
-from PyQt5.QtCore import QRect, QSettings, QTranslator
+from PyQt5.QtCore import QRect, QTranslator
 from PyQt5.QtGui import QDoubleValidator, QIcon, QIntValidator
 from PyQt5.QtWidgets import (
     QApplication,
@@ -18,12 +18,13 @@ from PyQt5.QtWidgets import (
 )
 
 from core import settings as prefs
+from core.preferences import Preferences
 from core.resources import icon_path, translation_path
-from version import COMPANY_NAME, PROGRAM_NAME
+from ui.geometry import to_list, to_rect
 
 
 class PreferencesWindow(QDialog):
-    """Reads and writes the QSettings the rest of the app runs on.
+    """Reads and writes the preferences the rest of the app runs on.
 
     Everything here is stored under `PaleoBytes / PTMGenerator2`; see
     core.settings for the keys and their defaults.
@@ -38,9 +39,7 @@ class PreferencesWindow(QDialog):
         self.parent = parent
         self.m_app = QApplication.instance()
         self.current_translator = None
-        self.settings = QSettings(
-            QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME
-        )
+        self.settings = getattr(self.m_app, "settings", None) or Preferences()
 
     def setup_ui(self):
         self.setWindowTitle(self.tr("Preferences"))
@@ -148,15 +147,16 @@ class PreferencesWindow(QDialog):
             self.edtPtmFitter.setText(filename)
 
     def read_settings(self):
-        self.m_app.settings = QSettings(
-            QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME
-        )
+        if getattr(self.m_app, "settings", None) is None:
+            self.m_app.settings = Preferences()
         s = self.m_app.settings
         self.remember_geometry = prefs.value_to_bool(
             s.value("WindowGeometry/RememberGeometry", True)
         )
         if self.remember_geometry:
-            self.setGeometry(s.value("WindowGeometry/PreferencesWindow", QRect(100, 100, 500, 250)))
+            self.setGeometry(
+                to_rect(s.value("WindowGeometry/PreferencesWindow"), QRect(100, 100, 500, 250))
+            )
             if prefs.value_to_bool(s.value("IsMaximized/PreferencesWindow", False)):
                 self.showMaximized()
             else:
@@ -177,7 +177,7 @@ class PreferencesWindow(QDialog):
 
     def save_settings(self):
         s = self.m_app.settings
-        s.setValue("WindowGeometry/PreferencesWindow", self.geometry())
+        s.setValue("WindowGeometry/PreferencesWindow", to_list(self.geometry()))
         s.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
         s.setValue(prefs.LANGUAGE, self.language_combobox.currentData())
         s.setValue(prefs.SERIAL_PORT, self.comboSerialPort.currentData())
@@ -187,6 +187,7 @@ class PreferencesWindow(QDialog):
         s.setValue(prefs.RETRY_COUNT, str(self.edtRetryCount.text()))
         s.setValue(prefs.LIGHT_POSITION_ADJUSTMENT, str(self.edtLightPositionAdjustment.text()))
         s.setValue(prefs.POST_SHUTTER_POLLING, str(self.edtPostShutterPolling.text()))
+        s.sync()
 
     def language_combobox_currentIndexChanged(self, index):
         self.language = self.language_combobox.currentData()

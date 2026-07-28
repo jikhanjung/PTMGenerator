@@ -1,13 +1,14 @@
 """The main window: settings, the capture table, and the capture loop."""
 
 import csv
+import json
 import os
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from PIL import Image
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QProgressDialog
 
@@ -16,7 +17,7 @@ from core import ptm_builder, ptm_format
 from core import settings as prefs
 from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
-from ui.main_window import PTMGeneratorMainWindow
+from ui.main_window import OutputRedirector, PTMGeneratorMainWindow
 
 pytestmark = pytest.mark.ui
 
@@ -662,3 +663,57 @@ def test_progress_reaches_the_dialog(ready_to_fit_natively, workdir):
     ):
         window.generatePTM()
     assert [call.args[0] for call in set_value.call_args_list] == list(range(1, 9))
+
+
+# -- where the application writes ------------------------------------------
+
+
+def test_the_log_goes_to_the_data_directory(main_window, settings_dir):
+    """Not the current directory, and not the install directory -- the
+    installer removes that on uninstall."""
+    assert main_window.redirector.file_path.startswith(str(settings_dir))
+    assert os.path.exists(main_window.redirector.file_path)
+
+
+def test_the_log_is_named_for_today(main_window):
+    import datetime
+
+    today = datetime.date.today().strftime("%Y%m%d")
+    assert os.path.basename(main_window.redirector.file_path) == f"PTMGenerator2_{today}.log"
+
+
+def test_a_second_run_appends_rather_than_truncating(main_window, tmp_path):
+    """One file per day, so a second capture session must not erase the first
+    one's record of what went wrong."""
+    path = tmp_path / "day.log"
+    path.write_text("earlier run\n", encoding="utf-8")
+    redirector = OutputRedirector(str(path))
+    redirector.stdout = None
+    redirector.write("later run\n")
+    redirector.close()
+    assert path.read_text(encoding="utf-8") == "earlier run\nlater run\n"
+
+
+def test_geometry_is_stored_as_numbers(main_window, settings_dir):
+    """QSettings could hold a QRect; JSON cannot, and a readable file is the
+    point of the move."""
+    main_window.setGeometry(QRect(10, 20, 800, 600))
+    main_window.save_settings()
+    written = json.loads((settings_dir / "preferences.json").read_text(encoding="utf-8"))
+    assert written["WindowGeometry"]["MainWindow"] == [10, 20, 800, 600]
+
+
+def test_geometry_survives_a_restart(main_window, settings_dir):
+    main_window.setGeometry(QRect(30, 40, 900, 700))
+    main_window.save_settings()
+    main_window.setGeometry(QRect(0, 0, 100, 100))
+    main_window.m_app.settings = None
+    main_window.read_settings()
+    assert main_window.geometry() == QRect(30, 40, 900, 700)
+
+
+def test_nonsense_geometry_falls_back_to_the_default(main_window):
+    """A hand-edited preferences file must not stop the window opening."""
+    main_window.m_app.settings.setValue("WindowGeometry/MainWindow", "not a rectangle")
+    main_window.read_settings()
+    assert main_window.geometry() == QRect(100, 100, 1400, 800)

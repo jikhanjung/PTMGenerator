@@ -4,7 +4,7 @@ import os
 import sys
 import time
 
-from PyQt5.QtCore import QObject, QRect, QSettings, Qt, QTimer, QTranslator, pyqtSignal
+from PyQt5.QtCore import QObject, QRect, Qt, QTimer, QTranslator, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import (
     QAction,
@@ -23,15 +23,17 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from core import image_data, ptm_builder, ptm_fitter
+from core import image_data, paths, ptm_builder, ptm_fitter
 from core import settings as prefs
 from core.capture_session import CaptureSession
 from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
+from core.preferences import Preferences
 from core.resources import icon_path, translation_path
 from core.serial_controller import SerialController
+from ui.geometry import to_list, to_rect
 from ui.preferences_window import PreferencesWindow
-from version import COMPANY_NAME, PROGRAM_NAME, __version__
+from version import __version__
 
 #: One capture tick per second.
 TICK_MS = 1000
@@ -52,7 +54,9 @@ class OutputRedirector(QObject):
         self.stdout = sys.stdout
         # Held open for the lifetime of the window and closed in close();
         # a context manager cannot express that.
-        self.file = open(file_path, "w")  # noqa: SIM115
+        # Appended, not truncated: the file is one day's log, and a second run
+        # on the same day must not erase the first one's record.
+        self.file = open(file_path, "a", encoding="utf-8")  # noqa: SIM115
 
     def write(self, message):
         if self.stdout is not None:
@@ -103,7 +107,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.selected_rows = []
         self.prev_selected_rows = []
 
-        self.redirector = OutputRedirector("output.log")
+        paths.ensure_directories()
+        self.redirector = OutputRedirector(paths.log_path())
         sys.stdout = self.redirector
 
     def setup_ui(self):
@@ -218,15 +223,18 @@ class PTMGeneratorMainWindow(QMainWindow):
     # -- settings -----------------------------------------------------------
 
     def read_settings(self):
-        self.m_app.settings = QSettings(
-            QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME
-        )
+        # The entry point opens the store and hands it to the application; a
+        # window built by a test or a script may find none there.
+        if getattr(self.m_app, "settings", None) is None:
+            self.m_app.settings = Preferences()
         s = self.m_app.settings
         self.m_app.remember_geometry = prefs.value_to_bool(
             s.value("WindowGeometry/RememberGeometry", True)
         )
         if self.m_app.remember_geometry:
-            self.setGeometry(s.value("WindowGeometry/MainWindow", QRect(100, 100, 1400, 800)))
+            self.setGeometry(
+                to_rect(s.value("WindowGeometry/MainWindow"), QRect(100, 100, 1400, 800))
+            )
             if prefs.value_to_bool(s.value("IsMaximized/MainWindow", False)):
                 self.showMaximized()
             else:
@@ -246,8 +254,9 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.update_language(self.m_app.language)
 
     def save_settings(self):
-        self.m_app.settings.setValue("WindowGeometry/MainWindow", self.geometry())
+        self.m_app.settings.setValue("WindowGeometry/MainWindow", to_list(self.geometry()))
         self.m_app.settings.setValue("IsMaximized/MainWindow", self.isMaximized())
+        self.m_app.settings.sync()
 
     # -- serial -------------------------------------------------------------
 

@@ -13,16 +13,32 @@ Run with `python PTMGenerator2.py`, or build the Windows executable with
 import os
 import sys
 
-from PyQt5.QtCore import QSettings, QTranslator
+from PyQt5.QtCore import QTranslator
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 
+from core import paths
 from core import self_test as self_test_checks
+from core.preferences import Preferences, legacy_ini_path, migrate_from_ini
 from core.resources import icon_path, translation_path
 from core.settings import LANGUAGE, read_str
 from ui import error_handling
 from ui.main_window import PTMGeneratorMainWindow
-from version import COMPANY_NAME, PROGRAM_NAME, __version__
+from version import PROGRAM_NAME, __version__
+
+
+def open_preferences():
+    """The preferences store, with anything QSettings left behind brought over.
+
+    The migration runs on every start and is a no-op once the JSON file has the
+    keys; that is cheaper than a flag recording whether it has happened, and it
+    also picks up a `.ini` restored from a backup later.
+    """
+    paths.ensure_directories()
+    preferences = Preferences()
+    if migrate_from_ini(preferences):
+        print(f"imported preferences from {legacy_ini_path()}")
+    return preferences
 
 
 def self_test(argv):
@@ -40,7 +56,7 @@ def self_test(argv):
     app = QApplication(argv[:1])
     app.translator = None
     app.language = "en"
-    app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
+    app.settings = open_preferences()
 
     print(f"{PROGRAM_NAME} {__version__} self-test")
     print(f"  frozen: {getattr(sys, 'frozen', False)}")
@@ -80,7 +96,7 @@ def main(argv=None):
     error_handling.install()
     app.translator = None
     app.setWindowIcon(QIcon(icon_path("app")))
-    app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, COMPANY_NAME, PROGRAM_NAME)
+    app.settings = open_preferences()
 
     app.language = read_str(app.settings, LANGUAGE)
     translator = QTranslator()

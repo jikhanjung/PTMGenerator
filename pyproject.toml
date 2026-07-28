@@ -214,16 +214,21 @@ max-complexity = 15
 [tool.ruff.lint.per-file-ignores]
 # S101 is `assert`, which is what a test is made of -- 162 of the 165 S findings
 # were this. SLF001: tests reach into private attributes to stage a fake serial
-# port. PTH117: assertions about os.path results, not code under test.
+# port. PTH111/PTH117: assertions about os.path results, not code under test;
+# a test for os.path.expanduser behaviour has to call it. DTZ011: the log file
+# is named for the local calendar date, and the test says so.
 # TRY: raising inline is how a test stages the failure it is about; abstracting
 # it into a helper would hide the thing under test.
-"tests/*" = ["S101", "SLF001", "PTH117", "TRY003", "TRY301"]
+"tests/*" = ["S101", "SLF001", "DTZ011", "PTH111", "PTH117", "TRY003", "TRY301"]
 # Sphinx requires the module-level name `copyright`; it is not our choice.
 "docs/manual/conf.py" = ["A001"]
 # DTZ011: the release date stamped into CHANGELOG.md is a local calendar date
 # on the maintainer's machine, which is what a changelog entry means. A UTC
 # date would be wrong for anyone releasing in the evening east of Greenwich.
 "scripts/bump_version.py" = ["DTZ011"]
+# DTZ011: the log file is named for the day the user is having. Someone looking
+# for "today's log" at 9pm in Seoul means their today, not UTC's.
+"core/paths.py" = ["DTZ011"]
 # conftest sets QT_QPA_PLATFORM before importing PyQt5, which has to happen
 # after the os import and before anything Qt-related.
 "tests/conftest.py" = ["E402"]

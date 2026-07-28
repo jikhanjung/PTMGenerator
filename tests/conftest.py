@@ -4,12 +4,12 @@ Two things make the GUI testable without hardware or a display:
 
 * Qt's "offscreen" platform plugin is selected before PyQt5 is imported, so the
   suite runs over SSH and in CI without xvfb.
-* QSettings is redirected to a temp directory per test, so the suite never
-  reads or writes the real ``PaleoBytes / PTMGenerator2`` preferences.
+* ``PTMGENERATOR2_DATA_DIR`` points at a temp directory per test, so the suite
+  never reads or writes the real ``~/PaleoBytes/PTMGenerator2`` — neither the
+  preferences nor the log.
 
-Building a main window also replaces ``sys.stdout`` with an OutputRedirector
-and opens ``output.log`` in the current directory, so the ``main_window``
-fixture runs inside a temp cwd and restores stdout afterwards.
+Building a main window also replaces ``sys.stdout`` with an OutputRedirector,
+so the ``main_window`` fixture restores stdout afterwards.
 """
 
 import io
@@ -20,7 +20,7 @@ import sys
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PyQt5.QtCore import QSettings, qInstallMessageHandler
+from PyQt5.QtCore import qInstallMessageHandler
 from PyQt5.QtWidgets import QApplication
 
 _EXPECTED_QT_NOISE = (
@@ -55,21 +55,35 @@ def qapp():
     if not hasattr(app, "translator"):
         app.translator = None
         app.language = "en"
+    app.settings = None
     return app
 
 
 @pytest.fixture
-def settings_dir(tmp_path):
-    """Point QSettings at a private directory for the duration of a test."""
-    path = tmp_path / "settings"
+def settings_dir(tmp_path, monkeypatch):
+    """Point the data directory at a private one for the duration of a test.
+
+    Everything the application writes outside the capture folder lands here:
+    ``preferences.json`` and ``logs/``. Without this a test run would edit the
+    developer's real preferences, which has happened.
+    """
+    from core import paths
+
+    path = tmp_path / "data"
     path.mkdir()
-    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, str(path))
+    monkeypatch.setenv(paths.DATA_DIR_ENV, str(path))
+    # The QApplication is session-scoped and holds the store the first window
+    # opened, which would otherwise be pointed at an earlier test's directory
+    # and carry its values forward.
+    app = QApplication.instance()
+    if app is not None:
+        app.settings = None
     return path
 
 
 @pytest.fixture
 def workdir(tmp_path, monkeypatch):
-    """A temp cwd, because building a window writes output.log into it."""
+    """A temp cwd. Capture files are written relative to it in several tests."""
     path = tmp_path / "work"
     path.mkdir()
     monkeypatch.chdir(path)
