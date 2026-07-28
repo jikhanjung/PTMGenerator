@@ -21,9 +21,29 @@ on Linux and macOS, which is what the test matrix covers.
 From a release
 --------------
 
-Download the executable from the `releases page
-<https://github.com/jikhanjung/PTMGenerator/releases>`_ and run it. It is a
-single self-contained file; there is nothing to install.
+Download ``PTMGenerator2_v<version>_build<n>_Installer.exe`` from the `releases
+page <https://github.com/jikhanjung/PTMGenerator/releases>`_ and run it.
+
+It installs per user, so there is no administrator prompt, into
+``%LOCALAPPDATA%\PaleoBytes\PTMGenerator2``. A Start Menu shortcut is created
+under **PaleoBytes**; a desktop shortcut is offered and off by default.
+
+Installing a newer version over an older one replaces it in place. Uninstall
+from Settings › Apps, or from the Start Menu folder.
+
+Where your settings and logs live
+---------------------------------
+
+Not in the install directory — the uninstaller removes that. They are in
+``%USERPROFILE%\PaleoBytes\PTMGenerator2``::
+
+    preferences.json      every setting from Edit › Preferences
+    logs\
+      PTMGenerator2_20260728.log     one file per day
+
+The application creates them on first run. Uninstalling leaves them alone, so
+reinstalling picks up where you left off; delete the folder by hand to start
+from defaults.
 
 From source
 -----------

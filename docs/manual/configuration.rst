@@ -1,10 +1,16 @@
 Configuration
 =============
 
-Settings are stored with ``QSettings`` under ``PaleoBytes / PTMGenerator2``:
+Settings live in ``preferences.json``, in the application's data directory:
 
-* Windows: ``%APPDATA%\PaleoBytes\PTMGenerator2.ini``
-* Linux: ``~/.config/PaleoBytes/PTMGenerator2.ini``
+* Windows: ``%USERPROFILE%\PaleoBytes\PTMGenerator2\preferences.json``
+* Linux and macOS: ``~/PaleoBytes/PTMGenerator2/preferences.json``
+
+It is ordinary JSON, so it can be read, edited with the application closed, and
+copied to another machine. Uninstalling does not remove it.
+
+Earlier versions kept an ``.ini`` under ``%APPDATA%``; it is imported the first
+time this version starts, and left where it is.
 
 Preferences
 -----------

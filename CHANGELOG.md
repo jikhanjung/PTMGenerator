@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **A Windows installer.** Releases now ship
+  `PTMGenerator2_v<version>_build<n>_Installer.exe` instead of a bare
+  executable. It installs per user, so there is no administrator prompt, into
+  `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2`, adds a Start Menu shortcut under
+  **PaleoBytes**, and can be uninstalled from Settings › Apps. Built with Inno
+  Setup, matching Modan2, CTHarvester and PaperMeister.
+- **Settings and logs have a home of their own**, in
+  `%USERPROFILE%\PaleoBytes\PTMGenerator2` — not under the install directory,
+  which the uninstaller removes. Settings are `preferences.json`, readable and
+  editable; an `.ini` from an earlier version is imported on first run and left
+  where it is. The log is one file per day in `logs/`, appended to, rather than
+  an `output.log` in whatever directory the application happened to start in.
 - **PTMs are now fitted in the application itself**, with no external program
   and no image-size limit beyond memory. `PTMfitter.exe` is 32-bit and fails
   above roughly 24 megapixels, which a 45MP body already exceeds. The images are

@@ -30,7 +30,10 @@ without a display, a QApplication or a controller attached.
 | `core/ptm_fitter.py` | The built-in least-squares fit, streaming so memory does not scale with the capture |
 | `core/ptm_format.py` | Reading and writing the PTM 1.2 container |
 | `core/resources.py` | Bundled-file lookup, frozen or not |
-| `core/settings.py` | Preference keys, defaults, coercion from QSettings strings |
+| `core/settings.py` | Preference keys, defaults, coercion |
+| `core/preferences.py` | The JSON store, and migration from the old QSettings `.ini` |
+| `core/paths.py` | `~/PaleoBytes/PTMGenerator2` — preferences and dated logs |
+| `ui/geometry.py` | QRect ↔ `[x, y, w, h]`, because JSON cannot hold a QRect |
 | `ui/main_window.py` | Widgets, the one-second timer, rendering what the session decides |
 | `ui/preferences_window.py` | The Edit > Preferences dialog |
 | `PTMGenerator2.py` | Entry point. `--self-test` checks the bundle and exits |
@@ -104,12 +107,21 @@ and none should be added.
 
 ## Gotchas
 
+- **Everything the application writes outside the capture folder goes to
+  `core.paths.data_dir()`** — `~/PaleoBytes/PTMGenerator2`, which is
+  `%USERPROFILE%\PaleoBytes\PTMGenerator2` on Windows. Never under the install
+  directory: the installer deletes that on uninstall. `PTMGENERATOR2_DATA_DIR`
+  redirects it, which is how the suite stays out of the developer's real data —
+  a script that builds a window without setting it will write there, and this
+  has happened.
 - **`initialize_variables()` replaces `sys.stdout`** with an `OutputRedirector`
-  writing `output.log` in the current directory. Tests that build a window run
-  in a temp cwd and restore stdout — see `tests/conftest.py`.
-- **QSettings is global.** Tests redirect it per test with `QSettings.setPath`.
-  Any script that constructs a window will otherwise write to the developer's
-  real preferences; this has happened.
+  appending to `logs/PTMGenerator2_<YYYYMMDD>.log`. One file per day, opened
+  in append mode. Tests restore stdout — see `tests/conftest.py`.
+- **Preferences are JSON, not QSettings.** `core.preferences.Preferences` keeps
+  the QSettings method names (`value`, `setValue`, `sync`) so `core/settings.py`
+  and both windows are unchanged, but a key containing `/` nests and types
+  survive the round trip. A QRect cannot be stored — `ui/geometry.py` converts.
+  An old `.ini` is imported on first run and left in place.
 - **A QApplication must outlive its widgets.** PyQt5 destroys it as soon as the
   last Python reference goes, so the `qapp` fixture is session-scoped.
 - **`app.translator` and `app.language`** are attached to the QApplication by the

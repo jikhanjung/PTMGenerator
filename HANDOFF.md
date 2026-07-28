@@ -8,15 +8,21 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 
 ## ▶ Current state (2026-07-28)
 
-**`v0.2.0-alpha.2`** — released 2026-07-28, pre-release. Since the tag, the
-built-in PTM fitter landed (P02 phases 1–4, devlog 010): PTMs are now fitted
-in-process by default, with `PTMfitter.exe` still selectable under
-**Preferences → PTM Engine**. Unreleased — no tag carries it yet.
+**`v0.2.0-alpha.2`** — released 2026-07-28, pre-release. Two things have landed
+since the tag and neither is released yet:
+
+1. **The built-in PTM fitter** (P02 phases 1–4, devlog 010). PTMs are fitted
+   in-process by default; `PTMfitter.exe` stays selectable under
+   **Preferences → PTM Engine**.
+2. **A Windows installer, and a data directory** (devlog 011). onefile became
+   onedir, releases ship an Inno Setup installer, and settings and logs moved to
+   `%USERPROFILE%\PaleoBytes\PTMGenerator2`. **The installer has never been
+   built on Windows** — run `gh workflow run build.yml` before tagging.
 
 | | |
 |---|---|
-| Tests | **262 passed**, ~5 s, no display needed |
-| Coverage | **91.8%** overall, `core/` 94–100% (gate: 85%) |
+| Tests | **308 passed**, ~6 s, no display needed |
+| Coverage | **92%** overall, `core/` 94–100% (gate: 85%) |
 | Lint / types | ruff 20 rule groups, mypy over `core/` + `ui/` — all clean, all gating |
 | CI | 5 workflows, all green: test, build, release, docs, security, codeql |
 | Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2` — both built and self-tested on Windows |
@@ -53,17 +59,17 @@ is smaller than this.
 
 ```bash
 make install-dev     # deps + pre-commit hooks
-make test            # 262 tests, ~5 s
+make test            # 308 tests, ~6 s
 make lint type-check
 ```
 
 Read `CLAUDE.md` before changing anything — it carries the conventions and the
 gotchas. The three that have actually caused problems:
 
-- Constructing a main window replaces `sys.stdout` and opens `output.log` in the
-  current directory.
-- QSettings is global. A script that builds a window writes to the developer's
-  real preferences unless it calls `QSettings.setPath` first. This has happened.
+- Constructing a main window replaces `sys.stdout` and opens today's log in
+  `~/PaleoBytes/PTMGenerator2/logs/`.
+- A script that builds a window writes to the developer's real preferences
+  unless it sets `PTMGENERATOR2_DATA_DIR` first. This has happened.
 - Every `core.resources.ICON` entry must exist on disk. `QIcon()` returns a null
   icon rather than raising, which is how a nonexistent icon shipped from the
   first release until `--self-test` found it.
@@ -96,14 +102,14 @@ no working test suite to the process the sibling projects run.
 | | Before | Now |
 |---|---|---|
 | Largest file | 1,217 lines | 530 (`ui/main_window.py`) |
-| Tests | 0 that completed | 262 |
+| Tests | 0 that completed | 308 |
 | Coverage | — | 92% |
 | ruff rule groups | 0 | 20 |
 | CI workflows | 0 | 5 |
 | Releases | 0 | 2 |
 | Manual | none | 2 languages |
 
-`devlog/README.md` indexes the write-ups; 003–010 cover this cycle. Eight bugs
+`devlog/README.md` indexes the write-ups; 003–011 cover this cycle. Eight bugs
 were fixed along the way, each with a regression test verified to fail against
 the previous code — the crashes are listed in `CHANGELOG.md` under
 `[0.2.0-alpha.1]`.

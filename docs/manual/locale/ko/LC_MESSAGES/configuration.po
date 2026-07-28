@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 14:40+0900\n"
+"POT-Creation-Date: 2026-07-28 16:28+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -26,154 +26,171 @@ msgstr "설정"
 
 #: ../../configuration.rst:4
 msgid ""
-"Settings are stored with ``QSettings`` under ``PaleoBytes / "
-"PTMGenerator2``:"
-msgstr "설정은 ``QSettings`` 를 통해 ``PaleoBytes / PTMGenerator2`` 아래에 저장됩니다:"
+"Settings live in ``preferences.json``, in the application's data "
+"directory:"
+msgstr "설정은 프로그램 데이터 디렉토리의 ``preferences.json`` 에 저장됩니다:"
 
 #: ../../configuration.rst:6
-msgid "Windows: ``%APPDATA%\\PaleoBytes\\PTMGenerator2.ini``"
-msgstr "Windows: ``%APPDATA%\\PaleoBytes\\PTMGenerator2.ini``"
+msgid "Windows: ``%USERPROFILE%\\PaleoBytes\\PTMGenerator2\\preferences.json``"
+msgstr "Windows: ``%USERPROFILE%\\PaleoBytes\\PTMGenerator2\\preferences.json``"
 
 #: ../../configuration.rst:7
-msgid "Linux: ``~/.config/PaleoBytes/PTMGenerator2.ini``"
-msgstr "Linux: ``~/.config/PaleoBytes/PTMGenerator2.ini``"
+msgid "Linux and macOS: ``~/PaleoBytes/PTMGenerator2/preferences.json``"
+msgstr "Linux 및 macOS: ``~/PaleoBytes/PTMGenerator2/preferences.json``"
 
-#: ../../configuration.rst:10
+#: ../../configuration.rst:9
+msgid ""
+"It is ordinary JSON, so it can be read, edited with the application "
+"closed, and copied to another machine. Uninstalling does not remove it."
+msgstr "평범한 JSON 파일이라 직접 열어 읽을 수 있고, 프로그램을 닫은 상태에서 편집하거나 다른 컴퓨터로 복사할 수도 있습니다. 프로그램을 제거해도 이 파일은 지워지지 않습니다."
+
+#: ../../configuration.rst:12
+msgid ""
+"Earlier versions kept an ``.ini`` under ``%APPDATA%``; it is imported the"
+" first time this version starts, and left where it is."
+msgstr "이전 버전은 ``%APPDATA%`` 아래에 ``.ini`` 파일을 두었습니다. 이 버전을 처음 실행할 때 그 내용을 가져오며, 원래 파일은 그대로 둡니다."
+
+#: ../../configuration.rst:16
 msgid "Preferences"
 msgstr "환경설정"
 
-#: ../../configuration.rst:16
+#: ../../configuration.rst:22
 msgid "Setting"
 msgstr "항목"
 
-#: ../../configuration.rst:17
+#: ../../configuration.rst:23
 msgid "Default"
 msgstr "기본값"
 
-#: ../../configuration.rst:18
+#: ../../configuration.rst:24
 msgid "Meaning"
 msgstr "의미"
 
-#: ../../configuration.rst:19
+#: ../../configuration.rst:25
 msgid "Serial Port"
 msgstr "시리얼 포트"
 
-#: ../../configuration.rst:20
+#: ../../configuration.rst:26
 msgid "*(none)*"
 msgstr "*(없음)*"
 
-#: ../../configuration.rst:21
+#: ../../configuration.rst:27
 msgid ""
 "The controller's port. Must be set before capturing; the list is "
 "populated from the ports present when the dialog opens."
 msgstr "컨트롤러의 포트. 촬영 전에 반드시 지정해야 합니다. 목록은 창을 열 때 연결되어 있는 포트로 채워집니다."
 
-#: ../../configuration.rst:23
+#: ../../configuration.rst:29
 msgid "PTM Engine"
 msgstr "PTM 엔진"
 
-#: ../../configuration.rst:24
+#: ../../configuration.rst:30
 msgid "Built-in"
 msgstr "내장"
 
-#: ../../configuration.rst:25
+#: ../../configuration.rst:31
 msgid ""
 "Which fitter **Generate PTM** uses. **Built-in** fits in the application "
 "itself and is limited only by memory. **PTMfitter.exe** shells out to the"
 " external binary, which is 32-bit and fails above roughly 24 megapixels; "
 "it is kept for comparison against the built-in fitter's output."
-msgstr "**PTM파일 만들기** 가 어느 fitter를 쓸지 정합니다. **내장** 은 프로그램 안에서 직접 피팅하며 메모리 외에는 제약이 없습니다. **PTMfitter.exe** 는 외부 바이너리를 호출하는데, 32비트라 약 2400만 화소가 넘는 이미지에서 실패합니다. 내장 fitter의 결과와 비교해 볼 수 있도록 남겨 두었습니다."
+msgstr ""
+"**PTM파일 만들기** 가 어느 fitter를 쓸지 정합니다. **내장** 은 프로그램 안에서 직접 피팅하며 메모리 외에는 제약이"
+" 없습니다. **PTMfitter.exe** 는 외부 바이너리를 호출하는데, 32비트라 약 2400만 화소가 넘는 이미지에서 "
+"실패합니다. 내장 fitter의 결과와 비교해 볼 수 있도록 남겨 두었습니다."
 
-#: ../../configuration.rst:29
+#: ../../configuration.rst:35
 msgid "PTM Fitter"
 msgstr "PTMFitter"
 
-#: ../../configuration.rst:30
+#: ../../configuration.rst:36
 msgid "``ptmfitter.exe``"
 msgstr "``ptmfitter.exe``"
 
-#: ../../configuration.rst:31
+#: ../../configuration.rst:37
 msgid ""
 "Path to the external fitter. Only used when the engine is set to "
 "**PTMfitter.exe**, and then **Generate PTM** refuses to run if it is not "
 "found."
-msgstr "외부 fitter 실행파일 경로. 엔진이 **PTMfitter.exe** 로 설정된 경우에만 쓰이며, 그때 파일을 찾지 못하면 **PTM파일 만들기** 가 실행을 거부합니다."
+msgstr ""
+"외부 fitter 실행파일 경로. 엔진이 **PTMfitter.exe** 로 설정된 경우에만 쓰이며, 그때 파일을 찾지 못하면 "
+"**PTM파일 만들기** 가 실행을 거부합니다."
 
-#: ../../configuration.rst:34
+#: ../../configuration.rst:40
 msgid "Number of LEDs"
 msgstr "LED 개수"
 
-#: ../../configuration.rst:35
+#: ../../configuration.rst:41
 msgid "50"
 msgstr "50"
 
-#: ../../configuration.rst:36
+#: ../../configuration.rst:42
 msgid ""
 "Shots in a full sequence. Must match the dome, and the light-position "
 "table."
 msgstr "전체 촬영의 장수. 돔 및 광원 위치 표와 일치해야 합니다."
 
-#: ../../configuration.rst:38
+#: ../../configuration.rst:44
 msgid "Retry Count"
 msgstr "재시도 회수"
 
-#: ../../configuration.rst:39
+#: ../../configuration.rst:45
 msgid "3"
 msgstr "3"
 
-#: ../../configuration.rst:40
+#: ../../configuration.rst:46
 msgid "How many times a slot is re-shot before being recorded as missing."
 msgstr "빠진 것으로 기록하기 전에 한 슬롯을 몇 번까지 다시 찍을지."
 
-#: ../../configuration.rst:41
+#: ../../configuration.rst:47
 msgid "Post Shutter Polling"
 msgstr "셔터 후 대기 시간"
 
-#: ../../configuration.rst:42
+#: ../../configuration.rst:48
 msgid "1.0"
 msgstr "1.0"
 
-#: ../../configuration.rst:43
+#: ../../configuration.rst:49
 msgid ""
 "Seconds to wait after the shutter before scanning for the new file. "
 "Increase it if shots are being missed on a slow card or a large RAW."
 msgstr "셔터 작동 후 새 파일을 찾기까지 기다리는 초. 느린 메모리 카드나 큰 RAW 파일 때문에 사진을 놓친다면 늘리세요."
 
-#: ../../configuration.rst:45
+#: ../../configuration.rst:51
 msgid "Light Position Adjustment"
 msgstr "광원 위치 보정"
 
-#: ../../configuration.rst:46
+#: ../../configuration.rst:52
 msgid "0"
 msgstr "0"
 
-#: ../../configuration.rst:47
+#: ../../configuration.rst:53
 msgid ""
 "Azimuth offset in degrees, to align the dome's LED #1 with the specimen's"
 " orientation. Elevation is unaffected."
 msgstr "방위각 보정값(도). 돔의 LED #1을 표본이 놓인 방향에 맞춥니다. 고도는 영향을 받지 않습니다."
 
-#: ../../configuration.rst:49
+#: ../../configuration.rst:55
 msgid "Language"
 msgstr "언어"
 
-#: ../../configuration.rst:50
+#: ../../configuration.rst:56
 msgid "``en``"
 msgstr "``en``"
 
-#: ../../configuration.rst:51
+#: ../../configuration.rst:57
 msgid "``en`` or ``ko``. Takes effect immediately."
 msgstr "``en`` 또는 ``ko``. 즉시 적용됩니다."
 
-#: ../../configuration.rst:54
+#: ../../configuration.rst:60
 msgid "Tuning the timing"
 msgstr "타이밍 조정"
 
-#: ../../configuration.rst:56
+#: ../../configuration.rst:62
 msgid "Two settings interact when shots go missing:"
 msgstr "사진이 빠질 때 관여하는 설정은 두 가지입니다:"
 
-#: ../../configuration.rst:58
+#: ../../configuration.rst:64
 msgid ""
 "*Post Shutter Polling* is a fixed delay before each check. *Retry Count* "
 "determines how many times a slot that timed out is attempted again. If a "
@@ -184,7 +201,7 @@ msgstr ""
 " 촬영 전체가 비어서 돌아온다면 타이밍이 아니라 시리얼 포트 문제일 가능성이 큽니다. **시험 촬영** 이 파일을 만들어 내는지부터"
 " 확인하세요."
 
-#: ../../configuration.rst:63
+#: ../../configuration.rst:69
 msgid ""
 "If shots are missed intermittently, raise *Post Shutter Polling* first: "
 "retries cost a full timeout each, so a longer wait is cheaper than a "
@@ -192,4 +209,9 @@ msgid ""
 msgstr ""
 "간헐적으로 놓친다면 *셔터 후 대기 시간* 부터 늘리세요. 재시도는 매번 타임아웃 시간을 통째로 쓰기 때문에, 조금 더 기다리는 "
 "편이 재시도보다 쌉니다."
+
+#~ msgid ""
+#~ "Settings are stored with ``QSettings`` "
+#~ "under ``PaleoBytes / PTMGenerator2``:"
+#~ msgstr "설정은 ``QSettings`` 를 통해 ``PaleoBytes / PTMGenerator2`` 아래에 저장됩니다:"
 

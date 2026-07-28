@@ -65,9 +65,32 @@ handles images the 32-bit `PTMfitter.exe` cannot.
 
 ## Installation
 
+**From a release** — download
+`PTMGenerator2_v<version>_build<n>_Installer.exe` from the
+[releases page](https://github.com/jikhanjung/PTMGenerator/releases) and run it.
+It installs per user (no administrator prompt) into
+`%LOCALAPPDATA%\PaleoBytes\PTMGenerator2`, with a Start Menu shortcut under
+**PaleoBytes**.
+
+**From source**
+
 1. Clone or download this repository
 2. Install dependencies: `pip install -e .`
 3. Connect your Arduino LED dome controller via serial port
+
+### Where your settings and logs live
+
+`%USERPROFILE%\PaleoBytes\PTMGenerator2` on Windows,
+`~/PaleoBytes/PTMGenerator2` elsewhere:
+
+| | |
+| --- | --- |
+| `preferences.json` | Everything from **Edit › Preferences**, as readable JSON |
+| `logs/PTMGenerator2_<date>.log` | Console output, one file per day |
+
+Deliberately not under the install directory, which the uninstaller removes.
+Uninstalling leaves your settings alone. Set `PTMGENERATOR2_DATA_DIR` to put
+them somewhere else.
 
 ## Repository layout
 
@@ -84,6 +107,7 @@ handles images the 32-bit `PTMfitter.exe` cannot.
 | `tests/` | pytest suite — no display required. |
 | `scripts/bump_version.py` | Version bump, changelog roll, commit and tag. |
 | `docs/manual/` | The Sphinx manual published to GitHub Pages. |
+| `installer/` | Inno Setup template for the Windows installer. CI fills it in and runs `ISCC`. |
 | `PTMGenerator2.spec` | PyInstaller build spec. |
 | `devlog/`, `TODOs.md` | Design notes and deferred work. |
 | `legacy/` | Superseded code, kept for reference only — see below. |

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 14:40+0900\n"
+"POT-Creation-Date: 2026-07-28 16:28+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -37,7 +37,9 @@ msgid ""
 "Choose the controller's serial port and check the LED count. The PTM "
 "engine defaults to the built-in fitter, which needs no external program. "
 "See :doc:`configuration` for every setting."
-msgstr "컨트롤러의 시리얼 포트를 고르고 LED 개수를 확인합니다. PTM 엔진은 기본값이 내장 fitter라 외부 프로그램이 필요 없습니다. 전체 설정 항목은 :doc:`configuration` 을 보세요."
+msgstr ""
+"컨트롤러의 시리얼 포트를 고르고 LED 개수를 확인합니다. PTM 엔진은 기본값이 내장 fitter라 외부 프로그램이 필요 "
+"없습니다. 전체 설정 항목은 :doc:`configuration` 을 보세요."
 
 #: ../../user_guide.rst:12
 msgid "**Open the working directory** (:menuselection:`File --> Open Directory`)"
@@ -115,7 +117,9 @@ msgid ""
 "Prompts for the output ``.ptm`` path, writes the ``.lp`` file beside the "
 "images, and fits the PTM. A progress dialog counts the images as they are"
 " read; **Cancel** abandons the run and writes nothing."
-msgstr "저장할 ``.ptm`` 경로를 물어본 뒤, 사진 옆에 ``.lp`` 파일을 만들고 PTM을 피팅합니다. 진행 대화상자가 읽어들인 사진 수를 표시하며, **취소** 를 누르면 아무것도 저장하지 않고 중단합니다."
+msgstr ""
+"저장할 ``.ptm`` 경로를 물어본 뒤, 사진 옆에 ``.lp`` 파일을 만들고 PTM을 피팅합니다. 진행 대화상자가 읽어들인 "
+"사진 수를 표시하며, **취소** 를 누르면 아무것도 저장하지 않고 중단합니다."
 
 #: ../../user_guide.rst:51
 msgid ""
@@ -123,7 +127,10 @@ msgid ""
 "The built-in one is the default and has no image-size limit; "
 "``PTMfitter.exe`` remains selectable but fails above roughly 24 "
 "megapixels. See :doc:`configuration`."
-msgstr "어느 fitter가 실행될지는 설정의 :guilabel:`PTM 엔진` 이 정합니다. 내장 fitter가 기본값이며 이미지 크기 제한이 없습니다. ``PTMfitter.exe`` 도 선택할 수 있지만 약 2400만 화소를 넘으면 실패합니다. :doc:`configuration` 을 보세요."
+msgstr ""
+"어느 fitter가 실행될지는 설정의 :guilabel:`PTM 엔진` 이 정합니다. 내장 fitter가 기본값이며 이미지 크기 "
+"제한이 없습니다. ``PTMfitter.exe`` 도 선택할 수 있지만 약 2400만 화소를 넘으면 실패합니다. "
+":doc:`configuration` 을 보세요."
 
 #: ../../user_guide.rst:57
 msgid "What a run does per LED"
@@ -197,12 +204,14 @@ msgid "The output, at the path you chose"
 msgstr "결과물. 지정한 경로에 저장됩니다"
 
 #: ../../user_guide.rst:96
-msgid "``output.log``"
-msgstr "``output.log``"
+msgid "``PTMGenerator2_<date>.log``"
+msgstr "``PTMGenerator2_<날짜>.log``"
 
 #: ../../user_guide.rst:96
-msgid "Console output, next to the executable"
-msgstr "콘솔 출력. 실행파일 옆에 생깁니다"
+msgid ""
+"Console output, in the ``logs`` folder of the data directory — one file "
+"per day, appended to"
+msgstr "콘솔 출력. 데이터 디렉토리의 ``logs`` 폴더에 하루 한 파일씩 이어서 기록됩니다"
 
 #~ msgid ""
 #~ "Writes the ``.lp`` file beside the "
@@ -212,4 +221,10 @@ msgstr "콘솔 출력. 실행파일 옆에 생깁니다"
 
 #~ msgid "The output, produced by PTMfitter"
 #~ msgstr "결과물. PTMfitter가 생성합니다"
+
+#~ msgid "``output.log``"
+#~ msgstr "``output.log``"
+
+#~ msgid "Console output, next to the executable"
+#~ msgstr "콘솔 출력. 실행파일 옆에 생깁니다"
 
