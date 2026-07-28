@@ -1,0 +1,174 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../configuration.rst:2
+msgid "Configuration"
+msgstr "설정"
+
+#: ../../configuration.rst:4
+msgid ""
+"Settings are stored with ``QSettings`` under ``PaleoBytes / PTMGenerator2``:"
+msgstr "설정은 ``QSettings`` 를 통해 ``PaleoBytes / PTMGenerator2`` 아래에 저장됩니다:"
+
+#: ../../configuration.rst:6
+msgid "Windows: ``%APPDATA%\\PaleoBytes\\PTMGenerator2.ini``"
+msgstr "Windows: ``%APPDATA%\\PaleoBytes\\PTMGenerator2.ini``"
+
+#: ../../configuration.rst:7
+msgid "Linux: ``~/.config/PaleoBytes/PTMGenerator2.ini``"
+msgstr "Linux: ``~/.config/PaleoBytes/PTMGenerator2.ini``"
+
+#: ../../configuration.rst:10
+msgid "Preferences"
+msgstr "환경설정"
+
+#: ../../configuration.rst:16
+msgid "Setting"
+msgstr "항목"
+
+#: ../../configuration.rst:17
+msgid "Default"
+msgstr "기본값"
+
+#: ../../configuration.rst:18
+msgid "Meaning"
+msgstr "의미"
+
+#: ../../configuration.rst:19
+msgid "Serial Port"
+msgstr "시리얼 포트"
+
+#: ../../configuration.rst:20
+msgid "*(none)*"
+msgstr "*(없음)*"
+
+#: ../../configuration.rst:21
+msgid ""
+"The controller's port. Must be set before capturing; the list is populated "
+"from the ports present when the dialog opens."
+msgstr "컨트롤러의 포트. 촬영 전에 반드시 지정해야 합니다. 목록은 창을 열 때 연결되어 있는 포트로 채워집니다."
+
+#: ../../configuration.rst:23
+msgid "PTM Fitter"
+msgstr "PTMFitter"
+
+#: ../../configuration.rst:24
+msgid "``ptmfitter.exe``"
+msgstr "``ptmfitter.exe``"
+
+#: ../../configuration.rst:25
+msgid ""
+"Path to the fitter executable. **Generate PTM** refuses to run if it is not "
+"found."
+msgstr "fitter 실행파일 경로. 찾지 못하면 **PTM파일 만들기** 가 실행을 거부합니다."
+
+#: ../../configuration.rst:27
+msgid "Number of LEDs"
+msgstr "LED 개수"
+
+#: ../../configuration.rst:28
+msgid "50"
+msgstr "50"
+
+#: ../../configuration.rst:29
+msgid ""
+"Shots in a full sequence. Must match the dome, and the light-position table."
+msgstr "전체 촬영의 장수. 돔 및 광원 위치 표와 일치해야 합니다."
+
+#: ../../configuration.rst:31
+msgid "Retry Count"
+msgstr "재시도 회수"
+
+#: ../../configuration.rst:32
+msgid "3"
+msgstr "3"
+
+#: ../../configuration.rst:33
+msgid "How many times a slot is re-shot before being recorded as missing."
+msgstr "빠진 것으로 기록하기 전에 한 슬롯을 몇 번까지 다시 찍을지."
+
+#: ../../configuration.rst:34
+msgid "Post Shutter Polling"
+msgstr "셔터 후 대기 시간"
+
+#: ../../configuration.rst:35
+msgid "1.0"
+msgstr "1.0"
+
+#: ../../configuration.rst:36
+msgid ""
+"Seconds to wait after the shutter before scanning for the new file. Increase"
+" it if shots are being missed on a slow card or a large RAW."
+msgstr "셔터 작동 후 새 파일을 찾기까지 기다리는 초. 느린 메모리 카드나 큰 RAW 파일 때문에 사진을 놓친다면 늘리세요."
+
+#: ../../configuration.rst:38
+msgid "Light Position Adjustment"
+msgstr "광원 위치 보정"
+
+#: ../../configuration.rst:39
+msgid "0"
+msgstr "0"
+
+#: ../../configuration.rst:40
+msgid ""
+"Azimuth offset in degrees, to align the dome's LED #1 with the specimen's "
+"orientation. Elevation is unaffected."
+msgstr "방위각 보정값(도). 돔의 LED #1을 표본이 놓인 방향에 맞춥니다. 고도는 영향을 받지 않습니다."
+
+#: ../../configuration.rst:42
+msgid "Language"
+msgstr "언어"
+
+#: ../../configuration.rst:43
+msgid "``en``"
+msgstr "``en``"
+
+#: ../../configuration.rst:44
+msgid "``en`` or ``ko``. Takes effect immediately."
+msgstr "``en`` 또는 ``ko``. 즉시 적용됩니다."
+
+#: ../../configuration.rst:47
+msgid "Tuning the timing"
+msgstr "타이밍 조정"
+
+#: ../../configuration.rst:49
+msgid "Two settings interact when shots go missing:"
+msgstr "사진이 빠질 때 관여하는 설정은 두 가지입니다:"
+
+#: ../../configuration.rst:51
+msgid ""
+"*Post Shutter Polling* is a fixed delay before each check. *Retry Count* "
+"determines how many times a slot that timed out is attempted again. If a "
+"whole run comes back empty, the serial port is the likely cause, not the "
+"timing — check that a **Test Shot** produces a file at all."
+msgstr ""
+"*셔터 후 대기 시간* 은 매 확인 전에 두는 고정 지연입니다. *재시도 회수* 는 타임아웃된 슬롯을 몇 번 더 시도할지 정합니다. 촬영"
+" 전체가 비어서 돌아온다면 타이밍이 아니라 시리얼 포트 문제일 가능성이 큽니다. **시험 촬영** 이 파일을 만들어 내는지부터 "
+"확인하세요."
+
+#: ../../configuration.rst:56
+msgid ""
+"If shots are missed intermittently, raise *Post Shutter Polling* first: "
+"retries cost a full timeout each, so a longer wait is cheaper than a retry."
+msgstr ""
+"간헐적으로 놓친다면 *셔터 후 대기 시간* 부터 늘리세요. 재시도는 매번 타임아웃 시간을 통째로 쓰기 때문에, 조금 더 기다리는 편이 "
+"재시도보다 쌉니다."

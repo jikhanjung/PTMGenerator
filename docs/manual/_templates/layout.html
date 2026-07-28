@@ -1,0 +1,89 @@
+{# Language switcher, following the same pattern as Modan2's manual. #}
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+{{ super() }}
+<style>
+  .language-switcher {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: #2c3e50;
+    border: 1px solid #34495e;
+    border-radius: 4px;
+    padding: 8px 15px;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .language-switcher a {
+    margin: 0 5px;
+    text-decoration: none;
+    color: #3498db;
+    font-weight: 500;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .language-switcher a:hover {
+    color: #5dade2;
+    text-decoration: underline;
+  }
+  .language-switcher .current {
+    color: #ecf0f1;
+    font-weight: 600;
+    cursor: default;
+    margin: 0 5px;
+  }
+  .language-switcher .separator {
+    color: #7f8c8d;
+    margin: 0 3px;
+  }
+  .language-switcher .icon {
+    margin-right: 5px;
+  }
+  /* On a narrow screen the switcher would sit on top of the mobile nav
+     button, so put it back in the flow there. */
+  @media (max-width: 768px) {
+    .language-switcher {
+      position: static;
+      margin: 10px;
+      text-align: center;
+    }
+  }
+</style>
+<script>
+  // Swap the language segment of the current URL, so switching keeps the
+  // reader on the page they were reading rather than dropping them at the
+  // index. The site is published as <base>/en/... and <base>/ko/....
+  function switchLanguage(targetLang) {
+    var path = window.location.pathname;
+    var newPath;
+
+    if (path.indexOf('/en/') !== -1) {
+      newPath = path.replace('/en/', '/' + targetLang + '/');
+    } else if (path.indexOf('/ko/') !== -1) {
+      newPath = path.replace('/ko/', '/' + targetLang + '/');
+    } else {
+      // Served from somewhere without a language segment (a local
+      // `make html`, say). Fall back to the sibling directory.
+      var parts = path.split('/');
+      var page = parts.pop() || 'index.html';
+      newPath = parts.join('/') + '/' + targetLang + '/' + page;
+    }
+
+    window.location.href = newPath + window.location.hash;
+  }
+</script>
+{% endblock %}
+
+{% block document %}
+<div class="language-switcher">
+  <span class="icon">🌐</span>
+  {% if language == 'ko' %}
+    <a onclick="switchLanguage('en')">English</a><span class="separator">|</span><span class="current">한국어</span>
+  {% else %}
+    <span class="current">English</span><span class="separator">|</span><a onclick="switchLanguage('ko')">한국어</a>
+  {% endif %}
+</div>
+{{ super() }}
+{% endblock %}

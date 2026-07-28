@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **The manual is available in Korean**, at
+  <https://jikhanjung.github.io/PTMGenerator/ko/>, with a language switcher on
+  every page that keeps you on the page you were reading. The API reference and
+  the changelog stay in English — see `docs/manual/locale/README.md` for why.
+
 ## [0.2.0-alpha.1] - 2026-07-28
 ### Added
 - **The manual is published at <https://jikhanjung.github.io/PTMGenerator/>**,

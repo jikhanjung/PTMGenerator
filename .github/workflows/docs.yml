@@ -37,11 +37,34 @@ jobs:
       - name: Install
         run: pip install -r docs/manual/requirements.txt
 
-      # -W in the manual's Makefile turns warnings into errors, so a broken
-      # cross-reference or a malformed table fails the build rather than
-      # scrolling past.
-      - name: Build
-        run: make -C docs/manual clean html
+      # -W turns warnings into errors, so a broken cross-reference, a malformed
+      # table, or markup a translation broke fails the build rather than
+      # scrolling past. Each language is built separately into its own
+      # directory; the Korean catalogues live in docs/manual/locale/ko/.
+      - name: Build English
+        run: sphinx-build -W -b html -D language=en docs/manual docs/manual/_build/html/en
+
+      - name: Build Korean
+        run: sphinx-build -W -b html -D language=ko docs/manual docs/manual/_build/html/ko
+
+      # The site root has no page of its own, so send it to English. The
+      # in-page switcher swaps the language segment from there.
+      - name: Redirect the site root
+        run: |
+          cat > docs/manual/_build/html/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=en/index.html">
+            <link rel="canonical" href="en/index.html">
+            <title>PTMGenerator2</title>
+          </head>
+          <body>
+            <p><a href="en/index.html">English</a> &middot; <a href="ko/index.html">한국어</a></p>
+          </body>
+          </html>
+          HTML
 
       # Sphinx writes _static/ and _sources/; without this Pages runs the
       # output through Jekyll, which skips every path beginning with an

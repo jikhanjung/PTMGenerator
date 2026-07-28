@@ -34,7 +34,8 @@ help:
 	@echo "  make build            Build the executable for this platform"
 	@echo "  make build-clean      Remove build artifacts"
 	@echo "  make translations     Extract and compile translations"
-	@echo "  make docs             Build the Sphinx manual"
+	@echo "  make docs             Build the manual (English and Korean)"
+	@echo "  make docs-i18n        Re-extract strings into the Korean catalogues"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean            Remove all generated files"
@@ -118,8 +119,17 @@ translations:
 	  -ts translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
 	pyside6-lrelease translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.ts
 
+# Both languages, the way CI publishes them: <root>/en and <root>/ko.
 docs:
-	$(MAKE) -C docs/manual clean html
+	rm -rf docs/manual/_build/html
+	sphinx-build -W -b html -D language=en docs/manual docs/manual/_build/html/en
+	sphinx-build -W -b html -D language=ko docs/manual docs/manual/_build/html/ko
+
+# Re-extract translatable strings and merge them into the Korean catalogues.
+# Existing translations survive; new strings appear with an empty msgstr.
+docs-i18n:
+	$(MAKE) -C docs/manual clean gettext
+	sphinx-intl update -p docs/manual/_build/gettext -l ko -d docs/manual/locale
 
 # -- maintenance ------------------------------------------------------------
 

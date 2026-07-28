@@ -1,0 +1,60 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../index.rst:22
+msgid "User guide"
+msgstr "사용자 가이드"
+
+#: ../../index.rst:32
+msgid "Developer guide"
+msgstr "개발자 가이드"
+
+#: ../../index.rst:2
+msgid "PTMGenerator2"
+msgstr "PTMGenerator2"
+
+#: ../../index.rst:4
+msgid "Automated Polynomial Texture Mapping capture for an Arduino LED dome."
+msgstr "Arduino LED 돔을 이용한 PTM(Polynomial Texture Mapping) 촬영 자동화 도구."
+
+#: ../../index.rst:6
+msgid ""
+"An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter"
+" for each. PTMGenerator2 drives that sequence over a serial link, waits for "
+"each photo to land on disk, builds the light-position (``.lp``) file, and "
+"hands everything to PTMfitter to produce the final ``.ptm``."
+msgstr ""
+"Arduino가 제어하는 돔이 50개의 LED를 하나씩 켜면서 그때마다 DSLR 셔터를 작동시킵니다. PTMGenerator2는 이 "
+"순서를 시리얼로 지휘하고, 사진이 디스크에 저장되기를 기다렸다가, 광원 위치(``.lp``) 파일을 만들어 PTMfitter에 넘겨 최종"
+" ``.ptm`` 을 생성합니다."
+
+#: ../../index.rst:42
+msgid "Indices"
+msgstr "색인"
+
+#: ../../index.rst:44
+msgid ":ref:`genindex`"
+msgstr ":ref:`genindex`"
+
+#: ../../index.rst:45
+msgid ":ref:`modindex`"
+msgstr ":ref:`modindex`"

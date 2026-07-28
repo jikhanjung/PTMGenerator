@@ -1,0 +1,108 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../architecture.rst:2
+msgid "Architecture"
+msgstr "구조"
+
+#: ../../architecture.rst:5
+msgid "The boundary"
+msgstr "경계"
+
+#: ../../architecture.rst:7
+msgid ""
+"The split that matters is ``core/`` versus ``ui/``. **``core`` imports no "
+"PyQt5**, and ``tests/test_smoke.py`` asserts that in a subprocess so an "
+"earlier test having imported PyQt5 cannot mask a regression."
+msgstr ""
+"핵심이 되는 구분은 ``core/`` 와 ``ui/`` 입니다. **``core`` 는 PyQt5를 전혀 import하지 않으며**, "
+"``tests/test_smoke.py`` 가 이를 별도 프로세스에서 검증합니다. 앞선 테스트가 이미 PyQt5를 import한 상태가 "
+"회귀를 가리지 못하도록 하기 위해서입니다."
+
+#: ../../architecture.rst:11
+msgid ""
+"That boundary is what makes the capture policy, the serial protocol, the "
+"dome geometry and the file formats testable without a display, a "
+"QApplication or a controller. It is also why the suite runs in about a "
+"second."
+msgstr ""
+"이 경계 덕분에 촬영 정책·시리얼 프로토콜·돔 기하·파일 형식을 디스플레이나 QApplication, 컨트롤러 없이 테스트할 수 "
+"있습니다. 스위트가 1초 남짓에 끝나는 이유이기도 합니다."
+
+#: ../../architecture.rst:32
+msgid "The capture loop"
+msgstr "촬영 루프"
+
+#: ../../architecture.rst:34
+msgid ""
+"``ui.main_window.take_picture_process`` is the one-second timer tick. It "
+"asks the session what to do and renders the result; it decides nothing "
+"itself:"
+msgstr ""
+"``ui.main_window.take_picture_process`` 는 1초마다 도는 타이머 틱입니다. 세션에 무엇을 할지 묻고 그 "
+"결과를 화면에 그릴 뿐, 스스로 판단하지 않습니다:"
+
+#: ../../architecture.rst:41
+msgid ""
+"Because the shutter and the file poll are arguments rather than calls into "
+"Qt, a whole 50-slot run — including retakes and timeouts — is driven in "
+"microseconds in the tests with recorders in their place."
+msgstr ""
+"셔터와 파일 폴링이 Qt 호출이 아니라 인자로 주어지기 때문에, 재촬영과 타임아웃을 포함한 50슬롯 전체 실행을 테스트에서 기록용 "
+"대역으로 마이크로초 단위에 돌릴 수 있습니다."
+
+#: ../../architecture.rst:60
+msgid "The capture table"
+msgstr "촬영 목록"
+
+#: ../../architecture.rst:62
+msgid ""
+"A run is a list of :py:class:`core.image_data.CaptureSlot`, one per LED:"
+msgstr "한 번의 촬영은 LED마다 하나씩인 :py:class:`core.image_data.CaptureSlot` 의 목록입니다:"
+
+#: ../../architecture.rst:69
+msgid ""
+"It is a ``NamedTuple``, so it compares equal to a plain 4-tuple and unpacks "
+"the way the older code expected."
+msgstr "``NamedTuple`` 이라서 평범한 4-튜플과 같다고 비교되고, 이전 코드가 기대하던 방식으로 언패킹됩니다."
+
+#: ../../architecture.rst:72
+msgid ""
+"A failed shot keeps its slot rather than being dropped. That is what keeps "
+"``led_index`` aligned with ``light_vectors()``, so a run with gaps still "
+"produces a correct ``.lp`` — just from fewer images."
+msgstr ""
+"실패한 촬영도 슬롯을 버리지 않고 유지합니다. 그래야 ``led_index`` 가 ``light_vectors()`` 와 계속 "
+"맞아떨어져서, 빠진 자리가 있어도 올바른 ``.lp`` 가 만들어집니다. 사진 수만 줄어들 뿐입니다."
+
+#: ../../architecture.rst:77
+msgid "The .lp file"
+msgstr ".lp 파일"
+
+#: ../../architecture.rst:85
+msgid ""
+"First line is the count of images that follow. Each row is an absolute path "
+"and the unit vector of the light that was on. Shots that failed, and shots "
+"the user unchecked, appear in neither."
+msgstr ""
+"첫 줄은 뒤따르는 사진의 개수입니다. 각 행은 절대 경로와 그때 켜져 있던 광원의 단위 벡터입니다. 실패한 촬영과 사용자가 체크를 해제한"
+" 촬영은 개수에도 본문에도 들어가지 않습니다."

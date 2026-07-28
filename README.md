@@ -2,7 +2,8 @@
 
 A desktop application for automated Polynomial Texture Mapping (PTM) image capture and generation.
 
-**Manual:** <https://jikhanjung.github.io/PTMGenerator/> — built from
+**Manual:** [English](https://jikhanjung.github.io/PTMGenerator/en/) ·
+[한국어](https://jikhanjung.github.io/PTMGenerator/ko/) — built from
 `docs/manual/` and published on every push to `main`.
 
 ## Overview

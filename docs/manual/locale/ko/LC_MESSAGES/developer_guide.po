@@ -1,0 +1,240 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../developer_guide.rst:2
+msgid "Developer guide"
+msgstr "개발자 가이드"
+
+#: ../../developer_guide.rst:5
+msgid "Setting up"
+msgstr "개발 환경 준비"
+
+#: ../../developer_guide.rst:13
+msgid ""
+"That installs the runtime, test, build and docs dependencies, and the pre-"
+"commit hooks."
+msgstr "런타임·테스트·빌드·문서 의존성과 pre-commit 훅을 함께 설치합니다."
+
+#: ../../developer_guide.rst:17
+msgid "Everyday commands"
+msgstr "자주 쓰는 명령"
+
+#: ../../developer_guide.rst:30
+msgid "Testing"
+msgstr "테스트"
+
+#: ../../developer_guide.rst:32
+msgid ""
+"The suite needs **no display**: ``tests/conftest.py`` selects Qt's "
+"``offscreen`` platform plugin before PyQt5 is imported, so it runs over SSH "
+"and in CI without xvfb. Do not add xvfb."
+msgstr ""
+"스위트는 **디스플레이가 필요 없습니다**. ``tests/conftest.py`` 가 PyQt5를 import하기 전에 Qt의 "
+"``offscreen`` 플랫폼 플러그인을 선택하므로, SSH 환경이나 CI에서 xvfb 없이 그대로 돕니다. xvfb를 추가하지 "
+"마세요."
+
+#: ../../developer_guide.rst:36
+msgid ""
+"QSettings is redirected to a temporary directory per test, so running the "
+"suite never reads or writes real preferences."
+msgstr "QSettings는 테스트마다 임시 디렉토리로 돌려놓기 때문에, 스위트를 돌려도 실제 환경설정을 읽거나 쓰지 않습니다."
+
+#: ../../developer_guide.rst:39
+msgid ""
+"To test capture behaviour, drive "
+":py:class:`core.capture_session.CaptureSession` directly with fakes rather "
+"than constructing a window and waiting out real ticks:"
+msgstr ""
+"촬영 동작을 테스트할 때는 창을 만들어 실제 틱을 기다리지 말고, "
+":py:class:`core.capture_session.CaptureSession` 을 가짜 함수와 함께 직접 구동하세요:"
+
+#: ../../developer_guide.rst:48
+msgid ""
+"Markers: ``unit`` (no Qt), ``ui`` (needs a QApplication), ``smoke`` (must "
+"pass on every OS in the matrix), ``property`` (Hypothesis), ``slow``."
+msgstr ""
+"마커: ``unit`` (Qt 불필요), ``ui`` (QApplication 필요), ``smoke`` (매트릭스의 모든 OS에서 "
+"통과해야 함), ``property`` (Hypothesis), ``slow``."
+
+#: ../../developer_guide.rst:51
+msgid ""
+"For pure logic with an invariant, prefer a property test over a handful of "
+"fixed cases — ``tests/test_light_positions_properties.py`` checks the dome "
+"geometry over every adjustment angle the preference permits, not the four "
+"the example-based tests happen to use."
+msgstr ""
+"불변식이 있는 순수 로직이라면 고정된 몇 개의 사례보다 property 테스트가 낫습니다. "
+"``tests/test_light_positions_properties.py`` 는 예제 기반 테스트가 쓰는 네 개가 아니라, 설정이 "
+"허용하는 모든 보정 각도에 대해 돔 기하를 검사합니다."
+
+#: ../../developer_guide.rst:57
+msgid "Code quality"
+msgstr "코드 품질"
+
+#: ../../developer_guide.rst:59
+msgid ""
+"ruff replaces black, isort, flake8 and pyupgrade, and is **pinned to an "
+"exact version in three places that must move together**: ``pyproject.toml``,"
+" ``.pre-commit-config.yaml`` and the lint job in "
+"``.github/workflows/test.yml``. A newer ruff formats code the previous one "
+"accepted, so an unpinned bump reformats the tree from under an unrelated "
+"pull request."
+msgstr ""
+"ruff가 black·isort·flake8·pyupgrade를 대신합니다. **반드시 함께 움직여야 하는 세 곳에 정확한 버전으로 "
+"고정** 되어 있습니다: ``pyproject.toml``, ``.pre-commit-config.yaml``, 그리고 "
+"``.github/workflows/test.yml`` 의 lint 잡. 새 버전의 ruff는 이전 버전이 통과시킨 코드를 다시 포맷하기"
+" 때문에, 고정하지 않으면 무관한 PR 아래에서 트리 전체가 재포맷됩니다."
+
+#: ../../developer_guide.rst:65
+msgid ""
+"mypy covers ``core/`` and ``ui/``. The setting that matters is "
+"``check_untyped_defs``: this code carries few annotations, and by default "
+"mypy skips the *bodies* of unannotated functions — so a clean run without it"
+" means very little. It is on for ``core/``; turning it on for ``ui/`` is "
+"tracked in ``TODOs.md``. PyQt5 ships its own stubs, so no third-party stub "
+"package is needed."
+msgstr ""
+"mypy는 ``core/`` 와 ``ui/`` 를 검사합니다. 중요한 설정은 ``check_untyped_defs`` 입니다. 이 "
+"코드에는 타입 주석이 적은데, mypy는 기본적으로 주석 없는 함수의 *본문* 을 건너뜁니다. 즉 이 설정 없이 통과한 결과는 별 의미가"
+" 없습니다. 현재 ``core/`` 에만 켜져 있고, ``ui/`` 로 확대하는 일은 ``TODOs.md`` 에 기록되어 있습니다. "
+"PyQt5는 자체 stub를 제공하므로 서드파티 stub 패키지가 필요하지 않습니다."
+
+#: ../../developer_guide.rst:73
+msgid "Translations"
+msgstr "번역"
+
+#: ../../developer_guide.rst:75
+msgid ""
+"Three steps. Skipping the third is the usual mistake — the ``.qm`` files are"
+" what the application loads, and CI checks for drift."
+msgstr ""
+"세 단계입니다. 흔한 실수는 세 번째를 빠뜨리는 것입니다. 애플리케이션이 실제로 읽는 것은 ``.qm`` 파일이고, CI가 어긋남을 "
+"검사합니다."
+
+#: ../../developer_guide.rst:82
+msgid ""
+"``pylupdate5`` ships with PyQt5; ``lrelease`` does not, so "
+"``PySide6-Essentials`` provides it as ``pyside6-lrelease``."
+msgstr ""
+"``pylupdate5`` 는 PyQt5에 들어 있지만 ``lrelease`` 는 없습니다. 그래서 "
+"``PySide6-Essentials`` 가 ``pyside6-lrelease`` 라는 이름으로 제공합니다."
+
+#: ../../developer_guide.rst:85
+msgid ""
+"Editing a ``.ts`` by hand is fine; Qt Linguist is nicer. Both ``.ts`` and "
+"``.qm`` are committed."
+msgstr ""
+"``.ts`` 를 직접 편집해도 되고, Qt Linguist를 쓰면 더 편합니다. ``.ts`` 와 ``.qm`` 모두 커밋합니다."
+
+#: ../../developer_guide.rst:89
+msgid "Dependencies"
+msgstr "의존성"
+
+#: ../../developer_guide.rst:91
+msgid ""
+"``pyproject.toml`` declares ranges; the nine lockfiles pin exact versions "
+"with hashes so CI, contributors and release builds install byte-identical "
+"trees. Regenerate with ``make lock`` after changing a range, and commit the "
+"result — CI fails otherwise."
+msgstr ""
+"``pyproject.toml`` 은 버전 범위를 선언하고, 9개의 락파일이 해시와 함께 정확한 버전을 고정합니다. 그래야 "
+"CI·기여자·릴리스 빌드가 바이트 단위로 동일한 패키지를 설치합니다. 범위를 바꾼 뒤에는 ``make lock`` 으로 다시 생성하고 "
+"결과를 커밋하세요. 그러지 않으면 CI가 실패합니다."
+
+#: ../../developer_guide.rst:96
+msgid ""
+"They are per-platform on purpose. A universal resolve pins one version per "
+"package for every OS without checking wheel coverage, and ``pyqt5-qt5`` "
+"stopped publishing Windows wheels after 5.15.2 while Linux and macOS reach "
+"5.15.19."
+msgstr ""
+"플랫폼별로 나눈 것은 의도적입니다. universal 방식은 휠 제공 여부를 확인하지 않고 모든 OS에 대해 패키지당 하나의 버전을 "
+"고정하는데, ``pyqt5-qt5`` 는 5.15.2 이후로 Windows 휠 배포를 중단한 반면 Linux와 macOS는 "
+"5.15.19까지 있습니다."
+
+#: ../../developer_guide.rst:101
+msgid "Checking a build"
+msgstr "빌드 확인"
+
+#: ../../developer_guide.rst:107
+msgid ""
+"Starts the application headlessly against the bundle it is running from, "
+"verifies every declared icon and translation resolves, constructs the main "
+"window, and exits non-zero if anything is missing. A source checkout always "
+"has ``icons/`` and ``translations/`` on disk; a frozen build only has them "
+"if PyInstaller was told to bundle them, and if it was not the executable "
+"still starts — just with no icon and no Korean. ``release.yml`` runs this "
+"against every build."
+msgstr ""
+"실행 중인 번들을 대상으로 애플리케이션을 헤드리스로 띄워, 선언된 아이콘과 번역이 모두 해석되는지 확인하고 메인 윈도우를 구성한 뒤, "
+"빠진 것이 있으면 0이 아닌 코드로 종료합니다. 소스 체크아웃에는 ``icons/`` 와 ``translations/`` 가 항상 "
+"디스크에 있지만, frozen 빌드는 PyInstaller에게 포함하라고 알려준 경우에만 들어 있습니다. 알려주지 않아도 실행파일은 그냥"
+" 실행됩니다. 아이콘 없이, 한국어 없이. ``release.yml`` 이 모든 빌드에 대해 이 검사를 실행합니다."
+
+#: ../../developer_guide.rst:116
+msgid "Releasing"
+msgstr "릴리스"
+
+#: ../../developer_guide.rst:118
+msgid "Describe the change under ``## [Unreleased]`` in ``CHANGELOG.md``."
+msgstr "``CHANGELOG.md`` 의 ``## [Unreleased]`` 아래에 변경 내용을 적습니다."
+
+#: ../../developer_guide.rst:119
+msgid ""
+"``python scripts/bump_version.py patch`` — or ``minor``, ``preminor beta``, "
+"``prerelease``, ``stage rc``, ``release``."
+msgstr ""
+"``python scripts/bump_version.py patch`` — 또는 ``minor``, ``preminor beta``, "
+"``prerelease``, ``stage rc``, ``release``."
+
+#: ../../developer_guide.rst:121
+msgid "``git push && git push origin v<version>``."
+msgstr "``git push && git push origin v<version>``."
+
+#: ../../developer_guide.rst:123
+msgid ""
+"``release.yml`` refuses the tag if it disagrees with ``version.py``, gates "
+"on the full test matrix, builds the Windows executable, and publishes a "
+"release whose notes come from the matching ``CHANGELOG.md`` section."
+msgstr ""
+"``release.yml`` 은 태그가 ``version.py`` 와 다르면 거부하고, 전체 테스트 매트릭스를 통과해야 진행하며, "
+"Windows 실행파일을 빌드한 뒤 ``CHANGELOG.md`` 의 해당 절을 릴리스 노트로 삼아 게시합니다."
+
+#: ../../developer_guide.rst:127
+msgid ""
+"Never edit ``version.py`` by hand — the changelog and the tag drift apart."
+msgstr "``version.py`` 를 직접 수정하지 마세요. 체인지로그와 태그가 어긋납니다."
+
+#: ../../developer_guide.rst:130
+msgid "Recording decisions"
+msgstr "결정 기록하기"
+
+#: ../../developer_guide.rst:132
+msgid ""
+"``devlog/`` holds one file per piece of work, recording *why* something was "
+"done the way it was: what was tried, what it broke, what was rejected. "
+"``TODOs.md`` holds deferred work with enough context to resume. See "
+"``devlog/README.md``."
+msgstr ""
+"``devlog/`` 에는 작업 하나당 파일 하나가 있으며, 왜 그렇게 했는지를 기록합니다. 무엇을 시도했고, 무엇이 깨졌고, 무엇을 "
+"버렸는지. ``TODOs.md`` 에는 나중에 이어서 할 수 있을 만큼의 맥락과 함께 미뤄둔 일이 들어 있습니다. "
+"``devlog/README.md`` 를 보세요."

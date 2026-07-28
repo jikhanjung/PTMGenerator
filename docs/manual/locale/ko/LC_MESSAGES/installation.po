@@ -1,0 +1,110 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../installation.rst:2
+msgid "Installation"
+msgstr "설치"
+
+#: ../../installation.rst:5
+msgid "Requirements"
+msgstr "요구 사항"
+
+#: ../../installation.rst:7
+msgid "Python 3.12 or newer"
+msgstr "Python 3.12 이상"
+
+#: ../../installation.rst:8
+msgid "PyQt5 and pyserial (installed below)"
+msgstr "PyQt5와 pyserial (아래에서 함께 설치됩니다)"
+
+#: ../../installation.rst:9
+msgid ""
+"A DSLR with a remote shutter input, and tethering software that writes "
+"captured images into a directory on the PC"
+msgstr "릴리즈 셔터 입력이 있는 DSLR, 그리고 촬영한 사진을 PC의 디렉토리에 저장하는 테더링 소프트웨어"
+
+#: ../../installation.rst:11
+msgid "An Arduino-based LED dome controller, connected over USB or Bluetooth"
+msgstr "USB 또는 블루투스로 연결된 Arduino 기반 LED 돔 컨트롤러"
+
+#: ../../installation.rst:12
+msgid ""
+"``PTMfitter.exe`` — the fitter that turns the ``.lp`` file into a ``.ptm``"
+msgstr "``PTMfitter.exe`` — ``.lp`` 파일을 ``.ptm`` 으로 만들어 주는 fitter"
+
+#: ../../installation.rst:14
+msgid ""
+"Windows in practice: ``PTMfitter.exe`` is a Windows binary, and the "
+"tethering software that drops files into the capture directory is Windows-"
+"only. The Python code has no Windows-specific imports and the interface runs"
+" on Linux and macOS, which is what the test matrix covers."
+msgstr ""
+"실질적으로는 Windows 환경입니다. ``PTMfitter.exe`` 가 Windows 바이너리이고, 촬영 디렉토리에 파일을 떨궈 주는"
+" 테더링 소프트웨어도 Windows 전용입니다. 다만 Python 코드 자체에는 Windows 전용 import가 없어서 화면은 "
+"Linux와 macOS에서도 동작하며, 테스트 매트릭스가 이를 검증합니다."
+
+#: ../../installation.rst:20
+msgid "From a release"
+msgstr "릴리스에서 받기"
+
+#: ../../installation.rst:22
+msgid ""
+"Download the executable from the `releases page "
+"<https://github.com/jikhanjung/PTMGenerator/releases>`_ and run it. It is a "
+"single self-contained file; there is nothing to install."
+msgstr ""
+"`릴리스 페이지 <https://github.com/jikhanjung/PTMGenerator/releases>`_ 에서 실행파일을 받아"
+" 실행하면 됩니다. 모든 것이 들어 있는 단일 파일이라 따로 설치할 것이 없습니다."
+
+#: ../../installation.rst:27
+msgid "From source"
+msgstr "소스에서 실행"
+
+#: ../../installation.rst:36
+msgid ""
+"Dependencies are declared in ``pyproject.toml``; there is no "
+"``requirements.txt``."
+msgstr "의존성은 ``pyproject.toml`` 한 곳에만 선언되어 있습니다. ``requirements.txt`` 는 없습니다."
+
+#: ../../installation.rst:39
+msgid "For development, install the extras and the pre-commit hooks instead:"
+msgstr "개발용으로는 extras와 pre-commit 훅까지 함께 설치하세요:"
+
+#: ../../installation.rst:45
+msgid ""
+"To reproduce a build exactly, install from the lockfile for your platform "
+"rather than from the ranges in ``pyproject.toml``:"
+msgstr "빌드를 그대로 재현하려면 ``pyproject.toml`` 의 버전 범위가 아니라 플랫폼에 맞는 락파일로 설치하세요:"
+
+#: ../../installation.rst:53
+msgid "Building the executable"
+msgstr "실행파일 빌드"
+
+#: ../../installation.rst:59
+msgid ""
+"The output name is generated from ``version.py`` plus the build date — for "
+"example ``PTMGenerator2_v0.1.2_20260728.exe`` — so bumping the version in "
+"the source is all that is needed for a new release name."
+msgstr ""
+"출력 파일 이름은 ``version.py`` 의 버전과 빌드 날짜로 만들어집니다 — 예: "
+"``PTMGenerator2_v0.1.2_20260728.exe``. 따라서 새 릴리스 이름을 위해 필요한 것은 소스의 버전을 올리는 "
+"것뿐입니다."

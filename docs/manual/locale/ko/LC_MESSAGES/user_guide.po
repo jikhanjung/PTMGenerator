@@ -1,0 +1,176 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../user_guide.rst:2
+msgid "User guide"
+msgstr "사용자 가이드"
+
+#: ../../user_guide.rst:5
+msgid "Workflow"
+msgstr "작업 순서"
+
+#: ../../user_guide.rst:7
+msgid "**Configure** (:menuselection:`Edit --> Preferences`)"
+msgstr "**설정** (:menuselection:`편집 --> 환경설정`)"
+
+#: ../../user_guide.rst:9
+msgid ""
+"Choose the controller's serial port, set the path to ``PTMfitter.exe``, and "
+"check the LED count. See :doc:`configuration` for every setting."
+msgstr ""
+"컨트롤러의 시리얼 포트를 고르고, ``PTMfitter.exe`` 경로를 지정하고, LED 개수를 확인합니다. 전체 설정 항목은 "
+":doc:`configuration` 을 보세요."
+
+#: ../../user_guide.rst:12
+msgid ""
+"**Open the working directory** (:menuselection:`File --> Open Directory`)"
+msgstr "**작업 디렉토리 열기** (:menuselection:`파일 --> 디렉토리 열기`)"
+
+#: ../../user_guide.rst:14
+msgid ""
+"Choose the folder your tethering software writes photos into. If it already "
+"contains an ``image_data.csv`` the previous capture table is loaded; "
+"otherwise the directory is scanned and a table is rebuilt from the files "
+"found there."
+msgstr ""
+"테더링 소프트웨어가 사진을 저장하는 폴더를 고릅니다. 그 안에 ``image_data.csv`` 가 이미 있으면 이전 촬영 목록을 "
+"불러오고, 없으면 디렉토리를 훑어 파일로부터 목록을 다시 구성합니다."
+
+#: ../../user_guide.rst:19
+msgid "**Test Shot**"
+msgstr "**시험 촬영**"
+
+#: ../../user_guide.rst:21
+msgid ""
+"Fires a single frame. Use it to check the camera, the exposure and the "
+"serial link before committing to a full run."
+msgstr "한 장만 촬영합니다. 전체 촬영에 들어가기 전에 카메라·노출·시리얼 연결을 확인하는 데 쓰세요."
+
+#: ../../user_guide.rst:24
+msgid "**Take All Pictures**"
+msgstr "**전체 촬영**"
+
+#: ../../user_guide.rst:26
+msgid ""
+"Runs the full sequence. **Pause/Continue** and **Stop** control the run "
+"while it is in progress."
+msgstr "전체 순서를 실행합니다. 진행 중에는 **일시정지/계속** 과 **촬영 중지** 로 제어합니다."
+
+#: ../../user_guide.rst:29
+msgid "**Review**"
+msgstr "**검토**"
+
+#: ../../user_guide.rst:31
+msgid ""
+"Select a row to preview that image. Uncheck any shot you do not want in the "
+"final PTM. **Retake Picture** re-shoots the selected rows."
+msgstr ""
+"행을 선택하면 해당 사진을 미리 봅니다. 최종 PTM에 넣고 싶지 않은 사진은 체크를 해제하세요. **재촬영** 은 선택한 행을 다시 "
+"찍습니다."
+
+#: ../../user_guide.rst:34
+msgid "**Generate PTM**"
+msgstr "**PTM파일 만들기**"
+
+#: ../../user_guide.rst:36
+msgid ""
+"Writes the ``.lp`` file beside the images and runs PTMfitter. You are "
+"prompted for the output ``.ptm`` path."
+msgstr "사진 옆에 ``.lp`` 파일을 만들고 PTMfitter를 실행합니다. 저장할 ``.ptm`` 경로를 묻습니다."
+
+#: ../../user_guide.rst:40
+msgid "What a run does per LED"
+msgstr "LED 한 개마다 일어나는 일"
+
+#: ../../user_guide.rst:51
+msgid "One tick is one second."
+msgstr "1틱은 1초입니다."
+
+#: ../../user_guide.rst:54
+msgid "Missing shots"
+msgstr "빠진 사진"
+
+#: ../../user_guide.rst:56
+msgid ""
+"A shot that never arrives is recorded with ``-`` for its filename. The slot "
+"is kept rather than removed, so the remaining images keep their original LED"
+" indices and still get the right light vector. A run with gaps still "
+"produces a valid PTM — just from fewer images."
+msgstr ""
+"끝내 도착하지 않은 사진은 파일명이 ``-`` 로 기록됩니다. 해당 슬롯을 지우지 않고 남기기 때문에 나머지 사진들이 원래의 LED "
+"번호를 유지하고 올바른 광원 벡터를 받습니다. 빠진 자리가 있어도 PTM은 정상적으로 만들어집니다. 사진 수가 줄어들 뿐입니다."
+
+#: ../../user_guide.rst:61
+msgid "Use **Retake Picture** on those rows to fill them in."
+msgstr "그 행들을 선택해 **재촬영** 으로 채우면 됩니다."
+
+#: ../../user_guide.rst:64
+msgid "Running without the controller"
+msgstr "컨트롤러 없이 실행하기"
+
+#: ../../user_guide.rst:66
+msgid ""
+"Starting a capture with no serial port configured asks whether to continue. "
+"Cancelling is the default, because without the controller the LEDs and "
+"shutter are never triggered and every slot times out. Continuing anyway is "
+"there for trying the interface out with no hardware attached."
+msgstr ""
+"시리얼 포트를 설정하지 않은 채 촬영을 시작하면 계속할지 묻습니다. 기본값은 취소입니다. 컨트롤러가 없으면 LED와 셔터가 전혀 작동하지"
+" 않아 모든 슬롯이 타임아웃되기 때문입니다. 그대로 진행하는 선택지는 하드웨어 없이 화면만 확인해 보고 싶을 때를 위한 것입니다."
+
+#: ../../user_guide.rst:72
+msgid "Files a run produces"
+msgstr "촬영이 만드는 파일"
+
+#: ../../user_guide.rst:75
+msgid "``image_data.csv``"
+msgstr "``image_data.csv``"
+
+#: ../../user_guide.rst:75
+msgid ""
+"The capture table: index, directory, filename, included. Written into the "
+"capture directory"
+msgstr "촬영 목록: 번호, 디렉토리, 파일명, 포함 여부. 촬영 디렉토리에 저장됩니다"
+
+#: ../../user_guide.rst:77
+msgid "``<dirname>.lp``"
+msgstr "``<dirname>.lp``"
+
+#: ../../user_guide.rst:77
+msgid "Light positions, generated by **Generate PTM**"
+msgstr "광원 위치. **PTM파일 만들기** 가 생성합니다"
+
+#: ../../user_guide.rst:78
+msgid "``<chosen name>.ptm``"
+msgstr "``<chosen name>.ptm``"
+
+#: ../../user_guide.rst:78
+msgid "The output, produced by PTMfitter"
+msgstr "결과물. PTMfitter가 생성합니다"
+
+#: ../../user_guide.rst:79
+msgid "``output.log``"
+msgstr "``output.log``"
+
+#: ../../user_guide.rst:79
+msgid "Console output, next to the executable"
+msgstr "콘솔 출력. 실행파일 옆에 생깁니다"

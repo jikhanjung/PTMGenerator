@@ -1,0 +1,168 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: ko <LL@li.org>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../hardware.rst:2
+msgid "Hardware"
+msgstr "하드웨어"
+
+#: ../../hardware.rst:5
+msgid "The controller"
+msgstr "컨트롤러"
+
+#: ../../hardware.rst:7
+msgid ""
+"The firmware lives in ``PTMController/PTMController.ino`` and is flashed "
+"with the Arduino IDE. Seven daisy-chained 74HC595 shift registers give 56 "
+"outputs, of which 50 drive the LEDs. The remaining pins run a 7-segment "
+"display showing the current LED index. A rotary encoder with a push button "
+"allows manual LED selection and manual shooting without the PC."
+msgstr ""
+"펌웨어는 ``PTMController/PTMController.ino`` 에 있으며 Arduino IDE로 업로드합니다. 74HC595 "
+"시프트 레지스터 7개를 데이지 체인으로 연결해 56개 출력을 얻고, 그중 50개가 LED를 구동합니다. 남는 핀은 현재 LED 번호를 "
+"표시하는 7세그먼트 디스플레이에 쓰입니다. 푸시 버튼이 달린 로터리 엔코더로 PC 없이도 LED를 직접 고르고 촬영할 수 있습니다."
+
+#: ../../hardware.rst:14
+msgid "Pinout"
+msgstr "핀 배치"
+
+#: ../../hardware.rst:17
+msgid "Signal"
+msgstr "신호"
+
+#: ../../hardware.rst:17
+msgid "Arduino pin"
+msgstr "Arduino 핀"
+
+#: ../../hardware.rst:19
+msgid "``SER`` (74HC595 pin 14)"
+msgstr "``SER`` (74HC595 pin 14)"
+
+#: ../../hardware.rst:19
+msgid "8"
+msgstr "8"
+
+#: ../../hardware.rst:20
+msgid "``RCLK`` (74HC595 pin 12)"
+msgstr "``RCLK`` (74HC595 pin 12)"
+
+#: ../../hardware.rst:20
+msgid "9"
+msgstr "9"
+
+#: ../../hardware.rst:21
+msgid "``SRCLK`` (74HC595 pin 11)"
+msgstr "``SRCLK`` (74HC595 pin 11)"
+
+#: ../../hardware.rst:21
+msgid "10"
+msgstr "10"
+
+#: ../../hardware.rst:22
+msgid "Shutter"
+msgstr "셔터"
+
+#: ../../hardware.rst:22
+msgid "19"
+msgstr "19"
+
+#: ../../hardware.rst:26
+msgid "Serial protocol"
+msgstr "시리얼 프로토콜"
+
+#: ../../hardware.rst:28
+msgid ""
+"9600 baud, 8N1. The PC sends messages framed with ``<`` and ``>``, comma "
+"separated:"
+msgstr "9600 baud, 8N1. PC는 ``<`` 와 ``>`` 로 감싸고 쉼표로 구분한 메시지를 보냅니다:"
+
+#: ../../hardware.rst:32
+msgid "Message"
+msgstr "메시지"
+
+#: ../../hardware.rst:32
+msgid "Effect"
+msgstr "동작"
+
+#: ../../hardware.rst:34
+msgid "``<ON,n>``"
+msgstr "``<ON,n>``"
+
+#: ../../hardware.rst:34
+msgid "Turn on LED *n*, all others off"
+msgstr "LED *n* 을 켜고 나머지는 모두 끕니다"
+
+#: ../../hardware.rst:35
+msgid "``<SHOOT,n>``"
+msgstr "``<SHOOT,n>``"
+
+#: ../../hardware.rst:35
+msgid "Turn on LED *n* and trigger the shutter"
+msgstr "LED *n* 을 켜고 셔터를 작동시킵니다"
+
+#: ../../hardware.rst:36
+msgid "``<OFF>``"
+msgstr "``<OFF>``"
+
+#: ../../hardware.rst:36
+msgid "Turn all LEDs off. Sent when the port closes"
+msgstr "모든 LED를 끕니다. 포트를 닫을 때 전송됩니다"
+
+#: ../../hardware.rst:39
+msgid ""
+"LED numbers are 1-based on the wire (1–50 for the default configuration) and"
+" 0-based in the code; :py:mod:`core.serial_controller` converts between "
+"them."
+msgstr ""
+"LED 번호는 통신선 위에서는 1부터 시작하고(기본 설정에서 1–50) 코드 안에서는 0부터 시작합니다. "
+":py:mod:`core.serial_controller` 가 둘 사이를 변환합니다."
+
+#: ../../hardware.rst:42
+msgid ""
+"The Arduino echoes human-readable status lines back — ``Turn on LED #n``, "
+"``Shooting with LED #n turned on.`` — which are informational only. The "
+"application does not parse them."
+msgstr ""
+"Arduino는 ``Turn on LED #n``, ``Shooting with LED #n turned on.`` 같은 사람이 읽는 "
+"상태 문자열을 되돌려 보내지만 참고용일 뿐이며, 애플리케이션은 이를 해석하지 않습니다."
+
+#: ../../hardware.rst:47
+msgid "LED geometry"
+msgstr "LED 배치 기하"
+
+#: ../../hardware.rst:49
+msgid ""
+"``core/light_positions.py`` holds one ``[elevation, azimuth]`` pair per LED,"
+" in degrees, measured off the physical rig. **The index into that list is "
+"the LED number**, so the table must not be reordered without re-measuring."
+msgstr ""
+"``core/light_positions.py`` 에는 LED마다 ``[고도, 방위각]`` 쌍이 도(degree) 단위로 들어 있으며, "
+"실제 장비에서 측정한 값입니다. **이 목록의 인덱스가 곧 LED 번호** 이므로, 다시 측정하지 않고 순서를 바꾸면 안 됩니다."
+
+#: ../../hardware.rst:53
+msgid ""
+"``light_vectors()`` converts it to the unit vectors PTMfitter wants. The "
+"*Light Position Adjustment* preference rotates the whole dome about the "
+"vertical axis, to line LED #1 up with how the specimen is sitting; elevation"
+" is unaffected."
+msgstr ""
+"``light_vectors()`` 가 이를 PTMfitter가 요구하는 단위 벡터로 변환합니다. *광원 위치 보정* 설정은 돔 전체를 "
+"수직축 기준으로 회전시켜 LED #1을 표본이 놓인 방향에 맞춥니다. 고도는 영향을 받지 않습니다."

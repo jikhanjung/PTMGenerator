@@ -1,0 +1,432 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2026, PaleoBytes
+# This file is distributed under the same license as the PTMGenerator2
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../api.rst:2
+msgid "API reference"
+msgstr ""
+
+#: ../../api.rst:5
+msgid "``core`` — Qt-free logic"
+msgstr ""
+
+#: ../../api.rst:7
+msgid ""
+"Nothing in this package imports PyQt5, which is what makes it testable "
+"without a display, a QApplication or a controller attached."
+msgstr ""
+
+#: core.capture_session:1 of
+msgid "Sequencing a capture run."
+msgstr ""
+
+#: core.capture_session:3 of
+msgid "One tick per second, driven by a QTimer in the UI. Each slot goes"
+msgstr ""
+
+#: core.capture_session:5 of
+msgid "idle -> preparing -> polling -> (recorded | retake) -> next slot"
+msgstr ""
+
+#: core.capture_session:7 of
+msgid ""
+"and the run ends when the queue drains. This object owns the sequencing "
+"only: firing the shutter and looking for the resulting file are injected,"
+" so the policy — how long to wait, when to retake, when to give up — can "
+"be tested without a controller, a camera or a clock."
+msgstr ""
+
+#: core.capture_session.StepResult:1 of
+msgid "What one tick did, for the UI to render."
+msgstr ""
+
+#: core.capture_session.StepResult.event:1
+#: core.image_data.CaptureSlot.led_index:1 of
+msgid "Alias for field number 0"
+msgstr ""
+
+#: core.capture_session.StepResult.recorded:1 of
+msgid "(led_index, image_path or None)."
+msgstr ""
+
+#: core.capture_session.StepResult.recorded core.image_data.CSV_ENCODINGS of
+msgid "type"
+msgstr ""
+
+#: core.capture_session.StepResult.recorded:3 of
+msgid "Set when a slot was decided"
+msgstr ""
+
+#: core.capture_session.StepResult.finished:1 of
+msgid "True once the queue has drained and the run is over."
+msgstr ""
+
+#: core.capture_session.CaptureSession:1 of
+msgid "The queue of LEDs still to shoot, and the state of the current one."
+msgstr ""
+
+#: core.capture_session.CaptureSession.is_new_slot:1 of
+msgid "True while the current slot has not been shot yet."
+msgstr ""
+
+#: core.capture_session.CaptureSession.step:1 of
+msgid "Advance one tick."
+msgstr ""
+
+#: ../../api.rst
+msgid "Parameters"
+msgstr ""
+
+#: core.capture_session.CaptureSession.step:3 of
+msgid "Called as shoot(led_index) to light the LED and fire."
+msgstr ""
+
+#: core.capture_session.CaptureSession.step:4 of
+msgid "Called as poll() -> image path, or None if nothing new."
+msgstr ""
+
+#: ../../api.rst
+msgid "Returns"
+msgstr ""
+
+#: core.capture_session.CaptureSession.step:6 of
+msgid "what happened, and whether the run is over."
+msgstr ""
+
+#: ../../api.rst
+msgid "Return type"
+msgstr ""
+
+#: core.serial_controller:1 of
+msgid "Talking to the Arduino LED-dome controller."
+msgstr ""
+
+#: core.serial_controller:3 of
+msgid ""
+"The firmware reads messages framed with angle brackets and split on "
+"commas — `<ON,7>`, `<SHOOT,7>`, `<OFF>` — at 9600 baud, and echoes human-"
+"readable status lines back that nothing parses."
+msgstr ""
+
+#: core.serial_controller:7 of
+msgid ""
+"Every method tolerates there being no port. A capture can legitimately be"
+" started with no controller attached (the user is asked first, and may "
+"say to go ahead), and before this was centralised here each call site "
+"reached for a `serial` attribute that openSerial had never assigned."
+msgstr ""
+
+#: core.serial_controller.SerialController:1 of
+msgid "The controller's serial port, or the absence of one."
+msgstr ""
+
+#: core.serial_controller.SerialController.last_error:1 of
+msgid ""
+"Why the last open() failed, or None. Set when a port is configured but "
+"could not be opened, which the UI reports differently from there being no"
+" port at all."
+msgstr ""
+
+#: core.serial_controller.SerialController.is_configured:1 of
+msgid "True when a port name is set, whether or not it can be opened."
+msgstr ""
+
+#: core.serial_controller.SerialController.open:1 of
+msgid "Open the configured port. Returns True if there is one to talk to."
+msgstr ""
+
+#: core.serial_controller.SerialController.open:3 of
+msgid ""
+"Never raises. The port name is stored in preferences, so the application "
+"will eventually try one that has gone away — the board unplugged, the "
+"Arduino IDE's serial monitor holding it, a USB port re-enumerated to a "
+"different number, or the preferences carried to another machine. That "
+"used to let a SerialException escape into a Qt slot, which aborts the "
+"process with no message."
+msgstr ""
+
+#: core.serial_controller.SerialController.close:1 of
+msgid "Turn the LEDs off and release the port. Safe when never opened."
+msgstr ""
+
+#: core.serial_controller.SerialController.send:1 of
+msgid "Frame and write a message. Discarded, with a note, if there is no port."
+msgstr ""
+
+#: core.serial_controller.SerialController.receive:1 of
+msgid "Read one echoed status line, or None if there is no port."
+msgstr ""
+
+#: core.serial_controller.SerialController.turn_on:1 of
+msgid "Light LED `led_index` (0-based here, 1-based on the wire)."
+msgstr ""
+
+#: core.serial_controller.SerialController.shoot:1 of
+msgid "Light LED `led_index` and fire the shutter."
+msgstr ""
+
+#: core.serial_controller.SerialController.available_ports:1 of
+msgid "Device names of the serial ports currently present."
+msgstr ""
+
+#: core.light_positions:1 of
+msgid "The dome's LED geometry."
+msgstr ""
+
+#: core.light_positions:3 of
+msgid ""
+"PTMfitter wants a unit vector per shot, pointing from the specimen "
+"towards the light that was on. The dome is described in polar coordinates"
+" instead — one [elevation, azimuth] pair per LED, in degrees — so this "
+"module is the conversion between the two."
+msgstr ""
+
+#: core.light_positions.light_vectors:1 of
+msgid "Convert the polar LED table into unit vectors for the .lp file."
+msgstr ""
+
+#: core.light_positions.light_vectors:3 of
+msgid ""
+"Degrees to rotate the whole dome about the vertical axis, to line LED #1 "
+"up with how the specimen is sitting. Elevation is unaffected."
+msgstr ""
+
+#: core.light_positions.light_vectors:8 of
+msgid "One [x, y, z] unit vector per LED, in LED order."
+msgstr ""
+
+#: core.image_data:1 of
+msgid "The capture table: one slot per LED, and how it is persisted."
+msgstr ""
+
+#: core.image_data:3 of
+msgid ""
+"A run produces one image per LED. The table that tracks them is a list of"
+" `CaptureSlot`s, mirrored to `image_data.csv` in the capture directory so"
+" a run can be reopened later."
+msgstr ""
+
+#: core.image_data:7 of
+msgid ""
+"Slots for shots that failed carry \"-\" for both the directory and the "
+"filename, which keeps the LED index aligned with the light-position table"
+" even when part of a run is missing."
+msgstr ""
+
+#: core.image_data.CaptureSlot:1 of
+msgid "One LED's shot. A plain tuple, so existing unpacking keeps working."
+msgstr ""
+
+#: core.image_data.CaptureSlot.directory:1 of
+msgid "Alias for field number 1"
+msgstr ""
+
+#: core.image_data.CaptureSlot.filename:1 of
+msgid "Alias for field number 2"
+msgstr ""
+
+#: core.image_data.CaptureSlot.include:1 of
+msgid "Alias for field number 3"
+msgstr ""
+
+#: core.image_data.CaptureSlot.captured:1 of
+msgid "False for a shot that never arrived."
+msgstr ""
+
+#: core.image_data.CSV_ENCODINGS:1 of
+msgid ""
+"that is what write_csv produces, and -sig absorbs the byte-order mark a "
+"spreadsheet adds when someone opens the file to look at it. The fallbacks"
+" are for tables written before this was pinned, when the encoding was "
+"whatever the machine defaulted to -- cp949 on Korean Windows. latin-1 "
+"decodes any byte sequence, so the last attempt always succeeds: a legacy "
+"name may come back mangled, but the run still opens, which beats refusing"
+" to load it at all."
+msgstr ""
+
+#: core.image_data.CSV_ENCODINGS:9 of
+msgid "Tried in order when reading a capture table. utf-8-sig first"
+msgstr ""
+
+#: core.image_data.read_csv:1 of
+msgid "Load a capture table. Returns [] if there is no file."
+msgstr ""
+
+#: core.image_data.read_csv:3 of
+msgid ""
+"Accepts the 3-column format written before include flags existed; those "
+"rows default to included."
+msgstr ""
+
+#: core.image_data.write_csv:1 of
+msgid "Write the capture table, overwriting whatever was there."
+msgstr ""
+
+#: core.image_data.write_csv:3 of
+msgid ""
+"utf-8 explicitly, not the platform default. The table holds directory and"
+" file names, which for this application are routinely non-ASCII, and it "
+"is written into the capture directory to be read back later — possibly on"
+" a machine whose default encoding is cp949 rather than utf-8."
+msgstr ""
+
+#: core.image_data.detect_irregular_intervals:1 of
+msgid "Rebuild the capture table for a directory of already-taken images."
+msgstr ""
+
+#: core.image_data.detect_irregular_intervals:3 of
+msgid ""
+"Sorts the images by creation time, takes the most frequent gap between "
+"consecutive files as the typical shot interval, and reads any gap longer "
+"than 1.5x that as one or more missed shots, inserting a placeholder slot "
+"for each so the surviving images keep their original LED indices."
+msgstr ""
+
+#: core.image_data.detect_irregular_intervals:8 of
+msgid "Directory to scan. Not searched recursively."
+msgstr ""
+
+#: core.image_data.detect_irregular_intervals:10 of
+msgid "Seam for tests, which need exact intervals without sleeping."
+msgstr ""
+
+#: core.image_data.detect_irregular_intervals:12 of
+msgid ""
+"One slot per LED position. Empty when fewer than two images make the "
+"interval unmeasurable."
+msgstr ""
+
+#: core.image_data.find_newest_image:1 of
+msgid "The most recent image in `directory` created after `newer_than`."
+msgstr ""
+
+#: core.image_data.find_newest_image:3 of
+msgid ""
+"Returns (path, mtime), or (None, newer_than) if nothing new has landed. "
+"Not recursive: the tethering software drops files in one directory, and "
+"walking subdirectories made every poll slower for no gain."
+msgstr ""
+
+#: core.ptm_builder:1 of
+msgid "Producing the .lp file and handing it to PTMfitter."
+msgstr ""
+
+#: core.ptm_builder:3 of
+msgid ""
+"PTMfitter takes a light-position file: a count, then one line per image "
+"giving its path and the unit vector of the light that was on. This module"
+" builds that text and runs the fitter; choosing the output path is the "
+"UI's job."
+msgstr ""
+
+#: core.ptm_builder.PtmFitterNotFoundError:1 of
+msgid "Raised when the configured PTMfitter executable is not on disk."
+msgstr ""
+
+#: core.ptm_builder.build_lp_content:1 of
+msgid "Render the .lp file for a capture table."
+msgstr ""
+
+#: core.ptm_builder.build_lp_content:3 of
+msgid ""
+"Shots that failed, and shots the user unchecked, are left out — both of "
+"the count on the first line and of the body."
+msgstr ""
+
+#: core.ptm_builder.build_lp_content:6 of
+msgid "The capture table."
+msgstr ""
+
+#: core.ptm_builder.build_lp_content:8 of
+msgid "Unit vectors, indexed by LED."
+msgstr ""
+
+#: core.ptm_builder.build_lp_content:11 of
+msgid "The complete file contents."
+msgstr ""
+
+#: core.ptm_builder.lp_path_for:1 of
+msgid "Where the .lp goes: beside the images, named after their directory."
+msgstr ""
+
+#: core.ptm_builder.run_fitter:1 of
+msgid "Invoke PTMfitter."
+msgstr ""
+
+#: core.ptm_builder.run_fitter:3 of
+msgid ""
+"Seam for tests, so the suite never launches a real process. Resolved at "
+"call time rather than bound as a default, so patching "
+"`core.ptm_builder.subprocess.call` works."
+msgstr ""
+
+#: ../../api.rst
+msgid "Raises"
+msgstr ""
+
+#: core.ptm_builder.run_fitter:7 of
+msgid "If `fitter_path` does not exist."
+msgstr ""
+
+#: core.settings:1 of
+msgid "Preference keys, defaults and coercion."
+msgstr ""
+
+#: core.settings:3 of
+msgid ""
+"QSettings stores everything as text in an .ini file, so a value written "
+"as an int comes back as a string. The defaults and the coercion live here"
+" so the two windows that read preferences cannot drift apart on either."
+msgstr ""
+
+#: core.settings.value_to_bool:1 of
+msgid "Coerce a QSettings value to bool."
+msgstr ""
+
+#: core.settings.value_to_bool:3 of
+msgid ""
+"An .ini round-trips True as the string \"true\", which is truthy either "
+"way, but so is \"false\"."
+msgstr ""
+
+#: core.resources:1 of
+msgid "Locating bundled files."
+msgstr ""
+
+#: core.resources:3 of
+msgid ""
+"Icons and compiled translations sit next to the source when running from "
+"a checkout, and inside PyInstaller's extraction directory when running "
+"from the frozen .exe. `resource_path` papers over the difference."
+msgstr ""
+
+#: core.resources.resource_path:1 of
+msgid "Absolute path to a bundled resource, frozen or not."
+msgstr ""
+
+#: core.resources.icon_path:1 of
+msgid "Absolute path to one of the ICON entries."
+msgstr ""
+
+#: core.resources.translation_path:1 of
+msgid "Absolute path to a compiled .qm for `language` (\"en\", \"ko\")."
+msgstr ""
+
