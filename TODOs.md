@@ -93,7 +93,7 @@ run. Verified 2026-07-28, after the built-in fitter and the installer (devlog
 | 4 | `filterwarnings = error` | ✅ | `pyproject.toml`, one narrow documented ignore for PyQt5's sip shims |
 | 5 | Lockfile + pip-audit + Dependabot | ✅ | 9 per-platform locks with hashes, pip-audit on all three runtime locks, `.github/dependabot.yml` |
 | 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 93% across 331 tests |
-| 7 | Static type checking, scoped | ⚠️ | mypy gates over `core/` **and** `ui/`. `check_untyped_defs` is on for `core/` only — see below |
+| 7 | Static type checking, scoped | ✅ | mypy gates over `core/` **and** `ui/`, `check_untyped_defs` on for both (devlog 013) |
 | 8 | Dead-code / complexity automation | ✅ | `C90` enforced at the guide's threshold of 15 |
 | 9 | Packaged artifact + installer | ✅ | `--self-test` runs against the frozen .exe before Inno Setup packages it (`reusable_build.yml`). Signing still open |
 | 10 | Property-based tests | ✅ | `tests/test_light_positions_properties.py`, hypothesis over the adjustment angle |
@@ -121,25 +121,6 @@ starts committing. Recording it so a later audit reads this as a decision
 rather than an oversight.
 
 ---
-
-## Turn on `check_untyped_defs` for `ui/`
-
-`core/` has it; `ui/` does not. It is the setting that matters — the code
-carries few annotations, and by default mypy skips the *bodies* of unannotated
-functions, so scope alone buys very little.
-
-Enabling it for `ui/` surfaces 111 findings, but they are two systemic patterns
-rather than 111 mistakes:
-
-* `QApplication.instance()` and `menuBar().addMenu()` are typed as Optional, so
-  every use is a `union-attr` warning. Mechanical: assert once and reuse.
-* The entry point bolts `.translator`, `.language` and `.settings` onto the
-  QApplication object. No stub knows about them, and it is a real design smell —
-  a small typed holder passed to the windows would fix both the warnings and the
-  smell. That is the actual work here, and it is a refactor, not a lint pass.
-
-PyQt5 ships its own `.pyi` stubs and `py.typed`, so no third-party stub package
-is needed — the earlier note here claiming otherwise was wrong.
 
 ## Convert `os.path` to `pathlib`
 

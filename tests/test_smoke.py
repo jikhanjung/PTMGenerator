@@ -57,7 +57,7 @@ def test_preferences_window_constructs(prefs_window):
     assert prefs_window.windowTitle() == "Preferences"
     # Language, serial port, engine, fitter path, LED count, retries, polling,
     # adjustment, OK
-    assert prefs_window.layout.rowCount() == 9
+    assert prefs_window.form_layout.rowCount() == 9
 
 
 def test_the_fitter_choice_round_trips(prefs_window, main_window):

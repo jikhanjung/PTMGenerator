@@ -15,7 +15,7 @@ hooks. Python 3.12 or newer.
 
 ```bash
 make lint          # ruff check + ruff format --check
-make type-check    # mypy over core/
+make type-check    # mypy over core/ and ui/
 make test          # the suite, ~6s
 ```
 

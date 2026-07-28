@@ -48,13 +48,14 @@ def qapp():
     A QApplication must exist before any QWidget, and PyQt5 destroys it as soon
     as the last Python reference goes away — hence session scope rather than a
     local in each test.
+
+    `PtmApplication` rather than `QApplication`: it declares the translator, the
+    language and the preferences store the windows read, so a test gets the same
+    object the entry point builds.
     """
-    app = QApplication.instance() or QApplication(sys.argv[:1])
-    # read_settings() -> update_language() expects the attributes the entry
-    # point attaches to the application object.
-    if not hasattr(app, "translator"):
-        app.translator = None
-        app.language = "en"
+    from ui.app import PtmApplication
+
+    app = QApplication.instance() or PtmApplication(sys.argv[:1])
     app.settings = None
     return app
 

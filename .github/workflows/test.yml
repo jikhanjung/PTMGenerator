@@ -14,7 +14,7 @@ on:
 jobs:
   # ---------------------------------------------------------------------------
   # Lint / format / type — once, not per-OS.
-  # Gating: ruff check, ruff format --check, mypy over core/.
+  # Gating: ruff check, ruff format --check, mypy over core/ and ui/.
   # ---------------------------------------------------------------------------
   lint:
     name: Lint (ruff, mypy)
@@ -46,8 +46,8 @@ jobs:
       # Scope is core/ — the Qt-free half, which has per-module settings in
       # pyproject.toml. Widen to ui/ a module at a time, each one clean before
       # it is added. Tracked in TODOs.md.
-      - name: mypy (core)
-        run: mypy --config-file pyproject.toml core/
+      - name: mypy (core, ui)
+        run: mypy --config-file pyproject.toml core/ ui/
 
   # Fast fail: if a module does not import or the window does not construct on
   # a platform, there is no point running the full suite there.

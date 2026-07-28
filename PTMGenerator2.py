@@ -15,7 +15,6 @@ import sys
 
 from PyQt5.QtCore import QTranslator
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication
 
 from core import paths
 from core import self_test as self_test_checks
@@ -23,6 +22,7 @@ from core.preferences import Preferences, legacy_ini_path, migrate_from_ini
 from core.resources import icon_path, translation_path
 from core.settings import LANGUAGE, read_str
 from ui import error_handling
+from ui.app import PtmApplication
 from ui.main_window import PTMGeneratorMainWindow
 from version import PROGRAM_NAME, __version__
 
@@ -53,9 +53,7 @@ def self_test(argv):
     # Set before QApplication so no display is needed on a CI runner.
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-    app = QApplication(argv[:1])
-    app.translator = None
-    app.language = "en"
+    app = PtmApplication(argv[:1])
     app.settings = open_preferences()
 
     print(f"{PROGRAM_NAME} {__version__} self-test")
@@ -90,11 +88,10 @@ def main(argv=None):
     if "--self-test" in argv:
         return self_test(argv)
 
-    app = QApplication(argv)
+    app = PtmApplication(argv)
     # Before any window exists: an exception escaping a Qt slot otherwise
     # aborts the process with nothing on screen and nothing in the log.
     error_handling.install()
-    app.translator = None
     app.setWindowIcon(QIcon(icon_path("app")))
     app.settings = open_preferences()
 

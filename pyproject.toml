@@ -263,16 +263,12 @@ check_untyped_defs = true
 disallow_untyped_defs = false
 warn_unused_ignores = true
 
-# ui/ is in scope and clean at the default leniency. check_untyped_defs is NOT
-# on for it yet: it surfaces 111 findings, essentially all from two systemic
-# patterns rather than 111 separate mistakes —
-#   * QApplication.instance() and menuBar().addMenu() are typed Optional, so
-#     every use is a union-attr warning;
-#   * the entry point bolts .translator/.language/.settings onto the
-#     QApplication object, which no stub knows about.
-# The second is a real design smell and wants a small typed holder rather than
-# a blanket ignore. Tracked in TODOs.md.
+# ui/ is checked on the same terms as core/. Turning check_untyped_defs on here
+# surfaced 100 findings, which came down to four causes rather than 100 mistakes
+# — see devlog 013. They were fixed rather than waived: ui/app.py declares the
+# application's own attributes and wraps the Qt accessors that are Optional in
+# the stubs but cannot be None once a window exists.
 [[tool.mypy.overrides]]
 module = "ui.*"
-check_untyped_defs = false
+check_untyped_defs = true
 disallow_untyped_defs = false

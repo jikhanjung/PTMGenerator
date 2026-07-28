@@ -5,7 +5,6 @@ import os
 from PyQt5.QtCore import QRect, QTranslator
 from PyQt5.QtGui import QDoubleValidator, QIcon, QIntValidator
 from PyQt5.QtWidgets import (
-    QApplication,
     QComboBox,
     QDialog,
     QFileDialog,
@@ -18,8 +17,8 @@ from PyQt5.QtWidgets import (
 )
 
 from core import settings as prefs
-from core.preferences import Preferences
 from core.resources import icon_path, translation_path
+from ui.app import app
 from ui.geometry import to_list, to_rect
 
 
@@ -32,14 +31,15 @@ class PreferencesWindow(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.initialize_variables(parent)
+        self.initialize_variables()
         self.setup_ui()
 
-    def initialize_variables(self, parent):
-        self.parent = parent
-        self.m_app = QApplication.instance()
+    def initialize_variables(self):
+        # No self.parent: QWidget.parent() is a method, and assigning over it
+        # shadowed the one the base class already keeps from __init__.
+        self.m_app = app()
         self.current_translator = None
-        self.settings = getattr(self.m_app, "settings", None) or Preferences()
+        self.settings = self.m_app.preferences()
 
     def setup_ui(self):
         self.setWindowTitle(self.tr("Preferences"))
@@ -98,17 +98,17 @@ class PreferencesWindow(QDialog):
         self.btnOkay = QPushButton(self.tr("OK"))
         self.btnOkay.clicked.connect(self.Okay)
 
-        self.layout = QFormLayout()
-        self.layout.addRow(self.language_label, self.language_combobox)
-        self.layout.addRow(self.lblSerialPort, self.comboSerialPort)
-        self.layout.addRow(self.lblFitter, self.comboFitter)
-        self.layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
-        self.layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
-        self.layout.addRow(self.lblRetryCount, self.edtRetryCount)
-        self.layout.addRow(self.lblPostShutterPolling, self.edtPostShutterPolling)
-        self.layout.addRow(self.lblLightPositionAdjustment, self.edtLightPositionAdjustment)
-        self.layout.addRow(self.btnOkay)
-        self.setLayout(self.layout)
+        self.form_layout = QFormLayout()
+        self.form_layout.addRow(self.language_label, self.language_combobox)
+        self.form_layout.addRow(self.lblSerialPort, self.comboSerialPort)
+        self.form_layout.addRow(self.lblFitter, self.comboFitter)
+        self.form_layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
+        self.form_layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
+        self.form_layout.addRow(self.lblRetryCount, self.edtRetryCount)
+        self.form_layout.addRow(self.lblPostShutterPolling, self.edtPostShutterPolling)
+        self.form_layout.addRow(self.lblLightPositionAdjustment, self.edtLightPositionAdjustment)
+        self.form_layout.addRow(self.btnOkay)
+        self.setLayout(self.form_layout)
 
         self.read_settings()
 
@@ -147,9 +147,7 @@ class PreferencesWindow(QDialog):
             self.edtPtmFitter.setText(filename)
 
     def read_settings(self):
-        if getattr(self.m_app, "settings", None) is None:
-            self.m_app.settings = Preferences()
-        s = self.m_app.settings
+        s = self.m_app.preferences()
         self.remember_geometry = prefs.value_to_bool(
             s.value("WindowGeometry/RememberGeometry", True)
         )
@@ -176,7 +174,7 @@ class PreferencesWindow(QDialog):
         self.update_language(self.language)
 
     def save_settings(self):
-        s = self.m_app.settings
+        s = self.m_app.preferences()
         s.setValue("WindowGeometry/PreferencesWindow", to_list(self.geometry()))
         s.setValue("IsMaximized/PreferencesWindow", self.isMaximized())
         s.setValue(prefs.LANGUAGE, self.language_combobox.currentData())

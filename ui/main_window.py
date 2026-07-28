@@ -28,9 +28,9 @@ from core import settings as prefs
 from core.capture_session import CaptureSession
 from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
-from core.preferences import Preferences
 from core.resources import icon_path, translation_path
 from core.serial_controller import SerialController
+from ui.app import app, require
 from ui.geometry import to_list, to_rect
 from ui.preferences_window import PreferencesWindow
 from version import __version__
@@ -122,7 +122,9 @@ class PTMGeneratorMainWindow(QMainWindow):
         # can land in a subfolder of it, so where they are actually going needs
         # its own line, next to the list of what has arrived.
         self.lblCaptureDirectory = QLabel()
-        self.lblCaptureDirectory.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lblCaptureDirectory.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
         self.lblCaptureDirectory.setWordWrap(True)
 
         self.capture_list_widget = QWidget()
@@ -141,13 +143,13 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_model = QStandardItemModel()
         self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
         self.table_view.setModel(self.image_model)
-        header = self.table_view.horizontalHeader()
+        header = require(self.table_view.horizontalHeader(), "table header")
         header.setSectionResizeMode(0, header.ResizeToContents)
         header.setSectionResizeMode(1, header.Stretch)
-        self.table_view.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        self.selection().selectionChanged.connect(self.on_selection_changed)
 
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
 
         self.lblDirectory = QLabel(self.tr("Directory"))
         self.btnOpenDirectory = QPushButton(self.tr("Open Directory"))
@@ -204,15 +206,15 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.actionAbout = QAction(self.tr("About"), self)
         self.actionAbout.triggered.connect(self.on_action_about_triggered)
 
-        self.main_menu = self.menuBar()
-        self.file_menu = self.main_menu.addMenu(self.tr("File"))
+        self.main_menu = require(self.menuBar(), "menu bar")
+        self.file_menu = require(self.main_menu.addMenu(self.tr("File")), "File menu")
         self.file_menu.addAction(self.actionOpenDirectory)
-        self.edit_menu = self.main_menu.addMenu(self.tr("Edit"))
+        self.edit_menu = require(self.main_menu.addMenu(self.tr("Edit")), "Edit menu")
         self.edit_menu.addAction(self.actionPreferences)
-        self.help_menu = self.main_menu.addMenu(self.tr("Help"))
+        self.help_menu = require(self.main_menu.addMenu(self.tr("Help")), "Help menu")
         self.help_menu.addAction(self.actionAbout)
 
-        self.m_app = QApplication.instance()
+        self.m_app = app()
         self.read_settings()
 
         self.update_capture_directory_label()
@@ -224,10 +226,8 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def read_settings(self):
         # The entry point opens the store and hands it to the application; a
-        # window built by a test or a script may find none there.
-        if getattr(self.m_app, "settings", None) is None:
-            self.m_app.settings = Preferences()
-        s = self.m_app.settings
+        # window built by a test or a script gets one opened here.
+        s = self.m_app.preferences()
         self.m_app.remember_geometry = prefs.value_to_bool(
             s.value("WindowGeometry/RememberGeometry", True)
         )
@@ -254,9 +254,10 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.update_language(self.m_app.language)
 
     def save_settings(self):
-        self.m_app.settings.setValue("WindowGeometry/MainWindow", to_list(self.geometry()))
-        self.m_app.settings.setValue("IsMaximized/MainWindow", self.isMaximized())
-        self.m_app.settings.sync()
+        s = self.m_app.preferences()
+        s.setValue("WindowGeometry/MainWindow", to_list(self.geometry()))
+        s.setValue("IsMaximized/MainWindow", self.isMaximized())
+        s.sync()
 
     # -- serial -------------------------------------------------------------
 
@@ -310,11 +311,11 @@ class PTMGeneratorMainWindow(QMainWindow):
             return True
         reason = self.serial.last_error
         if reason:
-            self.statusBar.showMessage(
+            self.status_bar.showMessage(
                 self.tr("Could not open {port}").format(port=self.serial.port), 5000
             )
         else:
-            self.statusBar.showMessage(self.tr("No serial port configured"), 5000)
+            self.status_bar.showMessage(self.tr("No serial port configured"), 5000)
         return self.confirm_capture_without_controller(reason)
 
     # -- capture ------------------------------------------------------------
@@ -360,9 +361,9 @@ class PTMGeneratorMainWindow(QMainWindow):
             if new_image is not None:
                 break
         if new_image is None:
-            self.statusBar.showMessage(self.tr("Failed to get image file"), 1000)
+            self.status_bar.showMessage(self.tr("Failed to get image file"), 1000)
         else:
-            self.statusBar.showMessage(f"New image detected: {new_image}", 1000)
+            self.status_bar.showMessage(f"New image detected: {new_image}", 1000)
         self.serial.close()
 
     def update_capture_directory_label(self):
@@ -390,7 +391,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.capture_directory = directory
         self.update_capture_directory_label()
         print(f"Capturing into {directory}")
-        self.statusBar.showMessage(
+        self.status_bar.showMessage(
             self.tr("Capturing into {directory}").format(directory=directory), 5000
         )
 
@@ -430,13 +431,13 @@ class PTMGeneratorMainWindow(QMainWindow):
             led_index, path = result.recorded
             self.record_slot(led_index, path)
 
-        self.statusBar.showMessage(
+        self.status_bar.showMessage(
             "[#{}] {}".format(index + 1 if index is not None else "-", result.event), 1000
         )
 
         if result.finished:
             self.timer.stop()
-            self.statusBar.showMessage(
+            self.status_bar.showMessage(
                 self.tr("All pictures ({}) taken").format(self.number_of_LEDs), 5000
             )
             self.update_csv()
@@ -454,7 +455,7 @@ class PTMGeneratorMainWindow(QMainWindow):
 
         checkbox_item = QStandardItem()
         checkbox_item.setCheckable(True)
-        checkbox_item.setCheckState(Qt.Checked if include else Qt.Unchecked)
+        checkbox_item.setCheckState(Qt.CheckState.Checked if include else Qt.CheckState.Unchecked)
         filename_item = QStandardItem(filename)
 
         slot = CaptureSlot(led_index, directory, filename, include)
@@ -472,18 +473,18 @@ class PTMGeneratorMainWindow(QMainWindow):
     def pause_continue_process(self):
         if self.timer.isActive():
             self.timer.stop()
-            self.statusBar.showMessage(self.tr("Paused"), 1000)
+            self.status_bar.showMessage(self.tr("Paused"), 1000)
             self.btnPauseContinue.setText(self.tr("Continue"))
         else:
             self.timer.start()
-            self.statusBar.showMessage(self.tr("Continued"), 1000)
+            self.status_bar.showMessage(self.tr("Continued"), 1000)
             self.btnPauseContinue.setText(self.tr("Pause"))
 
     def stop_process(self):
         self.timer.stop()
         self.session = None
         self.serial.close()
-        self.statusBar.showMessage(self.tr("Stopped"), 1000)
+        self.status_bar.showMessage(self.tr("Stopped"), 1000)
 
     # -- capture table ------------------------------------------------------
 
@@ -492,7 +493,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_model.clear()
         self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
         self.image_view.clear()
-        self.table_view.selectionModel().clearSelection()
+        self.selection().clearSelection()
         self.prev_selected_rows = []
 
     def load_csv_data(self):
@@ -501,7 +502,9 @@ class PTMGeneratorMainWindow(QMainWindow):
         for slot in self.image_data:
             checkbox_item = QStandardItem()
             checkbox_item.setCheckable(True)
-            checkbox_item.setCheckState(Qt.Checked if slot.include else Qt.Unchecked)
+            checkbox_item.setCheckState(
+                Qt.CheckState.Checked if slot.include else Qt.CheckState.Unchecked
+            )
             self.image_model.appendRow([checkbox_item, QStandardItem(slot.filename)])
         self.table_view.selectRow(0)
 
@@ -512,7 +515,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.update_csv()
             self.load_csv_data()
         else:
-            self.statusBar.showMessage(
+            self.status_bar.showMessage(
                 self.tr("Image files not found or not enough images in the directory."), 5000
             )
 
@@ -523,17 +526,23 @@ class PTMGeneratorMainWindow(QMainWindow):
             if checkbox_item and row < len(self.image_data):
                 slot = self.image_data[row]
                 self.image_data[row] = slot._replace(
-                    include=checkbox_item.checkState() == Qt.Checked
+                    include=checkbox_item.checkState() == Qt.CheckState.Checked
                 )
 
     def update_csv(self):
         self.sync_checkbox_states_to_image_data()
         image_data.write_csv(os.path.join(self.working_directory, self.csv_file), self.image_data)
 
+    def selection(self):
+        """The table's selection model.
+
+        Optional in the stubs -- a view with no model has none -- but the model
+        is set in `setup_ui` before anything here runs.
+        """
+        return require(self.table_view.selectionModel(), "selection model")
+
     def on_selection_changed(self, selected, deselected):
-        self.selected_rows = sorted(
-            {index.row() for index in self.table_view.selectionModel().selectedIndexes()}
-        )
+        self.selected_rows = sorted({index.row() for index in self.selection().selectedIndexes()})
         for row in self.selected_rows:
             if row not in self.prev_selected_rows and row < len(self.image_data):
                 slot = self.image_data[row]
@@ -543,7 +552,7 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def show_image(self, image_file):
         self.image_view.setPixmap(
-            QPixmap(image_file).scaled(self.image_view.size(), Qt.KeepAspectRatio)
+            QPixmap(image_file).scaled(self.image_view.size(), Qt.AspectRatioMode.KeepAspectRatio)
         )
 
     # -- actions ------------------------------------------------------------
@@ -612,9 +621,9 @@ class PTMGeneratorMainWindow(QMainWindow):
                 self.tr("The images could not be fitted: {reason}").format(reason=error)
             )
         except PtmFitCancelledError:
-            self.statusBar.showMessage(self.tr("PTM generation cancelled"), 5000)
+            self.status_bar.showMessage(self.tr("PTM generation cancelled"), 5000)
         else:
-            self.statusBar.showMessage(self.tr("Saved {path}").format(path=ptm_filename), 5000)
+            self.status_bar.showMessage(self.tr("Saved {path}").format(path=ptm_filename), 5000)
             print(f"Wrote {ptm_filename} (light positions: {lp_path})")
 
     def generate_ptm_natively(self, vectors, destination):
@@ -629,7 +638,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         """
         total = len(ptm_builder.usable_slots(self.image_data))
         dialog = QProgressDialog(self.tr("Fitting the PTM..."), self.tr("Cancel"), 0, total, self)
-        dialog.setWindowModality(Qt.WindowModal)
+        dialog.setWindowModality(Qt.WindowModality.WindowModal)
         dialog.setMinimumDuration(0)
 
         def report(done, count):
@@ -650,7 +659,7 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     def report_error(self, message):
         print(message)
-        self.statusBar.showMessage(message, 5000)
+        self.status_bar.showMessage(message, 5000)
         QMessageBox.critical(self, self.tr("Error"), message)
 
     # -- i18n ---------------------------------------------------------------

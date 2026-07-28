@@ -69,7 +69,7 @@ make install-dev     # dependencies + pre-commit hooks
 make test            # 331 tests, ~6s, no display needed
 make test-cov        # with a coverage report
 make lint            # ruff check + ruff format --check
-make type-check      # mypy over core/ (see the gotcha about ui/)
+make type-check      # mypy over core/ and ui/
 make run             # run the application
 make build           # PyInstaller -> dist/PTMGenerator2/PTMGenerator2.exe
 make translations    # pylupdate5 extract + pyside6-lrelease compile (the UI)
@@ -142,10 +142,14 @@ and none should be added.
   the docs build runs with `-W`. Adding an import to `core/` without adding it
   to `docs/manual/requirements.txt` fails the Documentation workflow, not the
   tests. This has happened (devlog 010).
-- **mypy gates over `core/` only.** `make type-check`, the CI lint job and the
-  pre-commit hook all pass just `core/`. `mypy ui/` passes if run by hand, but
-  nothing runs it, and `check_untyped_defs` is off there — so mypy would skip
-  the bodies of unannotated functions anyway. See `TODOs.md`.
+- **`check_untyped_defs` is on for both `core/` and `ui/`.** Without it mypy
+  skips the bodies of unannotated functions, and this code carries few
+  annotations — a clean run would mean almost nothing. Keep it on.
+- **Do not shadow a Qt method with an attribute.** `self.statusBar`,
+  `self.layout` and `self.parent` all did; each hid an inherited method that
+  would then raise `TypeError` if anyone called it. They are `status_bar`,
+  `form_layout` and gone respectively. This is not the same as the deliberate
+  Qt-mirroring names below, which shadow nothing.
 - **`sys.excepthook` is installed by the entry point** (`ui/error_handling.py`).
   An exception escaping a Qt slot otherwise aborts the process silently.
 

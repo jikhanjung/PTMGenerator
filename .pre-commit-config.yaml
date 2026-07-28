@@ -34,15 +34,14 @@ repos:
       - id: mixed-line-ending
         args: ['--fix=lf']
 
-  # mypy - scoped to core/, the Qt-free half. PyQt5 ships its own stubs, so
-  # widening to ui/ is about turning on check_untyped_defs there and fixing what
-  # it finds; do it a module at a time. Tracked in TODOs.md.
+  # mypy - core/ and ui/, both with check_untyped_defs on. PyQt5 ships its own
+  # stubs, so no stub package is needed.
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
       - id: mypy
         args: ['--config-file=pyproject.toml']
-        files: '^core/.*\.py$'
+        files: '^(core|ui)/.*\.py$'
         exclude: 'tests/|build/|dist/|legacy/'
 
 default_language_version:

@@ -24,7 +24,7 @@ since the tag and neither is released yet:
 |---|---|
 | Tests | **331 passed**, ~6 s, no display needed |
 | Coverage | **93%** overall (gate: 85%). `core/self_test.py` is the outlier at 29% — it checks the frozen bundle, which the suite is not |
-| Lint / types | ruff 20 rule groups, mypy over `core/` — all clean, all gating |
+| Lint / types | ruff 20 rule groups, mypy over `core/` **and** `ui/` with `check_untyped_defs` on both — all clean, all gating |
 | CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
 | Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2` — both built and self-tested on Windows |
 | Artifact | Inno Setup installer, per-user, `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2` |

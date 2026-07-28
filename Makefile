@@ -21,7 +21,7 @@ help:
 	@echo "Code Quality:"
 	@echo "  make format           Format code with ruff"
 	@echo "  make lint             Run ruff (lint + format check)"
-	@echo "  make type-check       Run mypy over core/"
+	@echo "  make type-check       Run mypy over core/ and ui/"
 	@echo "  make pre-commit       Run all pre-commit hooks"
 	@echo ""
 	@echo "Testing:"
@@ -85,7 +85,7 @@ lint:
 	ruff format --check --diff .
 
 type-check:
-	mypy --config-file pyproject.toml core/
+	mypy --config-file pyproject.toml core/ ui/
 
 pre-commit:
 	pre-commit run --all-files
