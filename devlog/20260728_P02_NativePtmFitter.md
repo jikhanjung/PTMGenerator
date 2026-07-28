@@ -95,7 +95,8 @@ This is exactly the sort of thing that produces a plausible but upside-down
 result, silently.
 
 **Quantisation** is per coefficient, over the whole image, from
-`ptm_scale_coefficients`:
+`ptm_scale_coefficients` — note "over the whole image", which is what makes
+banding awkward:
 
 ```c
 scale[i] = (max[i] - min[i]) / 256.0f;
@@ -105,9 +106,15 @@ bias[i]  = -256.0f / (max[i] - min[i]) * min[i];
 ```
 
 So the encoder needs the min and max of each coefficient across every pixel
-before it can write any of them — which constrains the banding strategy below:
-either two passes, or accumulate the coefficients unquantised and scale at the
-end.
+before it can write any of them. Two ways to live with that while banding:
+
+* **hold the unquantised coefficients** — 48e6 × 6 × 4 bytes ≈ 1.1 GB, against
+  the 7.2 GB the source images would take; or
+* **two passes** — cheap in memory, but it decodes every image twice, and
+  decoding is 96% of the runtime. That makes it roughly a 2× slowdown to save
+  1.1 GB.
+
+The first looks right on those numbers. Confirm in phase 3 rather than assuming.
 
 The reference also uses LAPACK least squares with the pseudo-inverse computed
 once and applied per pixel with `sgemv` — the same shape as the numpy plan
@@ -139,6 +146,44 @@ Steps 1 and 2 belong in the test suite, with the reference `.ptm` committed as
 a fixture for the small sets. Step 3 is a property test in spirit: for every
 input image, evaluating the fitted polynomial at that image's light direction
 should return approximately that image.
+
+## Is Python fast enough?
+
+Measured on this machine (8 cores), extrapolated to a 48MP × 50-image set:
+
+    the fit, pinv @ L      0.9 s
+    quantisation           2.7 s
+    JPEG decoding         54.6 s   single-threaded
+                           6.8 s   across 8 cores
+
+**The fit is 1.6% of the work.** The reason is that the light directions are the
+same for every pixel, so the design matrix and its pseudo-inverse are computed
+once and the whole image is then one `(6×N) @ (N×P)` multiplication — which
+numpy hands to BLAS. That is *the same library the C reference calls* through
+`cblas_sgemv`. Python issues the call; the arithmetic happens in the same
+compiled code either way. There is no per-pixel Python loop for an interpreter
+to be slow in, and the quantisation is likewise a handful of numpy operations.
+
+What actually costs time is libjpeg, which is the same C library whatever the
+caller is written in, and which parallelises across images without effort.
+
+For scale: `PTMfitter.exe` takes minutes on a 24MP set. A numpy implementation
+across multiple cores is likely to be *faster* than the thing it replaces.
+
+### So: not Rust, and not a C extension
+
+Neither is justified by these numbers — it would mean rewriting 1.6% of the
+runtime. `../CTHarvester` uses a Rust module because its hot loop is a per-pixel
+traversal that does not reduce to a BLAS call; this problem does.
+
+Revisit if, and only if:
+
+- banded measurements come out materially worse than this projection, or
+- decoding is parallelised and the total still misses the target.
+
+Even then the first move is a faster decoder — `pyturbojpeg`, `pillow-simd` —
+because that is where the time is. Rewriting the fit would be optimising the
+part that is already fast.
 
 ## Memory
 
@@ -190,10 +235,10 @@ what the `core/` boundary is for.
 - **"Byte-identical" may be unachievable** for reasons that do not matter —
   summation order, `float` vs `double` in the original. Decide the tolerance
   when the first comparison is run, and write down the reasoning.
-- **Performance.** PTMfitter takes minutes on a large set; a naive Python
-  implementation could take much longer. The per-pixel work is a single matmul
-  against a precomputed pseudo-inverse, so this should be fine, but a 48MP × 50
-  benchmark belongs in phase 3, not at the end.
+- ~~**Performance.**~~ **Measured, 2026-07-28** — see above. The fit is 0.9 s of
+  a ~57 s job dominated by JPEG decoding, which parallelises. A real banded
+  benchmark still belongs in phase 3, but the projection says this is not where
+  the risk is.
 - **numpy becomes a runtime dependency**, adding roughly 15 MB to the
   executable. Acceptable, but it is a real change to a build that is currently
   38 MB.
