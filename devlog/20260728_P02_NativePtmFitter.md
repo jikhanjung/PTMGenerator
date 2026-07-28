@@ -120,32 +120,91 @@ The reference also uses LAPACK least squares with the pseudo-inverse computed
 once and applied per pixel with `sgemv` — the same shape as the numpy plan
 here, which is reassuring.
 
+## Two references, and they are not the same kind of thing
+
+An earlier draft of this plan named `PTMfitter.exe` as the thing to match
+byte for byte. That was wrong, and the reason matters:
+
+**Its source is not available.** Byte-identity to a black box is not something a
+reimplementation can be *written* towards — only stumbled into. And when the
+output differed there would be nothing to read to find out why.
+
+So the two references have different jobs:
+
+- **`rti-builder` is the implementation reference.** Open C, so its header
+  writing, coefficient order, row flip and quantisation can be matched
+  deliberately and any difference diagnosed by reading it.
+- **`PTMfitter.exe` is a behavioural oracle.** It cannot be read, but its inputs
+  are entirely under our control, so its behaviour can be *characterised by
+  experiment* — and it has to be, because it is what produced every existing
+  capture.
+
+### What the probes already established
+
+Nine identical images under nine different lights, colours chosen per pixel
+column, JPEG written at 4:4:4 so the fitter sees the colours intended:
+
+| input RGB | stored RGB | c1 |
+|---|---|---|
+| (255, 0, 0) | (254, 0, 0) | 255 |
+| (200, 100, 50) | (200, 100, 50) | 255 |
+| (128, 128, 128) | (128, 128, 128) | 255 |
+
+- The payload is exactly `w × h × 9` bytes, no remainder. The byte that was
+  unaccounted for earlier was a miscount of the header, not a real field.
+- **RGB is interleaved per pixel and stores the input colour verbatim** — not
+  normalised, not reordered.
+- **c1 comes back as 255 for every pixel regardless of its colour.** With the
+  illumination constant across images the luminance is constant, so a raw fit
+  would put the pixel's luminance in c1. It does not: the luminance is
+  **normalised per pixel**. The magnitude of the colour lives entirely in the
+  RGB block, and the polynomial carries only the *shape* of the variation.
+
+That last one is the point. It is a real behaviour that has to be reproduced,
+it is not visible in `rti-builder`'s code, and no amount of reading the format
+specification would have revealed it. It came out of one designed experiment.
+
+The first attempt at that experiment was also wrong, which is worth recording:
+the JPEGs were written with default chroma subsampling, so (255,0,0) reached
+the fitter as (90,91,0) and the "stored RGB" looked like nonsense. The probe has
+to control the input, including the encoder's defaults.
+
+### Still to characterise
+
+- **The luminance weights.** Constant images cannot show them, because the
+  normalisation hides the magnitude. Needs images whose luminance varies with
+  light in a known way — e.g. one channel at a time.
+- **What the normalisation is exactly.** Peak to 255? Mean? Per pixel or per
+  image?
+- **Whether the fit is weighted or regularised**, and what happens with fewer
+  images than coefficients.
+- **The degenerate case.** With every coefficient identical across the image,
+  `rti-builder`'s `(max - min)` is zero and its scale/bias formula divides by
+  zero. The probe's header came back with round values — `1` and `0` for c1 —
+  so PTMfitter has some fallback. Ours needs one too.
+
 ## Verification
 
-This is the part that decides whether the work is worth starting, and it is
-unusually favourable here:
+The ladder, with the target corrected:
 
-**`PTMfitter.exe` works up to 24MP, so it is a reference implementation for
-everything below that line.** A native fitter can be checked against it byte
-for byte on sets it can handle, and only then trusted on the sets it cannot.
+1. **Byte-identical to `rti-builder`** on small synthetic sets. This is
+   achievable, because both implementations can be read.
+2. **Behaviourally equivalent to `PTMfitter.exe`** on the same sets: same
+   dimensions, same RGB block, coefficients within a stated tolerance, and the
+   same reconstruction when evaluated at each input light. Not byte equality —
+   that is not a reasonable thing to demand of a reimplementation of something
+   unreadable.
+3. **A real 24MP capture**, same criteria, against both.
+4. **A 48MP set** — no reference at all, so the check is internal: evaluating
+   the fitted polynomial at each input image's own light direction should
+   reproduce that image to within quantisation error.
+5. **Visual**: open the output of all three in a PTM viewer and compare.
 
-The ladder:
+Steps 1 and 2 belong in the test suite with committed fixtures. Step 4 is a
+property test in spirit and should be written as one.
 
-1. **Byte-identical output** on small synthetic sets (8×6, 64×64) — proves the
-   header, the quantisation and the ordering.
-2. **Byte-identical, or bounded-difference, output** on a real 24MP capture.
-   Exact equality may not survive floating-point ordering differences; if not,
-   the acceptance criterion becomes a maximum per-coefficient deviation, chosen
-   and justified, not discovered after the fact.
-3. **A 48MP set** — no reference, so the checks are internal: the fit
-   reproduces the input images at their own light positions to within
-   quantisation error.
-4. **Visual**: open both in a PTM viewer and compare.
-
-Steps 1 and 2 belong in the test suite, with the reference `.ptm` committed as
-a fixture for the small sets. Step 3 is a property test in spirit: for every
-input image, evaluating the fitted polynomial at that image's light direction
-should return approximately that image.
+**If step 2's tolerance cannot be met**, that is the signal to stop and
+characterise further rather than ship something that merely looks right.
 
 ## Is Python fast enough?
 
@@ -264,11 +323,10 @@ what the `core/` boundary is for.
   prose is ever needed.
 - ~~Is the fit weighted, and how is scale/bias derived?~~ Answered above:
   per-coefficient min/max across the whole image, mapped onto 0–255.
-- **Byte-identical to which implementation?** There are now two references that
-  need not agree with each other: the shipped `PTMfitter.exe` and `rti-builder`.
-  They will differ at least in floating-point details, and possibly in the
-  min/max derivation. Decide early which one is the target — `PTMfitter.exe`,
-  since it is what has produced every existing capture.
+- ~~**Byte-identical to which implementation?**~~ Answered above: byte-identity
+  to `rti-builder`, behavioural equivalence to `PTMfitter.exe`. Its source is
+  not available, so byte-identity to it is not a target a reimplementation can
+  be written towards.
 - **Does the quantisation need the whole image first?** Yes, per the formula
   above, which the banding design has to accommodate. Accumulating float
   coefficients for 48MP is 48e6 × 6 × 4 bytes ≈ 1.1 GB, which is affordable but
