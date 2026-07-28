@@ -17,6 +17,7 @@ from core import ptm_builder, ptm_format
 from core import settings as prefs
 from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
+from ui.geometry import to_list
 from ui.main_window import OutputRedirector, PTMGeneratorMainWindow
 
 pytestmark = pytest.mark.ui
@@ -696,20 +697,28 @@ def test_a_second_run_appends_rather_than_truncating(main_window, tmp_path):
 
 def test_geometry_is_stored_as_numbers(main_window, settings_dir):
     """QSettings could hold a QRect; JSON cannot, and a readable file is the
-    point of the move."""
+    point of the move.
+
+    Compared against the window's own geometry rather than the one requested:
+    a layout has a minimum size hint, and on Windows the widget comes back
+    wider than it was asked to be. What is under test is the encoding.
+    """
     main_window.setGeometry(QRect(10, 20, 800, 600))
     main_window.save_settings()
     written = json.loads((settings_dir / "preferences.json").read_text(encoding="utf-8"))
-    assert written["WindowGeometry"]["MainWindow"] == [10, 20, 800, 600]
+    stored = written["WindowGeometry"]["MainWindow"]
+    assert stored == to_list(main_window.geometry())
+    assert all(isinstance(number, int) for number in stored), stored
 
 
 def test_geometry_survives_a_restart(main_window, settings_dir):
     main_window.setGeometry(QRect(30, 40, 900, 700))
+    saved = main_window.geometry()  # what the layout actually allowed
     main_window.save_settings()
-    main_window.setGeometry(QRect(0, 0, 100, 100))
+    main_window.setGeometry(QRect(0, 0, 1000, 800))
     main_window.m_app.settings = None
     main_window.read_settings()
-    assert main_window.geometry() == QRect(30, 40, 900, 700)
+    assert main_window.geometry() == saved
 
 
 def test_nonsense_geometry_falls_back_to_the_default(main_window):
