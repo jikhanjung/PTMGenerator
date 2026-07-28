@@ -30,6 +30,7 @@ renumbered, because commits reference them by name.
 | 008 | 2026-07-28 | [Translating the manual](20260728_008_korean_manual.md) |
 | 009 | 2026-07-28 | [Watching for the capture folder, and what PTMfitter actually tolerates](20260728_009_capture_folder_and_ptmfitter_quirks.md) |
 | P02 | 2026-07-28 | [Plan: fitting PTMs in-process](20260728_P02_NativePtmFitter.md) |
+| 010 | 2026-07-28 | [Fitting PTMs in-process — P02 phases 1–4](20260728_010_native_ptm_fitter.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy

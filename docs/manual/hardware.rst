@@ -50,7 +50,7 @@ LED geometry
 degrees, measured off the physical rig. **The index into that list is the LED
 number**, so the table must not be reordered without re-measuring.
 
-``light_vectors()`` converts it to the unit vectors PTMfitter wants. The
+``light_vectors()`` converts it to the unit vectors the fitter wants. The
 *Light Position Adjustment* preference rotates the whole dome about the vertical
 axis, to line LED #1 up with how the specimen is sitting; elevation is
 unaffected.

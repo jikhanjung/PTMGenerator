@@ -9,15 +9,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 10:23+0900\n"
+"POT-Creation-Date: 2026-07-28 14:40+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: ko <LL@li.org>\n"
 "Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: ../../troubleshooting.rst:2
@@ -56,19 +56,20 @@ msgstr "*셔터 후 대기 시간* 을 늘려 보세요."
 
 #: ../../troubleshooting.rst:17
 msgid ""
-"Confirm the tethering software writes into the directory you opened, and not"
-" into a subdirectory — the poll deliberately does not search recursively."
+"Confirm the tethering software writes into the directory you opened, and "
+"not into a subdirectory — the poll deliberately does not search "
+"recursively."
 msgstr ""
 "테더링 소프트웨어가 하위 디렉토리가 아니라 열어둔 디렉토리에 직접 저장하는지 확인하세요. 폴링은 의도적으로 하위 디렉토리를 뒤지지 "
 "않습니다."
 
 #: ../../troubleshooting.rst:19
 msgid ""
-"Supported extensions are ``.jpg``, ``.jpeg``, ``.png``, ``.gif``, ``.bmp`` "
-"and ``.tiff``, matched case-insensitively."
+"Supported extensions are ``.jpg``, ``.jpeg``, ``.png``, ``.gif``, "
+"``.bmp`` and ``.tiff``, matched case-insensitively."
 msgstr ""
-"지원하는 확장자는 ``.jpg``, ``.jpeg``, ``.png``, ``.gif``, ``.bmp``, ``.tiff`` 이며 "
-"대소문자를 구분하지 않습니다."
+"지원하는 확장자는 ``.jpg``, ``.jpeg``, ``.png``, ``.gif``, ``.bmp``, ``.tiff`` 이며"
+" 대소문자를 구분하지 않습니다."
 
 #: ../../troubleshooting.rst:23
 msgid "Missing images in a sequence"
@@ -76,8 +77,8 @@ msgstr "촬영 도중 사진이 빠짐"
 
 #: ../../troubleshooting.rst:25
 msgid ""
-"Gaps are expected to be recorded, not silently dropped: the slot keeps its "
-"LED index with ``-`` for the filename."
+"Gaps are expected to be recorded, not silently dropped: the slot keeps "
+"its LED index with ``-`` for the filename."
 msgstr "빠진 자리는 조용히 버려지지 않고 기록됩니다. 해당 슬롯은 LED 번호를 유지한 채 파일명이 ``-`` 로 남습니다."
 
 #: ../../troubleshooting.rst:27
@@ -93,43 +94,54 @@ msgid "PTM generation fails"
 msgstr "PTM 생성 실패"
 
 #: ../../troubleshooting.rst:33
-msgid "Check the *PTM Fitter* path in Preferences."
-msgstr "환경설정의 *PTMFitter* 경로를 확인하세요."
+msgid "At least six images are needed: the polynomial has six coefficients."
+msgstr "최소 6장의 사진이 필요합니다. 다항식의 계수가 6개이기 때문입니다."
 
 #: ../../troubleshooting.rst:34
 msgid ""
-"The ``.lp`` file is written beside the images before the fitter runs; open "
-"it to check the paths and the count line."
-msgstr "``.lp`` 파일은 fitter 실행 전에 사진 옆에 생성됩니다. 열어서 경로와 첫 줄의 개수를 확인해 보세요."
+"Unchecked and missing shots are excluded. If the count is lower than "
+"expected, check the Include column."
+msgstr "체크를 해제한 사진과 빠진 사진은 제외됩니다. 개수가 예상보다 적다면 포함 열을 확인하세요."
 
 #: ../../troubleshooting.rst:36
 msgid ""
-"Unchecked and missing shots are excluded from the ``.lp``. If the count is "
-"lower than expected, check the Include column."
-msgstr "체크를 해제한 사진과 빠진 사진은 ``.lp`` 에서 제외됩니다. 개수가 예상보다 적다면 포함 열을 확인하세요."
+"The ``.lp`` file is written beside the images; open it to check the count"
+" line and the filenames."
+msgstr "``.lp`` 파일은 사진 옆에 생성됩니다. 열어서 첫 줄의 개수와 파일 이름들을 확인해 보세요."
 
-#: ../../troubleshooting.rst:40
+#: ../../troubleshooting.rst:38
+msgid ""
+"If the engine is set to *PTMfitter.exe*, check its path in Preferences, "
+"and note that it fails on images above roughly 24 megapixels — switch "
+"*PTM Engine* to **Built-in**, which has no such limit."
+msgstr "엔진이 *PTMfitter.exe* 로 설정되어 있다면 설정에서 경로를 확인하세요. 또한 약 2400만 화소가 넘는 이미지에서는 실패하므로, 그런 경우 *PTM 엔진* 을 크기 제한이 없는 **내장** 으로 바꾸면 됩니다."
+
+#: ../../troubleshooting.rst:43
 msgid "The interface is in the wrong language"
 msgstr "화면 언어가 잘못 나옴"
 
-#: ../../troubleshooting.rst:42
+#: ../../troubleshooting.rst:45
 msgid ""
 "Language is applied immediately from Preferences. If a string is still "
 "English in Korean mode, its translation is missing from "
 "``translations/*.qm`` — see the translation section of "
 ":doc:`developer_guide`."
 msgstr ""
-"언어는 환경설정에서 바꾸는 즉시 적용됩니다. 한국어인데도 영어로 남아 있는 문구가 있다면 ``translations/*.qm`` 에 "
-"번역이 빠진 것입니다. :doc:`developer_guide` 의 번역 절을 참고하세요."
+"언어는 환경설정에서 바꾸는 즉시 적용됩니다. 한국어인데도 영어로 남아 있는 문구가 있다면 ``translations/*.qm`` 에"
+" 번역이 빠진 것입니다. :doc:`developer_guide` 의 번역 절을 참고하세요."
 
-#: ../../troubleshooting.rst:47
+#: ../../troubleshooting.rst:50
 msgid "Whole files show as modified in git with no real changes"
 msgstr "git에서 내용 변경 없이 파일 전체가 수정된 것으로 표시됨"
 
-#: ../../troubleshooting.rst:49
+#: ../../troubleshooting.rst:52
 msgid ""
 "Line endings are normalized by ``.gitattributes``. Run ``git add "
 "--renormalize .`` if phantom whole-file diffs appear."
 msgstr ""
-"줄바꿈은 ``.gitattributes`` 가 정규화합니다. 파일 전체가 바뀐 것처럼 보이면 ``git add --renormalize "
-".`` 를 실행하세요."
+"줄바꿈은 ``.gitattributes`` 가 정규화합니다. 파일 전체가 바뀐 것처럼 보이면 ``git add "
+"--renormalize .`` 를 실행하세요."
+
+#~ msgid "Check the *PTM Fitter* path in Preferences."
+#~ msgstr "환경설정의 *PTMFitter* 경로를 확인하세요."
+

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **PTMs are now fitted in the application itself**, with no external program
+  and no image-size limit beyond memory. `PTMfitter.exe` is 32-bit and fails
+  above roughly 24 megapixels, which a 45MP body already exceeds. The images are
+  read one at a time, so memory is set by the image size rather than the number
+  of shots. A progress dialog counts them; **Cancel** writes nothing.
+- **PTM Engine preference**, defaulting to the built-in fitter.
+  `PTMfitter.exe` remains selectable, and the *PTM Fitter* path setting now
+  applies only to it.
+
 ### Fixed
 - **PTM generation no longer breaks on a path containing a space or Hangul.**
   The `.lp` file listed absolute paths, and PTMfitter splits each line on

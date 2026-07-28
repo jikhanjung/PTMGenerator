@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 11:56+0900\n"
+"POT-Creation-Date: 2026-07-28 14:40+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -341,85 +341,94 @@ msgid "(path, mtime), or (None, newer_than) if nothing new has landed."
 msgstr ""
 
 #: core.ptm_builder:1 of
-msgid "Producing the .lp file and driving PTMfitter."
+msgid "Producing a .ptm, either in-process or by driving PTMfitter.exe."
 msgstr ""
 
 #: core.ptm_builder:3 of
+msgid ""
+"`generate_native` is the default and does the fit here — see "
+"`core.ptm_fitter`. `generate` shells out to the external `PTMfitter.exe`,"
+" which is kept selectable while the native path proves itself on real "
+"captures, and which is why the rest of this module exists at all."
+msgstr ""
+
+#: core.ptm_builder:8 of
 msgid ""
 "PTMfitter is a Hewlett-Packard binary from around 2001 and it is "
 "particular about paths. Measured against the shipped `PTMfitter.exe` with"
 " nine images:"
 msgstr ""
 
-#: core.ptm_builder:7 of
+#: core.ptm_builder:12 of
 msgid ".lp lists bare filenames, run with cwd = the image directory"
 msgstr ""
 
-#: core.ptm_builder:7 core.ptm_builder:8 core.ptm_builder:9 core.ptm_builder:10
-#: core.ptm_builder:11 core.ptm_builder:16 core.ptm_builder:18 of
+#: core.ptm_builder:12 core.ptm_builder:13 core.ptm_builder:14
+#: core.ptm_builder:15 core.ptm_builder:16 core.ptm_builder:21
+#: core.ptm_builder:23 of
 msgid "works"
 msgstr ""
 
-#: core.ptm_builder:8 of
+#: core.ptm_builder:13 of
 msgid "... directory name contains a space"
 msgstr ""
 
-#: core.ptm_builder:9 of
+#: core.ptm_builder:14 of
 msgid "... directory name contains Hangul"
 msgstr ""
 
-#: core.ptm_builder:10 of
+#: core.ptm_builder:15 of
 msgid "... directory path is very long"
 msgstr ""
 
-#: core.ptm_builder:11 of
+#: core.ptm_builder:16 of
 msgid ".lp lists absolute paths, ASCII, no spaces"
 msgstr ""
 
-#: core.ptm_builder:12 of
+#: core.ptm_builder:17 of
 msgid ".lp lists absolute paths containing a space"
 msgstr ""
 
-#: core.ptm_builder:12 core.ptm_builder:13 core.ptm_builder:14
-#: core.ptm_builder:15 core.ptm_builder:17 of
+#: core.ptm_builder:17 core.ptm_builder:18 core.ptm_builder:19
+#: core.ptm_builder:20 core.ptm_builder:22 of
 msgid "FAILS"
 msgstr ""
 
-#: core.ptm_builder:13 of
+#: core.ptm_builder:18 of
 msgid ".lp lists absolute paths containing Hangul"
 msgstr ""
 
-#: core.ptm_builder:14 of
+#: core.ptm_builder:19 of
 msgid "a filename inside the .lp contains a space"
 msgstr ""
 
-#: core.ptm_builder:15 of
+#: core.ptm_builder:20 of
 msgid "-o is an absolute path containing a space and Hangul"
 msgstr ""
 
-#: core.ptm_builder:16 of
+#: core.ptm_builder:21 of
 msgid "-o is a relative ASCII name"
 msgstr ""
 
-#: core.ptm_builder:17 of
+#: core.ptm_builder:22 of
 msgid "a Hangul filename, .lp written as UTF-8"
 msgstr ""
 
-#: core.ptm_builder:18 of
+#: core.ptm_builder:23 of
 msgid "a Hangul filename, .lp written as CP949"
 msgstr ""
 
-#: core.ptm_builder:21 of
+#: core.ptm_builder:26 of
 msgid "Two separate constraints come out of that:"
 msgstr ""
 
-#: core.ptm_builder:23 of
+#: core.ptm_builder:28 of
 msgid ""
 "**It splits each .lp line on whitespace**, so anything containing a space"
 " is read as part of the light vector. No amount of encoding fixes this."
 msgstr ""
 
-#: core.ptm_builder:25 of
+#: core.ptm_builder:30 of
 msgid ""
 "**It reads the .lp in the machine's ANSI codepage**, not UTF-8 — which is"
 " what a 2001 Windows binary using `fopen` would do. So a Hangul filename "
@@ -427,7 +436,7 @@ msgid ""
 " UTF-8."
 msgstr ""
 
-#: core.ptm_builder:29 of
+#: core.ptm_builder:34 of
 msgid ""
 "Where the process happens to be running does not matter at all; only what"
 " it parses does. So the .lp lists bare filenames, is written in the local"
@@ -438,14 +447,14 @@ msgid ""
 "safe names."
 msgstr ""
 
-#: core.ptm_builder:36 of
+#: core.ptm_builder:41 of
 msgid ""
 "In practice neither arises: the images come straight off the camera as "
 "IMG_9999.JPG. This is here so that a renamed file produces a working fit "
 "or a clear error, rather than a silently wrong one."
 msgstr ""
 
-#: core.ptm_builder:40 of
+#: core.ptm_builder:45 of
 msgid ""
 "Note also that **the fitter returns 1 on success**, so its exit status "
 "cannot be used to tell whether it worked; the output file is checked "
@@ -525,7 +534,8 @@ msgid ""
 "left out of both the count and the body."
 msgstr ""
 
-#: core.ptm_builder.build_lp_content:6 core.ptm_builder.generate:5 of
+#: core.ptm_builder.build_lp_content:6 core.ptm_builder.generate:5
+#: core.ptm_builder.generate_native:10 of
 msgid "Unit vectors, indexed by LED."
 msgstr ""
 
@@ -569,7 +579,7 @@ msgstr ""
 msgid "Build the .lp, run PTMfitter, and put the .ptm where it was asked for."
 msgstr ""
 
-#: core.ptm_builder.generate:3 of
+#: core.ptm_builder.generate:3 core.ptm_builder.generate_native:8 of
 msgid "The capture table."
 msgstr ""
 
@@ -601,12 +611,48 @@ msgstr ""
 msgid "The executable is missing."
 msgstr ""
 
-#: core.ptm_builder.generate:19 of
+#: core.ptm_builder.generate:19 core.ptm_builder.generate_native:22 of
 msgid "Nothing to fit."
 msgstr ""
 
 #: core.ptm_builder.generate:20 of
 msgid "It ran but produced no .ptm."
+msgstr ""
+
+#: core.ptm_builder.load_image:1 of
+msgid "Decode one capture as an (height, width, 3) uint8 array."
+msgstr ""
+
+#: core.ptm_builder.generate_native:1 of
+msgid "Fit the PTM in-process and write it to `destination`."
+msgstr ""
+
+#: core.ptm_builder.generate_native:3 of
+msgid ""
+"Unlike `generate` this has no opinion about paths: nothing shells out, so"
+" spaces and non-ASCII anywhere are simply not a problem. It also has no "
+"size ceiling beyond available memory, which is the reason it exists — "
+"`PTMfitter.exe` is 32-bit and fails above about 24 megapixels."
+msgstr ""
+
+#: core.ptm_builder.generate_native:12 of
+msgid "Where the .ptm goes."
+msgstr ""
+
+#: core.ptm_builder.generate_native:14 of
+msgid ""
+"Optional `progress(done, total)`, called per image. The fit reads every "
+"capture, so this is not instant."
+msgstr ""
+
+#: core.ptm_builder.generate_native:16 of
+msgid "Seam for tests; called with a path, returns an image array."
+msgstr ""
+
+#: core.ptm_builder.generate_native:18 of
+msgid ""
+"The .lp written beside the images. Not needed by the fit — kept because "
+"it is the record of which light each shot was taken under."
 msgstr ""
 
 #: core.settings:1 of
@@ -618,6 +664,14 @@ msgid ""
 "QSettings stores everything as text in an .ini file, so a value written "
 "as an int comes back as a string. The defaults and the coercion live here"
 " so the two windows that read preferences cannot drift apart on either."
+msgstr ""
+
+#: core.settings.FITTER_NATIVE:1 of
+msgid ""
+"How the .ptm is produced. \"native\" fits in-process and has no size "
+"limit beyond memory; \"external\" shells out to PTMfitter.exe, which is "
+"32-bit and fails above about 24 megapixels. External is kept selectable "
+"while the native path proves itself against real captures."
 msgstr ""
 
 #: core.settings.value_to_bool:1 of
@@ -709,5 +763,8 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "If `fitter_path` does not exist."
+#~ msgstr ""
+
+#~ msgid "Producing the .lp file and driving PTMfitter."
 #~ msgstr ""
 

@@ -21,7 +21,9 @@ controller. It is also why the suite runs in about a second.
      capture_session.py     sequencing: preparation, polling, retakes
      light_positions.py     polar LED table -> unit vectors
      image_data.py          capture table, CSV, rebuilding from disk
-     ptm_builder.py         .lp generation, PTMfitter invocation
+     ptm_builder.py         .lp generation, and which fitter runs
+     ptm_fitter.py          the built-in least-squares fit
+     ptm_format.py          reading and writing the PTM 1.2 container
      resources.py           bundled-file lookup, frozen or not
      settings.py            preference keys, defaults, coercion
    ui/

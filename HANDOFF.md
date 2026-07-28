@@ -8,13 +8,15 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 
 ## ▶ Current state (2026-07-28)
 
-**`v0.2.0-alpha.2`** — released 2026-07-28, pre-release. Tag matches
-`version.py`; there is nothing uncommitted and nothing unpushed.
+**`v0.2.0-alpha.2`** — released 2026-07-28, pre-release. Since the tag, the
+built-in PTM fitter landed (P02 phases 1–4, devlog 010): PTMs are now fitted
+in-process by default, with `PTMfitter.exe` still selectable under
+**Preferences → PTM Engine**. Unreleased — no tag carries it yet.
 
 | | |
 |---|---|
-| Tests | **161 passed**, ~3 s, no display needed |
-| Coverage | **88%** overall, `core/` 94–100% (gate: 85%) |
+| Tests | **262 passed**, ~5 s, no display needed |
+| Coverage | **91.8%** overall, `core/` 94–100% (gate: 85%) |
 | Lint / types | ruff 20 rule groups, mypy over `core/` + `ui/` — all clean, all gating |
 | CI | 5 workflows, all green: test, build, release, docs, security, codeql |
 | Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2` — both built and self-tested on Windows |
@@ -24,7 +26,10 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 - Manual: [en](https://jikhanjung.github.io/PTMGenerator/en/) ·
   [ko](https://jikhanjung.github.io/PTMGenerator/ko/)
 
-Nothing is half-finished. The last cycle closed cleanly at alpha.2.
+One thing is deliberately half-finished: **P02 phase 5**, deleting the external
+fitter and the path workarounds it forces on `core/ptm_builder.py`. It is
+blocked on the built-in fitter having fitted a real capture, which needs a
+camera change. Everything else is complete and tested.
 
 ## ▶ The one thing blocking progress
 
@@ -48,7 +53,7 @@ is smaller than this.
 
 ```bash
 make install-dev     # deps + pre-commit hooks
-make test            # 161 tests, ~3 s
+make test            # 262 tests, ~5 s
 make lint type-check
 ```
 
@@ -91,14 +96,14 @@ no working test suite to the process the sibling projects run.
 | | Before | Now |
 |---|---|---|
 | Largest file | 1,217 lines | 530 (`ui/main_window.py`) |
-| Tests | 0 that completed | 161 |
-| Coverage | — | 88% |
+| Tests | 0 that completed | 262 |
+| Coverage | — | 92% |
 | ruff rule groups | 0 | 20 |
 | CI workflows | 0 | 5 |
 | Releases | 0 | 2 |
 | Manual | none | 2 languages |
 
-`devlog/README.md` indexes the write-ups; 003–008 cover this cycle. Eight bugs
+`devlog/README.md` indexes the write-ups; 003–010 cover this cycle. Eight bugs
 were fixed along the way, each with a regression test verified to fail against
 the previous code — the crashes are listed in `CHANGELOG.md` under
 `[0.2.0-alpha.1]`.

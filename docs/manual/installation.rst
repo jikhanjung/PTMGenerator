@@ -9,12 +9,14 @@ Requirements
 * A DSLR with a remote shutter input, and tethering software that writes
   captured images into a directory on the PC
 * An Arduino-based LED dome controller, connected over USB or Bluetooth
-* ``PTMfitter.exe`` — the fitter that turns the ``.lp`` file into a ``.ptm``
 
-Windows in practice: ``PTMfitter.exe`` is a Windows binary, and the tethering
-software that drops files into the capture directory is Windows-only. The Python
-code has no Windows-specific imports and the interface runs on Linux and macOS,
-which is what the test matrix covers.
+Optionally ``PTMfitter.exe``, the external fitter. It is not needed: fitting is
+built in, and is what **Generate PTM** uses unless you ask for the external one.
+
+Windows in practice: the tethering software that drops files into the capture
+directory is Windows-only, and ``PTMfitter.exe``, if you use it, is a Windows
+binary. The Python code has no Windows-specific imports and the interface runs
+on Linux and macOS, which is what the test matrix covers.
 
 From a release
 --------------

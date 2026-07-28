@@ -8,7 +8,7 @@ PTMGenerator2 automates Polynomial Texture Mapping capture for artefact
 documentation. An Arduino-driven dome lights 50 LEDs one at a time and fires a
 DSLR shutter for each; the application drives that over serial, waits for each
 photo to land on disk, builds the light-position (`.lp`) file, and hands
-everything to `PTMfitter.exe`.
+everything to the fitter — built in by default, `PTMfitter.exe` if asked.
 
 The shipped artifact is a single Windows executable. The Arduino firmware in
 `PTMController/` is a separate concern, flashed with the Arduino IDE.
@@ -26,7 +26,9 @@ without a display, a QApplication or a controller attached.
 | `core/capture_session.py` | Sequencing: preparation, polling, retakes, giving up. Takes the shutter and the file poll as arguments |
 | `core/light_positions.py` | `POLAR_LIGHT_LIST` (measured off the rig) to unit vectors |
 | `core/image_data.py` | `CaptureSlot`, `image_data.csv`, rebuilding a table from a directory, polling for a new file |
-| `core/ptm_builder.py` | `.lp` content, and running PTMfitter |
+| `core/ptm_builder.py` | `.lp` content, and which fitter runs |
+| `core/ptm_fitter.py` | The built-in least-squares fit, streaming so memory does not scale with the capture |
+| `core/ptm_format.py` | Reading and writing the PTM 1.2 container |
 | `core/resources.py` | Bundled-file lookup, frozen or not |
 | `core/settings.py` | Preference keys, defaults, coercion from QSettings strings |
 | `ui/main_window.py` | Widgets, the one-second timer, rendering what the session decides |

@@ -20,10 +20,17 @@ Preferences
      - *(none)*
      - The controller's port. Must be set before capturing; the list is
        populated from the ports present when the dialog opens.
+   * - PTM Engine
+     - Built-in
+     - Which fitter **Generate PTM** uses. **Built-in** fits in the application
+       itself and is limited only by memory. **PTMfitter.exe** shells out to the
+       external binary, which is 32-bit and fails above roughly 24 megapixels;
+       it is kept for comparison against the built-in fitter's output.
    * - PTM Fitter
      - ``ptmfitter.exe``
-     - Path to the fitter executable. **Generate PTM** refuses to run if it is
-       not found.
+     - Path to the external fitter. Only used when the engine is set to
+       **PTMfitter.exe**, and then **Generate PTM** refuses to run if it is not
+       found.
    * - Number of LEDs
      - 50
      - Shots in a full sequence. Must match the dome, and the light-position

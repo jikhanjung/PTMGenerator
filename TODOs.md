@@ -6,31 +6,30 @@ later. **This file is the plan**; `HANDOFF.md` is the current state, and
 
 ---
 
-## Do the PTM fitting in-process
+## Finish the in-process fitter — P02 phases 4 and 5
 
-`PTMfitter.exe` is a 32-bit binary from 2001 and its address space is the
-ceiling. Measured (devlog 009):
+Phases 1–4 are done: the container reader/writer (`core/ptm_format.py`), the fit
+(`core/ptm_fitter.py`), streaming so memory does not scale with the capture, and
+the **PTM Engine** preference that selects it — built-in by default, with
+`PTMfitter.exe` still selectable. See devlog 010.
 
-    6000x4000 = 24MP x 9 images    OK
-    6000x4000 = 24MP x 50 images   OK
-    8000x6000 = 48MP x 9 images    FAIL: "Memory Allocation error. size: 48"
+What is left:
 
-**Image size, not count.** A 45MP body is already over the line, so this is not
-theoretical. It also drives the path workarounds in `core/ptm_builder.py`, all
-of which would go away.
+**Fit a real 48MP capture.** The one thing that motivated the work is the one
+thing not yet demonstrated on real files; it needs a different camera. Until
+then the ceiling is only known from the estimate (`ptm_fitter.memory_estimate`)
+and from a measured 641 MB peak on synthetic 48MP data.
 
-The fit itself is a per-pixel least squares of a biquadratic in the light
-direction — six coefficients — which numpy does in a few lines, tiled so the
-whole set is never resident. The work is in the `.ptm` container format (PTM
-1.2, LRGB and RGB variants) and in proving the output is right.
+**Phase 5 — retire the external fitter.** Once the built-in one has fitted real
+captures, `core/ptm_builder.py` loses `generate`, the staging directory, the
+codepage-encoding rules for `.lp`, the whitespace check and the exit-code-1
+quirk — most of the module. Wait for phase 4 to prove itself in the field first;
+the preference is what makes that safe.
 
-There is a good verification route: `PTMfitter.exe` handles 24MP, so a native
-implementation can be checked against it byte for byte on sets that size before
-being trusted on the ones it cannot do.
-
-**Planned in `devlog/20260728_P02_NativePtmFitter.md`** — phases, verification
-ladder, memory strategy, risks and open questions. Read that before starting.
-It should not share a cycle with anything else.
+**Move the fit off the UI thread.** `generate_ptm_natively` pumps the event loop
+from its progress callback, which keeps the dialog responsive but is not what
+the quality guide's §11 asks for. A `QThread` worker is the right shape, and is
+worth doing at the same time as the capture loop, which has the same problem.
 
 ---
 

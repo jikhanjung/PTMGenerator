@@ -30,11 +30,14 @@ Missing images in a sequence
 PTM generation fails
 --------------------
 
-* Check the *PTM Fitter* path in Preferences.
-* The ``.lp`` file is written beside the images before the fitter runs; open it
-  to check the paths and the count line.
-* Unchecked and missing shots are excluded from the ``.lp``. If the count is
-  lower than expected, check the Include column.
+* At least six images are needed: the polynomial has six coefficients.
+* Unchecked and missing shots are excluded. If the count is lower than expected,
+  check the Include column.
+* The ``.lp`` file is written beside the images; open it to check the count line
+  and the filenames.
+* If the engine is set to *PTMfitter.exe*, check its path in Preferences, and
+  note that it fails on images above roughly 24 megapixels — switch *PTM Engine*
+  to **Built-in**, which has no such limit.
 
 The interface is in the wrong language
 --------------------------------------

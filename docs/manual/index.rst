@@ -5,8 +5,7 @@ Automated Polynomial Texture Mapping capture for an Arduino LED dome.
 
 An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for
 each. PTMGenerator2 drives that sequence over a serial link, waits for each photo
-to land on disk, builds the light-position (``.lp``) file, and hands everything
-to PTMfitter to produce the final ``.ptm``.
+to land on disk, builds the light-position (``.lp``) file, and fits the final ``.ptm``.
 
 .. code-block:: text
 
@@ -17,7 +16,7 @@ to PTMfitter to produce the final ``.ptm``.
            └── polls the capture directory for the new image file
                                    │
                                    ▼
-                      writes <dirname>.lp  ──▶  PTMfitter -i x.lp -o x.ptm
+                      writes <dirname>.lp  ──▶  fits <chosen name>.ptm
 
 .. toctree::
    :maxdepth: 2

@@ -10,7 +10,7 @@ A desktop application for automated Polynomial Texture Mapping (PTM) image captu
 
 PTMGenerator2 is a PyQt5-based tool designed for archaeological artifact documentation using Polynomial Texture Mapping (PTM) technology. The application automates the process of capturing multiple images under different lighting angles and generates PTM files that can reveal surface details invisible under normal lighting conditions.
 
-An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for each one. The application drives that sequence over a serial link, waits for each photo to land on disk, builds the light-position (`.lp`) file, and hands everything to `PTMfitter.exe` to produce the final `.ptm`.
+An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for each one. The application drives that sequence over a serial link, waits for each photo to land on disk, builds the light-position (`.lp`) file, and fits the final `.ptm` itself.
 
 ```
   PTMGenerator2.py  ──serial (9600 8N1)──▶  Arduino + 7× 74HC595  ──▶  50 LEDs
@@ -20,7 +20,7 @@ An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for
         └── polls the capture directory for the new image file
                                 │
                                 ▼
-                   writes <dirname>.lp  ──▶  PTMfitter.exe -i x.lp -o x.ptm
+                   writes <dirname>.lp  ──▶  fits <chosen name>.ptm
 ```
 
 ## Features
@@ -30,7 +30,7 @@ An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for
 - **Intelligent Polling**: Automatic detection of newly captured images with retry logic
 - **Image Management**: Track, preview, and selectively include/exclude images for PTM generation
 - **Multi-language Support**: Available in English and Korean (한국어)
-- **PTM Generation**: Create PTM files using the integrated PTMfitter engine
+- **PTM Generation**: Fit PTM files in-process, with no image-size limit — `PTMfitter.exe` remains selectable for comparison
 
 ## Requirements
 
@@ -47,9 +47,9 @@ pip install -e ".[dev]"     # plus the test and lint tooling
 To reproduce a build exactly, install from the lockfile for your platform
 instead: `pip install --require-hashes -r requirements-linux.lock`.
 
-Windows in practice — `PTMfitter.exe` is a Windows binary and the DSLR tethering
-software that drops files into the capture directory is Windows-only. The Python
-code itself has no Windows-specific imports and the GUI runs on Linux.
+Windows in practice — the DSLR tethering software that drops files into the
+capture directory is Windows-only, as is `PTMfitter.exe` if you choose to use it.
+The Python code itself has no Windows-specific imports and the GUI runs on Linux.
 
 ### Hardware Requirements
 
@@ -59,14 +59,15 @@ code itself has no Windows-specific imports and the GUI runs on Linux.
 
 ### External Tools
 
-- PTMfitter executable (`ptmfitter.exe`) - Configure path in Preferences
+None required. `PTMfitter.exe` is optional: select **PTM Engine → PTMfitter.exe**
+in Preferences and set its path there. The built-in fitter is the default and
+handles images the 32-bit `PTMfitter.exe` cannot.
 
 ## Installation
 
 1. Clone or download this repository
 2. Install dependencies: `pip install -e .`
-3. Ensure `ptmfitter.exe` is available (configure path in application preferences)
-4. Connect your Arduino LED dome controller via serial port
+3. Connect your Arduino LED dome controller via serial port
 
 ## Repository layout
 
@@ -77,7 +78,7 @@ code itself has no Windows-specific imports and the GUI runs on Linux.
 | `ui/` | The PyQt5 windows that drive it. |
 | `version.py` | Single source of truth for the version. |
 | `PTMController/PTMController.ino` | Arduino firmware: shift-register LED driver, shutter, rotary encoder, 7-segment display. |
-| `PTMfitter.exe` | Third-party PTM fitter binary invoked by **Generate PTM**. |
+| `PTMfitter.exe` | Third-party PTM fitter binary, optional — see `core/ptm_fitter.py` for the built-in one. |
 | `translations/` | Qt i18n — English and Korean (`.ts` sources, `.qm` compiled). |
 | `icons/` | Application icon. |
 | `tests/` | pytest suite — no display required. |
@@ -128,7 +129,7 @@ python PTMGenerator2.py
 6. **Generate PTM**:
    - Click "Generate PTM" when all images are captured
    - Choose output location and filename
-   - The application will create the PTM file using PTMfitter
+   - The images are read once and fitted; a progress dialog counts them
 
 ### Capture sequence internals
 
@@ -284,7 +285,9 @@ out the interface without hardware attached.
 - Check `image_data.csv` to see which positions failed
 
 ### PTM generation fails
-- Verify PTMfitter executable path in Preferences
+- At least six images must be present and checked — the polynomial has six coefficients
+- If **PTM Engine** is set to `PTMfitter.exe`, verify its path in Preferences, and
+  note that it fails above roughly 24 megapixels; **Built-in** has no such limit
 - Ensure all required images are present and checked
 - Check that filenames don't contain special characters
 
