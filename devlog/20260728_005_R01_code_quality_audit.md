@@ -109,12 +109,12 @@ mccabe correctly does not count as complex.
 | 11 | Performance | ➖ No benchmarks. The workload is I/O-bound on a 1 Hz timer; not worth instrumenting |
 | 12 | Security | ✅ No eval/exec/pickle/yaml. The subprocess call takes a user-configured path with no shell |
 | 13 | Dead code & complexity | ✅ `C901` clean; the dead code found in R00 was deleted |
-| 14 | Workflow & gating | ✅ pre-commit and CI gating. Branch protection is off by decision, not omission — see `TODOs.md` |
+| 14 | Workflow & gating | ⚠️ pre-commit and CI gating; branch protection off (`gh api ... 404`) |
 
 ## Appendix A checklist
 
 1. ✅ Cross-platform CI + headless smoke test
-2. ✅ Lint + tests gating — CI gates; branch protection deliberately declined (single maintainer)
+2. ⚠️ Lint + tests gating — CI yes, branch protection no
 3. ⚠️ Expand the lint ruleset — seven groups are free
 4. ✅ `filterwarnings = error`
 5. ✅ Lockfile + pip-audit + Dependabot
@@ -150,3 +150,29 @@ come before any amount of linting.
 8. **Widen mypy to `ui/`**.
 
 Items 6–8 are already in `TODOs.md`; 1–5 are new and are added there.
+
+
+---
+
+## Outcome (2026-07-28)
+
+The tables above are the state *found*. What was then done:
+
+| Item | Result |
+|---|---|
+| 1 Serial-open crash + excepthook | ✅ Fixed, 20 regression tests |
+| 2 File encodings | ✅ utf-8 writes, utf-8-sig CSV read, Korean-path tests |
+| 3 Naive datetime / DST | ✅ datetime round-trip deleted |
+| 4 Lint ruleset | ✅ All of the guide's groups enabled; waivers argued in config |
+| 5 Branch protection | ⛔ **Declined.** Single maintainer, no review partner: required PRs cost a round-trip on every one-line fix and add nothing over the pre-commit hooks and the gating CI. Revisit if a second person starts committing |
+| 6 Packaged-artifact smoke test | ⬜ Open — `TODOs.md` |
+| 7 Property-based tests | ⬜ Open — `TODOs.md` |
+| 8 mypy over `ui/` | ⬜ Open — `TODOs.md` |
+
+Suite went 125 → 145 tests. The three defects were verified to fail against the
+previous code before the fixes landed (8 failures, 4 errors with the fix
+stashed), which is the only way to know a regression test regresses.
+
+Still open, and worth being plain about: **§3 has no property-based tests and
+§7 does not launch the artifact it builds.** Those are the two remaining places
+where a defect could reach a user without any check firing.
