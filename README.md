@@ -167,19 +167,27 @@ pyinstaller PTMGenerator2.spec
 ```
 
 The output name is generated from `__version__` in `version.py` plus the build
-date — e.g. `PTMGenerator2_v0.1.2_20251107.exe` — so there is no second version
+date — e.g. `PTMGenerator2_v0.2.0-alpha.2_20260728.exe` — so there is no second version
 number to keep in step. Bump with `python scripts/bump_version.py <part>`; see
 `VERSION_MANAGEMENT.md`.
 
 Check a build before shipping it:
 
 ```bash
-dist/PTMGenerator2_v0.1.2_20260728.exe --self-test
+dist/PTMGenerator2_v<version>_<date>.exe --self-test
 ```
 
 It starts the application headlessly, verifies every bundled icon and
 translation resolves, constructs the main window and exits non-zero if anything
 is missing. `release.yml` runs it against every build.
+
+To build on a Windows runner without releasing anything — which is how a build
+should be checked before a version tag is pushed — run the **Build** workflow:
+
+```bash
+gh workflow run build.yml
+gh run download --name PTMGenerator2-windows-dev
+```
 
 `build/` and `dist/` are gitignored; the spec is build configuration and is tracked.
 
@@ -292,10 +300,10 @@ maintained and are not part of the build:
 
 ## Version History
 
-- **v0.1.2** (2025-11-07): Latest stable release
-  - Improved polling behavior
-  - Better directory handling
-  - Image selection feature
+See [CHANGELOG.md](CHANGELOG.md) for the full history, and the
+[releases page](https://github.com/jikhanjung/PTMGenerator/releases) for the
+built executables. Keeping a third summary here would only drift — this section
+claimed v0.1.2 was current for two releases after it was not.
 
 ## License
 

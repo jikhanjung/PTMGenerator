@@ -44,8 +44,8 @@ python scripts/bump_version.py patch
 토큰(`alpha`·`beta`·`rc`)을 생략하면 `alpha`입니다.
 
 ```bash
-python scripts/bump_version.py preminor        # 0.1.2 -> 0.2.0-alpha.1
-python scripts/bump_version.py preminor beta   # 0.1.2 -> 0.2.0-beta.1
+python scripts/bump_version.py preminor        # 0.2.0 -> 0.3.0-alpha.1
+python scripts/bump_version.py preminor beta   # 0.2.0 -> 0.3.0-beta.1
 ```
 
 ### Pre-release 번호 올리기 / 단계 전환 / 정식 전환

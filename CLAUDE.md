@@ -58,15 +58,19 @@ produces a correct `.lp`. Do not compact the list.
 
 ```bash
 make install-dev     # dependencies + pre-commit hooks
-make test            # 152 tests, ~3s, no display needed
+make test            # 161 tests, ~3s, no display needed
 make test-cov        # with a coverage report
 make lint            # ruff check + ruff format --check
 make type-check      # mypy over core/ and ui/
 make run             # run the application
 make build           # PyInstaller -> dist/PTMGenerator2_v<version>_<date>.exe
-make translations    # pylupdate5 extract + pyside6-lrelease compile
+make translations    # pylupdate5 extract + pyside6-lrelease compile (the UI)
+make docs            # the manual, English and Korean
+make docs-i18n       # re-extract strings into the Korean manual catalogues
 make lock            # regenerate the per-platform lockfiles
 ```
+
+Check a Windows build without releasing: `gh workflow run build.yml`.
 
 Tests select Qt's offscreen platform plugin themselves, so **no xvfb is needed**
 and none should be added.
@@ -87,8 +91,14 @@ and none should be added.
   raising, so a typo here is invisible until someone looks at the window.
 - **The `›` in "Edit › Preferences"** is U+203A and is the key the `.ts` files
   are indexed on. Changing it orphans the Korean translation.
-- Record deferred work in `TODOs.md`, and add a `devlog/` entry when the
-  reasoning behind a change would not be obvious later. See `devlog/README.md`.
+- Four documents, four jobs. Keep them apart or they drift into each other:
+  `HANDOFF.md` is the **current state** (where things stand, what is in flight);
+  `TODOs.md` is the **plan** (work to do, with enough context to resume);
+  `devlog/` is the **record** (why a past change was made that way, including
+  what was rejected); `CHANGELOG.md` is what **shipped**.
+- Add a `devlog/` entry per piece of work, and check at each release cycle that
+  none is missing — they have been forgotten before, when work spanned several
+  commits. See `devlog/README.md`.
 
 ## Gotchas
 
@@ -115,6 +125,10 @@ and none should be added.
 1. Describe the change under `## [Unreleased]` in `CHANGELOG.md`.
 2. `python scripts/bump_version.py patch` (or `minor`, `preminor beta`, …).
 3. `git push && git push origin v<version>`.
+
+Run `gh workflow run build.yml` first if anything touching the executable
+changed. The build has failed on Windows for a reason Linux could not see
+(devlog 007), and a failure during a release leaves the tag already pushed.
 
 `release.yml` refuses the tag if it disagrees with `version.py`, gates on the
 full test matrix, builds the Windows executable, and publishes a release whose
