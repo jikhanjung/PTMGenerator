@@ -26,6 +26,8 @@ renumbered, because commits reference them by name.
 | 004 | 2026-07-28 | [core/ui split, CI and the release process](20260728_004_core_ui_split_and_ci.md) |
 | 005 | 2026-07-28 | [R01 — code quality audit against the shared guide](20260728_005_R01_code_quality_audit.md) |
 | 006 | 2026-07-28 | [Acting on the R01 audit, and publishing the manual](20260728_006_audit_fixes_and_pages.md) |
+| 007 | 2026-07-28 | [Building before tagging, and the first two releases](20260728_007_first_releases.md) |
+| 008 | 2026-07-28 | [Translating the manual](20260728_008_korean_manual.md) |
 
 R-series entries (`R01`, `R02`, …) are audits rather than changes: a review of
 the whole tree against a standard, with the state found recorded separately from
