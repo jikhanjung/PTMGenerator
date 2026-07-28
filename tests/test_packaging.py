@@ -35,7 +35,7 @@ def test_the_ico_carries_the_sizes_windows_asks_for():
     # blurry in most of them.
     Image = pytest.importorskip("PIL.Image", reason="Pillow is not a runtime dependency")
     with Image.open(ROOT / "icons" / "PTMGenerator2.ico") as ico:
-        sizes = {size for size in ico.info.get("sizes", ())}
+        sizes = set(ico.info.get("sizes", ()))
     assert {(16, 16), (32, 32), (48, 48), (256, 256)} <= sizes
 
 
