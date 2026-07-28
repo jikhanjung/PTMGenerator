@@ -18,27 +18,13 @@ from PyQt5.QtGui import QIcon
 
 from core import paths
 from core import self_test as self_test_checks
-from core.preferences import Preferences, legacy_ini_path, migrate_from_ini
+from core.preferences import Preferences
 from core.resources import icon_path, translation_path
 from core.settings import LANGUAGE, read_str
 from ui import error_handling
 from ui.app import PtmApplication
 from ui.main_window import PTMGeneratorMainWindow
 from version import PROGRAM_NAME, __version__
-
-
-def open_preferences():
-    """The preferences store, with anything QSettings left behind brought over.
-
-    The migration runs on every start and is a no-op once the JSON file has the
-    keys; that is cheaper than a flag recording whether it has happened, and it
-    also picks up a `.ini` restored from a backup later.
-    """
-    paths.ensure_directories()
-    preferences = Preferences()
-    if migrate_from_ini(preferences):
-        print(f"imported preferences from {legacy_ini_path()}")
-    return preferences
 
 
 def self_test(argv):
@@ -54,7 +40,8 @@ def self_test(argv):
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
     app = PtmApplication(argv[:1])
-    app.settings = open_preferences()
+    paths.ensure_directories()
+    app.settings = Preferences()
 
     print(f"{PROGRAM_NAME} {__version__} self-test")
     print(f"  frozen: {getattr(sys, 'frozen', False)}")
@@ -93,7 +80,8 @@ def main(argv=None):
     # aborts the process with nothing on screen and nothing in the log.
     error_handling.install()
     app.setWindowIcon(QIcon(icon_path("app")))
-    app.settings = open_preferences()
+    paths.ensure_directories()
+    app.settings = Preferences()
 
     app.language = read_str(app.settings, LANGUAGE)
     translator = QTranslator()

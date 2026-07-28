@@ -3,8 +3,15 @@
 Replaces QSettings, which put an ``.ini`` under ``%APPDATA%`` on Windows and
 ``~/.config`` elsewhere — two locations, neither of them the one the rest of
 PaleoBytes uses. This writes a single ``preferences.json`` in
-``core.paths.data_dir()``, which a user can open, read and copy between
-machines.
+`core.paths.config_dir`, which a user can open, read and copy between machines.
+
+**Migration runs on the first read, not from the entry point.** A script or a
+future CLI does not go through application startup, so hooking it there would
+leave those running silently without the user's settings. Two rules go with it:
+an existing file at the new location is never overwritten — an old file
+reinstating a setting the user has since changed is a silent regression — and
+the original is never deleted, because it costs nothing to leave and an older
+build still finds its settings.
 
 The API is deliberately QSettings-shaped — ``value``, ``setValue``, ``sync`` —
 because `core.settings` and both windows are written against it, and because a
@@ -26,7 +33,7 @@ import os
 import sys
 from pathlib import Path
 
-from core.paths import preferences_path
+from core.paths import legacy_preferences_path, preferences_path
 from version import COMPANY_NAME, PROGRAM_NAME
 
 
@@ -38,9 +45,26 @@ class Preferences:
             `core.paths.preferences_path`, resolved at construction.
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, migrate=True):
         self.path = path or preferences_path()
         self._values = _read(self.path)
+        if migrate and not self._values:
+            # Only when there is nothing here: a file at the new location wins
+            # over anything older, always.
+            self.migrate()
+
+    def migrate(self):
+        """Pull in settings from wherever an older build left them.
+
+        Newest source first, so a machine that has both gets the later one.
+
+        Returns:
+            bool: True if anything was imported.
+        """
+        imported = _absorb_json(self, legacy_preferences_path())
+        if not imported:
+            imported = migrate_from_ini(self)
+        return imported
 
     def value(self, key, default=None):
         node = self._values
@@ -80,6 +104,33 @@ class Preferences:
         return json.loads(json.dumps(self._values))
 
 
+def _absorb_json(preferences, path):
+    """Copy a preferences.json from an older location, if there is one."""
+    if os.path.abspath(path) == os.path.abspath(preferences.path):
+        return False
+    values = _read(path)
+    if not values:
+        return False
+    imported = False
+    for key, value in _flatten(values):
+        if preferences.value(key) is None:
+            preferences.setValue(key, value)
+            imported = True
+    if imported:
+        preferences.sync()
+    return imported
+
+
+def _flatten(values, prefix=""):
+    """Nested objects back into the "a/b" keys `value` and `setValue` take."""
+    for key, value in values.items():
+        full = f"{prefix}{key}"
+        if isinstance(value, dict):
+            yield from _flatten(value, f"{full}/")
+        else:
+            yield full, value
+
+
 def _read(path):
     if not os.path.exists(path):
         return {}
@@ -114,8 +165,8 @@ class _CaseSensitiveParser(configparser.ConfigParser):
 def migrate_from_ini(preferences, ini_path=None):
     """Copy an old QSettings ``.ini`` into `preferences`, if there is one.
 
-    Called once at startup so an existing installation keeps its serial port and
-    its language. The ``.ini`` is left where it is: reading it again is harmless,
+    So an installation from 0.1.2 or earlier keeps its serial port and its
+    language. The ``.ini`` is left where it is: reading it again is harmless,
     and deleting a file the user did not ask us to delete is not.
 
     Returns:

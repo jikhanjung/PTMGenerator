@@ -36,6 +36,10 @@ dependencies = [
     # version.py parses __version__ with it, so it is a runtime dependency and
     # not a tooling one.
     "semver>=3.0.0,<4.0.0",
+    # Where preferences.json goes, per OS. Pure Python, and deliberately not
+    # QStandardPaths: core/ imports no Qt, and a path module that pulls in a GUI
+    # toolkit makes headless scripts need one. See devlog 014.
+    "platformdirs>=4.0.0,<5.0.0",
 ]
 
 [project.optional-dependencies]

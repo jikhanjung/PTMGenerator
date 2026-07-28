@@ -669,10 +669,13 @@ def test_progress_reaches_the_dialog(ready_to_fit_natively, workdir):
 # -- where the application writes ------------------------------------------
 
 
-def test_the_log_goes_to_the_data_directory(main_window, settings_dir):
+def test_the_log_goes_to_the_data_directory(main_window):
     """Not the current directory, and not the install directory -- the
-    installer removes that on uninstall."""
-    assert main_window.redirector.file_path.startswith(str(settings_dir))
+    installer removes that on uninstall. It stays with the data rather than
+    following the preferences into the config directory."""
+    from core import paths
+
+    assert main_window.redirector.file_path.startswith(paths.data_dir())
     assert os.path.exists(main_window.redirector.file_path)
 
 

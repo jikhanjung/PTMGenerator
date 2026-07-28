@@ -4,9 +4,10 @@ Two things make the GUI testable without hardware or a display:
 
 * Qt's "offscreen" platform plugin is selected before PyQt5 is imported, so the
   suite runs over SSH and in CI without xvfb.
-* ``PTMGENERATOR2_DATA_DIR`` points at a temp directory per test, so the suite
-  never reads or writes the real ``~/PaleoBytes/PTMGenerator2`` — neither the
-  preferences nor the log.
+* ``PTMGENERATOR2_CONFIG_DIR`` and ``PTMGENERATOR2_DATA_DIR`` point at temp
+  directories per test, so the suite never reads or writes the real
+  preferences or log. They are separate because the two are separate on disk —
+  see ``core/paths.py``.
 
 Building a main window also replaces ``sys.stdout`` with an OutputRedirector,
 so the ``main_window`` fixture restores stdout afterwards.
@@ -62,17 +63,20 @@ def qapp():
 
 @pytest.fixture
 def settings_dir(tmp_path, monkeypatch):
-    """Point the data directory at a private one for the duration of a test.
+    """Point both roots at private ones for the duration of a test.
 
-    Everything the application writes outside the capture folder lands here:
-    ``preferences.json`` and ``logs/``. Without this a test run would edit the
+    Returns the config directory, which is where ``preferences.json`` goes; the
+    log lands in ``<tmp>/data/logs``. Without this a test run would edit the
     developer's real preferences, which has happened.
     """
     from core import paths
 
-    path = tmp_path / "data"
+    path = tmp_path / "config"
     path.mkdir()
-    monkeypatch.setenv(paths.DATA_DIR_ENV, str(path))
+    data = tmp_path / "data"
+    data.mkdir()
+    monkeypatch.setenv(paths.CONFIG_DIR_ENV, str(path))
+    monkeypatch.setenv(paths.DATA_DIR_ENV, str(data))
     # The QApplication is session-scoped and holds the store the first window
     # opened, which would otherwise be pointed at an earlier test's directory
     # and carry its values forward.

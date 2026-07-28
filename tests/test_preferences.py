@@ -13,7 +13,9 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def store(tmp_path):
-    return Preferences(str(tmp_path / "preferences.json"))
+    # migrate=False: these are about the store itself, and a real machine's
+    # legacy files must not reach into them.
+    return Preferences(str(tmp_path / "preferences.json"), migrate=False)
 
 
 # -- the store --------------------------------------------------------------
@@ -212,3 +214,97 @@ def test_the_legacy_path_on_windows(monkeypatch):
     monkeypatch.setattr("core.preferences.sys.platform", "win32")
     assert legacy_ini_path().endswith("PTMGenerator2.ini")
     assert "PaleoBytes" in legacy_ini_path()
+
+
+# -- migration into the config directory ------------------------------------
+#
+# The PaleoBytes convention (devlog 014) fixes three things about this, and each
+# one has a test: it happens on the first *read* rather than at startup, an
+# existing file is never overwritten, and the original is never deleted.
+
+
+@pytest.fixture
+def locations(tmp_path, monkeypatch):
+    """Config and data directories, isolated, as `core.paths` sees them."""
+    from core import paths
+
+    config, data = tmp_path / "config", tmp_path / "data"
+    config.mkdir()
+    data.mkdir()
+    monkeypatch.setenv(paths.CONFIG_DIR_ENV, str(config))
+    monkeypatch.setenv(paths.DATA_DIR_ENV, str(data))
+    return config, data
+
+
+def test_settings_are_carried_over_from_the_data_directory(locations):
+    """An unreleased build put preferences.json beside the log."""
+    _config, data = locations
+    (data / "preferences.json").write_text('{"language": "ko"}', encoding="utf-8")
+    assert Preferences().value(prefs.LANGUAGE) == "ko"
+
+
+def test_the_migration_persists_to_the_new_location(locations):
+    config, data = locations
+    (data / "preferences.json").write_text('{"language": "ko"}', encoding="utf-8")
+    Preferences()
+    assert json.loads((config / "preferences.json").read_text(encoding="utf-8")) == {
+        "language": "ko"
+    }
+
+
+def test_the_original_is_left_alone(locations):
+    """Costs nothing to leave, and an older build still finds its settings."""
+    _config, data = locations
+    legacy = data / "preferences.json"
+    legacy.write_text('{"language": "ko"}', encoding="utf-8")
+    Preferences()
+    assert legacy.exists()
+
+
+def test_an_existing_file_is_never_overwritten(locations):
+    """The rule that stops a silent regression: an old file must not reinstate
+    a setting the user has since changed."""
+    config, data = locations
+    (config / "preferences.json").write_text('{"language": "en"}', encoding="utf-8")
+    (data / "preferences.json").write_text('{"language": "ko"}', encoding="utf-8")
+    assert Preferences().value(prefs.LANGUAGE) == "en"
+
+
+def test_migration_happens_on_the_first_read_not_at_startup(locations):
+    """A script or a CLI does not go through application startup. Hooking this
+    to the entry point would leave those running without the user's settings."""
+    _config, data = locations
+    (data / "preferences.json").write_text('{"serial_port": "COM7"}', encoding="utf-8")
+    # Nothing here calls the entry point.
+    assert Preferences().value(prefs.SERIAL_PORT) == "COM7"
+
+
+def test_the_qsettings_ini_is_still_picked_up(locations, tmp_path, monkeypatch):
+    """0.1.2 and earlier. Reached through the same first-read hook."""
+    _config, _data = locations
+    old = tmp_path / "PTMGenerator2.conf"
+    old.write_text("[General]\nNumber_of_LEDs=24\n", encoding="utf-8")
+    monkeypatch.setattr("core.preferences.legacy_ini_path", lambda: str(old))
+    assert Preferences().value(prefs.NUMBER_OF_LEDS) == 24
+
+
+def test_the_newer_legacy_location_wins(locations, tmp_path, monkeypatch):
+    """A machine with both takes the later one."""
+    _config, data = locations
+    (data / "preferences.json").write_text('{"language": "ko"}', encoding="utf-8")
+    old = tmp_path / "PTMGenerator2.conf"
+    old.write_text("[General]\nlanguage=en\n", encoding="utf-8")
+    monkeypatch.setattr("core.preferences.legacy_ini_path", lambda: str(old))
+    assert Preferences().value(prefs.LANGUAGE) == "ko"
+
+
+def test_nested_legacy_keys_survive_the_move(locations):
+    _config, data = locations
+    (data / "preferences.json").write_text(
+        '{"WindowGeometry": {"MainWindow": [1, 2, 3, 4]}}', encoding="utf-8"
+    )
+    assert Preferences().value("WindowGeometry/MainWindow") == [1, 2, 3, 4]
+
+
+def test_nothing_to_migrate_leaves_an_empty_store(locations):
+    assert Preferences().as_dict() == {}
