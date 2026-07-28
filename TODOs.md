@@ -13,14 +13,18 @@ run. Verified 2026-07-28.
 |---|---|---|---|
 | 1 | Cross-platform CI matrix + headless smoke test | ✅ | 3 OS x Python 3.12, `tests/test_smoke.py`. No xvfb — Qt's offscreen plugin |
 | 2 | Lint + tests gating | ✅ | ruff, mypy, the test matrix and the translation check all gate. No `\|\| true` anywhere |
-| 3 | Expand the lint ruleset incrementally | ⚠️ | `E, F, I, UP, B, C4, SIM, PTH, RUF`. Missing the guide's `N`, `LOG`, `DTZ`, `TRY`, `S`, `C901` |
+| 3 | Expand the lint ruleset incrementally | ✅ | All of the guide's groups landed 2026-07-28: `E, F, I, N, UP, B, C4, SIM, PTH, RUF, DTZ, S, TRY, LOG, G, RET, PIE, PERF, A, C90`. Waivers argued in `pyproject.toml` |
 | 4 | `filterwarnings = error` | ✅ | `pyproject.toml`, one narrow documented ignore for PyQt5's sip shims |
 | 5 | Lockfile + pip-audit + Dependabot | ✅ | 9 per-platform locks with hashes, pip-audit on all three runtime locks, `.github/dependabot.yml` |
 | 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 88% |
 | 7 | Static type checking, scoped | ⚠️ | mypy gating over `core/` only. `ui/` is the open part |
-| 8 | Dead-code / complexity automation | ❌ | `C901` not enabled; no complexity ceiling |
+| 8 | Dead-code / complexity automation | ✅ | `C90` enforced at the guide's threshold of 15 |
 | 9 | Packaged-artifact smoke test | ⚠️ | `release.yml` checks the .exe exists and is non-empty; it does not run it |
 | 10 | Property-based tests | ❌ | None. The light-vector maths is the obvious candidate |
+
+**Done 2026-07-28** (see devlog R01): the serial-open crash and the
+platform-default encodings, the naive-datetime DST bug, the full lint ruleset,
+and branch protection on `main`.
 
 ---
 
