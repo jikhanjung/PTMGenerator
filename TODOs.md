@@ -23,8 +23,16 @@ run. Verified 2026-07-28.
 | 10 | Property-based tests | ❌ | None. The light-vector maths is the obvious candidate |
 
 **Done 2026-07-28** (see devlog R01): the serial-open crash and the
-platform-default encodings, the naive-datetime DST bug, the full lint ruleset,
-and branch protection on `main`.
+platform-default encodings, the naive-datetime DST bug, and the full lint
+ruleset.
+
+**Not doing: branch protection on `main`.** The guide (§14) and Appendix A item
+2 both call for it, and it is deliberately declined here. This is a
+single-maintainer repository with no review partner, so requiring pull requests
+buys nothing that the pre-commit hooks and the gating CI do not already provide,
+and costs a PR round-trip on every one-line fix. Revisit if a second person
+starts committing. Recording it so a later audit reads this as a decision
+rather than an oversight.
 
 ---
 

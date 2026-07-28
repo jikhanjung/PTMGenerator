@@ -109,12 +109,12 @@ mccabe correctly does not count as complex.
 | 11 | Performance | ➖ No benchmarks. The workload is I/O-bound on a 1 Hz timer; not worth instrumenting |
 | 12 | Security | ✅ No eval/exec/pickle/yaml. The subprocess call takes a user-configured path with no shell |
 | 13 | Dead code & complexity | ✅ `C901` clean; the dead code found in R00 was deleted |
-| 14 | Workflow & gating | ⚠️ pre-commit and CI gating; **branch protection is off** (`gh api ... 404 Branch not protected`) |
+| 14 | Workflow & gating | ✅ pre-commit and CI gating. Branch protection is off by decision, not omission — see `TODOs.md` |
 
 ## Appendix A checklist
 
 1. ✅ Cross-platform CI + headless smoke test
-2. ⚠️ Lint + tests gating — CI yes, **branch protection no**, so a push to `main` bypasses everything
+2. ✅ Lint + tests gating — CI gates; branch protection deliberately declined (single maintainer)
 3. ⚠️ Expand the lint ruleset — seven groups are free
 4. ✅ `filterwarnings = error`
 5. ✅ Lockfile + pip-audit + Dependabot
@@ -138,7 +138,10 @@ come before any amount of linting.
 4. **Enable the seven zero-violation rule groups** plus `DTZ`, `PERF`, `N` with
    the Qt waivers argued in config and `S` with the tests waiver. One commit,
    no behaviour change.
-5. **Turn on branch protection** for `main`, requiring the four CI checks.
+5. ~~**Turn on branch protection** for `main`.~~ Declined 2026-07-28: single
+   maintainer, no review partner, so required PRs cost a round-trip per one-line
+   fix and add nothing over the pre-commit hooks and the gating CI. See
+   `TODOs.md`. Revisit if a second person starts committing.
 6. **Launch the frozen executable in CI** — a `--self-test` flag that builds the
    window offscreen, prints the version and exits. Catches a bundle missing
    `icons/` or `translations/`, which source tests cannot.
