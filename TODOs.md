@@ -122,6 +122,20 @@ rather than an oversight.
 
 ---
 
+## Settle the log filename across PaleoBytes
+
+The projects disagree by one character:
+
+    ~/PaleoBytes/Modan2/logs/Modan2.20260728.log
+    ~/PaleoBytes/PTMGenerator2/logs/PTMGenerator2_20260728.log
+
+R02 (the config-location convention) covers where logs go and says nothing about
+naming, so neither is wrong. But a shared convention that stops one character
+short is the kind of thing that quietly makes tooling per-project later.
+
+Whichever wins, it is a one-line change in `core/paths.log_path` here. Worth
+raising across the projects rather than deciding alone — see devlog 014.
+
 ## Convert `os.path` to `pathlib`
 
 `PTH` is enabled but eleven rules are waived in `pyproject.toml`. The paths are

@@ -4,6 +4,12 @@
 PaperMeister: a per-user Inno Setup installer, and user data under
 `%USERPROFILE%\PaleoBytes\PTMGenerator2`.
 
+> **Partly superseded the same day by devlog 014.** `preferences.json` does not
+> live in the data directory — the PaleoBytes convention puts configuration
+> under the OS config location instead. The log stays exactly where this entry
+> puts it. Everything below about the installer still stands, except the install
+> directory, which moved to `{userpf}`; see the section on it.
+
 ## Why the two are one change
 
 Shipping an installer forces the data question. A onefile executable run from
@@ -23,7 +29,7 @@ Before:
 After:
 
     %USERPROFILE%\PaleoBytes\PTMGenerator2\
-    ├── preferences.json
+    ├── preferences.json          <- moved again in devlog 014
     └── logs\
         └── PTMGenerator2_20260728.log
 

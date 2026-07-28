@@ -116,8 +116,20 @@ R02's, worked through:
       overwritten**, and reached without going through the entry point
 - [x] the log left where it was
 
+## Noticed while checking the result
+
+The layout now matches Modan2's, which is the useful confirmation that the
+convention was read the same way twice. The log *names* do not:
+
+    ~/PaleoBytes/Modan2/logs/Modan2.20260728.log
+    ~/PaleoBytes/PTMGenerator2/logs/PTMGenerator2_20260728.log
+
+Dot against underscore. R02 covers where logs go and deliberately says nothing
+about what they are called, so this is not a violation of anything — but it is
+the kind of small divergence a shared convention exists to avoid, and it is
+cheaper to settle now than after either project has logs worth keeping. Left
+alone here rather than changed unilaterally; noted in `TODOs.md`.
+
 ## State
 
-347 tests, ruff and mypy clean, both manuals build. The layout on this machine
-now matches Modan2's, which is the check that the convention was read the same
-way twice.
+347 tests, ruff and mypy clean, both manuals build, all nine lockfiles in sync.
