@@ -35,14 +35,16 @@ An Arduino-driven dome lights 50 LEDs one at a time and fires a DSLR shutter for
 
 ### Software Dependencies
 
-- Python 3.8+
-- PyQt5
-- pyserial
+- Python 3.12+
+- PyQt5, pyserial, semver — declared in `pyproject.toml`
 
-Install dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -e .            # runtime
+pip install -e ".[dev]"     # plus the test and lint tooling
 ```
+
+To reproduce a build exactly, install from the lockfile for your platform
+instead: `pip install --require-hashes -r requirements-linux.lock`.
 
 Windows in practice — `PTMfitter.exe` is a Windows binary and the DSLR tethering
 software that drops files into the capture directory is Windows-only. The Python
@@ -61,7 +63,7 @@ code itself has no Windows-specific imports and the GUI runs on Linux.
 ## Installation
 
 1. Clone or download this repository
-2. Install dependencies: `pip install -r requirements.txt`
+2. Install dependencies: `pip install -e .`
 3. Ensure `ptmfitter.exe` is available (configure path in application preferences)
 4. Connect your Arduino LED dome controller via serial port
 
@@ -69,14 +71,19 @@ code itself has no Windows-specific imports and the GUI runs on Linux.
 
 | Path | Purpose |
 | --- | --- |
-| `PTMGenerator2.py` | **The application.** PyQt5 GUI, serial control, capture loop, PTM generation. |
+| `PTMGenerator2.py` | Entry point. `--self-test` starts headlessly, checks the bundle and exits. |
+| `core/` | **Qt-free logic**: serial protocol, capture sequencing, dome geometry, the CSV and `.lp` formats. Imports no PyQt5 — asserted by the test suite. |
+| `ui/` | The PyQt5 windows that drive it. |
+| `version.py` | Single source of truth for the version. |
 | `PTMController/PTMController.ino` | Arduino firmware: shift-register LED driver, shutter, rotary encoder, 7-segment display. |
 | `PTMfitter.exe` | Third-party PTM fitter binary invoked by **Generate PTM**. |
 | `translations/` | Qt i18n — English and Korean (`.ts` sources, `.qm` compiled). |
 | `icons/` | Application icon. |
-| `test_PTMGenerator2.py` | `unittest` suite. |
+| `tests/` | pytest suite — no display required. |
+| `scripts/bump_version.py` | Version bump, changelog roll, commit and tag. |
+| `docs/manual/` | The Sphinx manual published to GitHub Pages. |
 | `PTMGenerator2.spec` | PyInstaller build spec. |
-| `devlog/` | Design and implementation notes. |
+| `devlog/`, `TODOs.md` | Design notes and deferred work. |
 | `legacy/` | Superseded code, kept for reference only — see below. |
 
 ## Usage
@@ -145,7 +152,7 @@ Stored via `QSettings` under `PaleoBytes / PTMGenerator2`.
 | `serial_port` | *(none)* | COM port of the Arduino controller. Must be set before capturing. |
 | `ptm_fitter` | `ptmfitter.exe` | Path to the PTM fitter executable. |
 | `Number_of_LEDs` | 50 | Number of shots in a full sequence. |
-| `RetryCount` | 0 | Automatic retakes before a slot is given up as `-`. |
+| `RetryCount` | 3 | Automatic retakes before a slot is given up as `-`. |
 | `light_position_adjustment` | 0 | Azimuth offset in degrees, to align the dome's LED #1 with the specimen's orientation. |
 | `post_shutter_polling` | 1.0 | Seconds to wait after the shutter before scanning for the new file. |
 | `language` | `en` | `en` or `ko`. |
@@ -158,10 +165,20 @@ Releases are built with PyInstaller:
 pyinstaller PTMGenerator2.spec
 ```
 
-The output name is generated from `PROGRAM_VERSION` in `PTMGenerator2.py` plus the
-build date — e.g. `PTMGenerator2_v0.1.2_20251107.exe` — so bumping the version in
-the source is all that is needed for a new release name. To pin a fixed name
-instead, replace `name=EXE_NAME` in the spec with a literal string.
+The output name is generated from `__version__` in `version.py` plus the build
+date — e.g. `PTMGenerator2_v0.1.2_20251107.exe` — so there is no second version
+number to keep in step. Bump with `python scripts/bump_version.py <part>`; see
+`VERSION_MANAGEMENT.md`.
+
+Check a build before shipping it:
+
+```bash
+dist/PTMGenerator2_v0.1.2_20260728.exe --self-test
+```
+
+It starts the application headlessly, verifies every bundled icon and
+translation resolves, constructs the main window and exits non-zero if anything
+is missing. `release.yml` runs it against every build.
 
 `build/` and `dist/` are gitignored; the spec is build configuration and is tracked.
 
@@ -212,9 +229,10 @@ pyside6-lrelease translations/PTMGenerator2_ko.ts translations/PTMGenerator2_en.
 ```
 
 `pylupdate5` comes with PyQt5. `lrelease` does not: it ships with the Qt
-developer tools, so `requirements.txt` pulls in `PySide6-Essentials`, which
-provides it as `pyside6-lrelease` (`sudo apt install qttools5-dev-tools` gives a
-plain `lrelease` instead, if you prefer the system package).
+developer tools, so the `dev` extra in `pyproject.toml` pulls in
+`PySide6-Essentials`, which provides it as `pyside6-lrelease`
+(`sudo apt install qttools5-dev-tools` gives a plain `lrelease` instead, if you
+prefer the system package).
 
 Both `.ts` and `.qm` are tracked — the `.qm` files are what PyInstaller bundles,
 so they must be recompiled and committed whenever a translation changes.
@@ -222,7 +240,8 @@ so they must be recompiled and committed whenever a translation changes.
 ## Tests
 
 ```bash
-python -m unittest test_PTMGenerator2 -v
+make test          # or: pytest tests/
+make test-cov      # with a coverage report
 ```
 
 Requires PyQt5 but no display: the suite selects Qt's `offscreen` platform

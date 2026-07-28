@@ -24,6 +24,12 @@ renumbered, because commits reference them by name.
 | — | 2025-11-07 | [Image polling and PTM generation — implementation](20251107_P01_ImagePollingAndPTMGeneration_Implementation.md) |
 | 003 | 2026-07-27 | [Repository cleanup and the first test suite](20260727_003_repository_cleanup_and_tests.md) |
 | 004 | 2026-07-28 | [core/ui split, CI and the release process](20260728_004_core_ui_split_and_ci.md) |
+| 005 | 2026-07-28 | [R01 — code quality audit against the shared guide](20260728_005_R01_code_quality_audit.md) |
+| 006 | 2026-07-28 | [Acting on the R01 audit, and publishing the manual](20260728_006_audit_fixes_and_pages.md) |
+
+R-series entries (`R01`, `R02`, …) are audits rather than changes: a review of
+the whole tree against a standard, with the state found recorded separately from
+what was then done about it. The convention comes from Modan2.
 
 ## Writing an entry
 

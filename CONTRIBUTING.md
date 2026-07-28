@@ -15,7 +15,7 @@ hooks. Python 3.12 or newer.
 
 ```bash
 make lint          # ruff check + ruff format --check
-make type-check    # mypy over core/
+make type-check    # mypy over core/ and ui/
 make test          # the suite, ~1.3s
 ```
 
@@ -49,7 +49,11 @@ result = session.step(shoot=shots.append, poll=lambda: "/shots/a.jpg")
 ```
 
 Markers: `unit` (no Qt), `ui` (needs a QApplication), `smoke` (must pass on every
-OS), `slow`.
+OS), `property` (Hypothesis), `slow`.
+
+For pure logic with an invariant — the light geometry is the example — prefer a
+property test over a handful of fixed cases. See
+`tests/test_light_positions_properties.py`.
 
 The suite needs no display — `tests/conftest.py` selects Qt's offscreen platform
 plugin. Please don't add xvfb.
@@ -79,7 +83,8 @@ Leave the `›` in "Edit › Preferences" alone — it is U+203A and is the key 
 
 ## Dependencies
 
-`pyproject.toml` declares ranges; the lockfiles pin exact versions with hashes.
+`pyproject.toml` is the only place dependencies are declared — there is no
+`requirements.txt`. The lockfiles pin exact versions with hashes.
 After changing a range:
 
 ```bash

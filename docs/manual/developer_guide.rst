@@ -21,7 +21,7 @@ Everyday commands
    make test          # the suite, ~1.3s
    make test-cov      # with a coverage report
    make lint          # ruff check + ruff format --check
-   make type-check    # mypy over core/
+   make type-check    # mypy over core/ and ui/
    make run           # run the application
    make build         # PyInstaller -> dist/
    make docs          # this manual
@@ -46,7 +46,12 @@ ticks:
    result = session.step(shoot=shots.append, poll=lambda: "/shots/a.jpg")
 
 Markers: ``unit`` (no Qt), ``ui`` (needs a QApplication), ``smoke`` (must pass
-on every OS in the matrix), ``slow``.
+on every OS in the matrix), ``property`` (Hypothesis), ``slow``.
+
+For pure logic with an invariant, prefer a property test over a handful of fixed
+cases — ``tests/test_light_positions_properties.py`` checks the dome geometry
+over every adjustment angle the preference permits, not the four the
+example-based tests happen to use.
 
 Code quality
 ------------
@@ -57,9 +62,12 @@ version in three places that must move together**: ``pyproject.toml``,
 A newer ruff formats code the previous one accepted, so an unpinned bump
 reformats the tree from under an unrelated pull request.
 
-mypy is scoped to ``core/``. Widening it to ``ui/`` means teaching it about
-PyQt5's stubs; do that a module at a time, each one clean before it joins the
-invocation. Tracked in ``TODOs.md``.
+mypy covers ``core/`` and ``ui/``. The setting that matters is
+``check_untyped_defs``: this code carries few annotations, and by default mypy
+skips the *bodies* of unannotated functions — so a clean run without it means
+very little. It is on for ``core/``; turning it on for ``ui/`` is tracked in
+``TODOs.md``. PyQt5 ships its own stubs, so no third-party stub package is
+needed.
 
 Translations
 ------------
@@ -88,6 +96,21 @@ CI fails otherwise.
 They are per-platform on purpose. A universal resolve pins one version per
 package for every OS without checking wheel coverage, and ``pyqt5-qt5`` stopped
 publishing Windows wheels after 5.15.2 while Linux and macOS reach 5.15.19.
+
+Checking a build
+----------------
+
+.. code-block:: bash
+
+   dist/PTMGenerator2_v0.1.2_20260728.exe --self-test
+
+Starts the application headlessly against the bundle it is running from,
+verifies every declared icon and translation resolves, constructs the main
+window, and exits non-zero if anything is missing. A source checkout always has
+``icons/`` and ``translations/`` on disk; a frozen build only has them if
+PyInstaller was told to bundle them, and if it was not the executable still
+starts — just with no icon and no Korean. ``release.yml`` runs this against
+every build.
 
 Releasing
 ---------

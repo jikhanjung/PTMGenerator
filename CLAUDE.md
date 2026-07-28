@@ -31,7 +31,7 @@ without a display, a QApplication or a controller attached.
 | `core/settings.py` | Preference keys, defaults, coercion from QSettings strings |
 | `ui/main_window.py` | Widgets, the one-second timer, rendering what the session decides |
 | `ui/preferences_window.py` | The Edit > Preferences dialog |
-| `PTMGenerator2.py` | Entry point |
+| `PTMGenerator2.py` | Entry point. `--self-test` checks the bundle and exits |
 | `version.py` | **Single source of truth for the version** |
 
 ### The capture loop
@@ -58,10 +58,10 @@ produces a correct `.lp`. Do not compact the list.
 
 ```bash
 make install-dev     # dependencies + pre-commit hooks
-make test            # 125 tests, ~1.3s, no display needed
+make test            # 152 tests, ~3s, no display needed
 make test-cov        # with a coverage report
 make lint            # ruff check + ruff format --check
-make type-check      # mypy over core/
+make type-check      # mypy over core/ and ui/
 make run             # run the application
 make build           # PyInstaller -> dist/PTMGenerator2_v<version>_<date>.exe
 make translations    # pylupdate5 extract + pyside6-lrelease compile
@@ -82,6 +82,9 @@ and none should be added.
   without running `make translations` ships stale strings; CI checks for drift.
 - **Qt-mirroring attribute names** (`btnOkay`, `edtPtmFitter`, `Okay`) are
   deliberate. Do not rename them to snake_case.
+- **Every entry in `core.resources.ICON` must exist on disk.** `core/self_test.py`
+  checks them. `QIcon()` on a missing path yields a null icon rather than
+  raising, so a typo here is invisible until someone looks at the window.
 - **The `›` in "Edit › Preferences"** is U+203A and is the key the `.ts` files
   are indexed on. Changing it orphans the Korean translation.
 - Record deferred work in `TODOs.md`, and add a `devlog/` entry when the
@@ -101,6 +104,11 @@ and none should be added.
   entry point, and `read_settings()` expects them to exist.
 - **`detect_irregular_intervals`** rebuilds a capture table from files on disk;
   the name is historical and kept because it is referenced from the docs.
+- **mypy's `check_untyped_defs` is on for `core/` but not `ui/`.** Without it
+  mypy skips the bodies of unannotated functions, so a clean run over `ui/`
+  means less than it looks. See `TODOs.md`.
+- **`sys.excepthook` is installed by the entry point** (`ui/error_handling.py`).
+  An exception escaping a Qt slot otherwise aborts the process silently.
 
 ## Release
 

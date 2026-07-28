@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **The manual is published at <https://jikhanjung.github.io/PTMGenerator/>**,
+  rebuilt on every push.
+- **`--self-test`.** Starts the application headlessly, verifies every bundled
+  icon and translation resolves, and exits non-zero if anything is missing. Run
+  against the executable in CI before a release is published.
+- **A global exception handler.** An error inside a button handler used to abort
+  the application silently; it now logs to `output.log` and shows a dialog.
 - **The project now has a test suite, CI and a release process.** `tests/` runs
   under pytest with no display required (Qt's offscreen platform), covering the
   serial protocol, the capture state machine, the light geometry, the CSV and
@@ -35,6 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Superseded implementations moved to `legacy/`.
 
 ### Fixed
+- **Crash when the configured serial port cannot be opened.** The port name is
+  saved in preferences, so an unplugged board, a port held by the Arduino IDE,
+  or a re-enumerated USB device aborted the application with no message. It now
+  reports which port and why, and offers to continue without it.
+- **`image_data.csv` and `.lp` files are written as UTF-8.** They were written
+  in the platform's default encoding, so a run captured on Korean Windows could
+  not be reopened on Linux, and vice versa. The CSV is read as `utf-8-sig`, so a
+  file re-saved by a spreadsheet still loads.
+- **Interval detection no longer miscounts across a daylight-saving change.**
+  It compared naive local datetimes, so a gap spanning the transition read as
+  hundreds of missed shots.
+- **The Open Directory button's missing icon.** It referenced a file that has
+  never existed in the repository; `QIcon()` fails silently on a missing path,
+  so it rendered blank from the first release.
 - **Crash when no serial port is configured.** Pressing Stop — and several
   other paths — reached for a serial object that was never created, raising
   `AttributeError`.

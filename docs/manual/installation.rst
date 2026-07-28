@@ -33,6 +33,9 @@ From source
    pip install -e .
    python PTMGenerator2.py
 
+Dependencies are declared in ``pyproject.toml``; there is no
+``requirements.txt``.
+
 For development, install the extras and the pre-commit hooks instead:
 
 .. code-block:: bash
