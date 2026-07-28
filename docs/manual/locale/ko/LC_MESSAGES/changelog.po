@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 16:28+0900\n"
+"POT-Creation-Date: 2026-07-28 19:36+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -39,12 +39,35 @@ msgstr ""
 msgid "[Unreleased]"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:12 ../../../../CHANGELOG.md:48
-#: ../../../../CHANGELOG.md:55 ../../../../CHANGELOG.md:127
+#: ../../../../CHANGELOG.md:12 ../../../../CHANGELOG.md:65
+#: ../../../../CHANGELOG.md:72 ../../../../CHANGELOG.md:144
 msgid "Added"
 msgstr ""
 
 #: ../../../../CHANGELOG.md:13
+msgid ""
+"**A Windows installer.** Releases now ship "
+"`PTMGenerator2_v<version>_build<n>_Installer.exe` instead of a bare "
+"executable. It installs per user, so there is no administrator prompt, "
+"into `%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2` — the per-user"
+" Program Files, where Windows itself installs per-user applications — "
+"adds a Start Menu shortcut under **PaleoBytes**, and can be uninstalled "
+"from Settings › Apps. Built with Inno Setup, matching Modan2, CTHarvester"
+" and PaperMeister."
+msgstr ""
+
+#: ../../../../CHANGELOG.md:21
+msgid ""
+"**Settings and logs have a home of their own**, in "
+"`%USERPROFILE%\\PaleoBytes\\PTMGenerator2` — not under the install "
+"directory, which the uninstaller removes. Settings are "
+"`preferences.json`, readable and editable; an `.ini` from an earlier "
+"version is imported on first run and left where it is. The log is one "
+"file per day in `logs/`, appended to, rather than an `output.log` in "
+"whatever directory the application happened to start in."
+msgstr ""
+
+#: ../../../../CHANGELOG.md:27
 msgid ""
 "**PTMs are now fitted in the application itself**, with no external "
 "program and no image-size limit beyond memory. `PTMfitter.exe` is 32-bit "
@@ -54,18 +77,25 @@ msgid ""
 "**Cancel** writes nothing."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:18
+#: ../../../../CHANGELOG.md:32
 msgid ""
 "**PTM Engine preference**, defaulting to the built-in fitter. "
 "`PTMfitter.exe` remains selectable, and the *PTM Fitter* path setting now"
 " applies only to it."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:22 ../../../../CHANGELOG.md:87
+#: ../../../../CHANGELOG.md:36 ../../../../CHANGELOG.md:104
 msgid "Fixed"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:23
+#: ../../../../CHANGELOG.md:37
+msgid ""
+"**The crash dialog names a log file that exists.** It pointed at "
+"`output.log`, which moved with the rest of the application's data; it now"
+" shows the real path."
+msgstr ""
+
+#: ../../../../CHANGELOG.md:40
 msgid ""
 "**PTM generation no longer breaks on a path containing a space or "
 "Hangul.** The `.lp` file listed absolute paths, and PTMfitter splits each"
@@ -77,19 +107,19 @@ msgid ""
 "`PTMfitter.exe` — see `core/ptm_builder.py`."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:30
+#: ../../../../CHANGELOG.md:47
 msgid ""
 "**A failed fit is reported.** PTMfitter exits 1 on success, so its status"
 " cannot be used; the application now checks that a `.ptm` actually "
 "appeared and says so when it did not, instead of reporting success."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:34 ../../../../CHANGELOG.md:75
-#: ../../../../CHANGELOG.md:131 ../../../../CHANGELOG.md:137
+#: ../../../../CHANGELOG.md:51 ../../../../CHANGELOG.md:92
+#: ../../../../CHANGELOG.md:148 ../../../../CHANGELOG.md:154
 msgid "Changed"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:35
+#: ../../../../CHANGELOG.md:52
 msgid ""
 "**The chosen folder is now watched recursively until the first shot "
 "lands.** Tethering software commonly files images into a dated subfolder "
@@ -104,11 +134,11 @@ msgid ""
 "the capture list is where shots are going."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:47
+#: ../../../../CHANGELOG.md:64
 msgid "[0.2.0-alpha.2] - 2026-07-28"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:49
+#: ../../../../CHANGELOG.md:66
 msgid ""
 "**The manual is available in Korean**, at "
 "<https://jikhanjung.github.io/PTMGenerator/ko/>, with a language switcher"
@@ -117,31 +147,31 @@ msgid ""
 "`docs/manual/locale/README.md` for why."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:54
+#: ../../../../CHANGELOG.md:71
 msgid "[0.2.0-alpha.1] - 2026-07-28"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:56
+#: ../../../../CHANGELOG.md:73
 msgid ""
 "**The manual is published at "
 "<https://jikhanjung.github.io/PTMGenerator/>**, rebuilt on every push."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:58
+#: ../../../../CHANGELOG.md:75
 msgid ""
 "**`--self-test`.** Starts the application headlessly, verifies every "
 "bundled icon and translation resolves, and exits non-zero if anything is "
 "missing. Run against the executable in CI before a release is published."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:61
+#: ../../../../CHANGELOG.md:78
 msgid ""
 "**A global exception handler.** An error inside a button handler used to "
 "abort the application silently; it now logs to `output.log` and shows a "
 "dialog."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:63
+#: ../../../../CHANGELOG.md:80
 msgid ""
 "**The project now has a test suite, CI and a release process.** `tests/` "
 "runs under pytest with no display required (Qt's offscreen platform), "
@@ -149,7 +179,7 @@ msgid ""
 "geometry, the CSV and `.lp` formats and the windows themselves."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:67
+#: ../../../../CHANGELOG.md:84
 msgid ""
 "**`version.py` is the single source of truth for the version.** The "
 "window title, `pyproject.toml`, the PyInstaller spec's output filename "
@@ -157,17 +187,17 @@ msgid ""
 "scripts/bump_version.py <part>`; see `VERSION_MANAGEMENT.md`."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:71
+#: ../../../../CHANGELOG.md:88
 msgid ""
 "Prompt before starting a capture with no controller attached, offering to"
 " continue anyway for trying the interface out without hardware."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:73
+#: ../../../../CHANGELOG.md:90
 msgid "`.gitattributes`, so line endings are normalized on check-in."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:76
+#: ../../../../CHANGELOG.md:93
 msgid ""
 "**The application is split into `core/` and `ui/`.** `core/` holds the "
 "serial protocol, capture sequencing, dome geometry and file formats and "
@@ -175,13 +205,13 @@ msgid ""
 "`ui/` holds the two windows. `PTMGenerator2.py` is now an entry point."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:80
+#: ../../../../CHANGELOG.md:97
 msgid ""
 "One build spec, `PTMGenerator2.spec`, replacing the six near-identical "
 "versioned copies. It derives the output name from `version.py`."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:82
+#: ../../../../CHANGELOG.md:99
 msgid ""
 "Image extensions are matched from one shared list. Polling accepted "
 "`.gif` and `.bmp` and matched case-insensitively while rebuilding a table"
@@ -189,11 +219,11 @@ msgid ""
 " be reopened."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:85
+#: ../../../../CHANGELOG.md:102
 msgid "Superseded implementations moved to `legacy/`."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:88
+#: ../../../../CHANGELOG.md:105
 msgid ""
 "**Crash when the configured serial port cannot be opened.** The port name"
 " is saved in preferences, so an unplugged board, a port held by the "
@@ -202,14 +232,14 @@ msgid ""
 "without it."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:92
+#: ../../../../CHANGELOG.md:109
 msgid ""
 "**`image_data.csv` and `.lp` files are written as UTF-8.** They were "
 "written in the platform's default encoding, so a run captured on Korean "
 "Windows could not be reopened on Linux, and vice versa."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:96
+#: ../../../../CHANGELOG.md:113
 msgid ""
 "*Existing captures keep working.* Reading falls back through utf-8-sig → "
 "cp949 → latin-1, so a table written by an earlier version still loads, "
@@ -218,54 +248,54 @@ msgid ""
 "spreadsheet, which adds a byte-order mark, also loads."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:101
+#: ../../../../CHANGELOG.md:118
 msgid ""
 "**Interval detection no longer miscounts across a daylight-saving "
 "change.** It compared naive local datetimes, so a gap spanning the "
 "transition read as hundreds of missed shots."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:104
+#: ../../../../CHANGELOG.md:121
 msgid ""
 "**The Open Directory button's missing icon.** It referenced a file that "
 "has never existed in the repository; `QIcon()` fails silently on a "
 "missing path, so it rendered blank from the first release."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:107
+#: ../../../../CHANGELOG.md:124
 msgid ""
 "**Crash when no serial port is configured.** Pressing Stop — and several "
 "other paths — reached for a serial object that was never created, raising"
 " `AttributeError`."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:110
+#: ../../../../CHANGELOG.md:127
 msgid "**Crash on Retake Picture before any row had been selected.**"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:111
+#: ../../../../CHANGELOG.md:128
 msgid ""
 "Post Shutter Polling accepts fractional seconds; an integer validator had"
 " made the default of `1.0` impossible to edit."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:113
+#: ../../../../CHANGELOG.md:130
 msgid ""
 "Switching language relabelled every preference row except Post Shutter "
 "Polling and Light Position Adjustment."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:115
+#: ../../../../CHANGELOG.md:132
 msgid ""
 "Korean translations for the eight strings that were still falling back to"
 " English, and the compiled `.qm` files regenerated."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:118
+#: ../../../../CHANGELOG.md:135
 msgid "Removed"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:119
+#: ../../../../CHANGELOG.md:136
 msgid ""
 "`interval.py`, a prototype that could not be imported or run: it executed"
 " at module level against a hardcoded desktop path and unpacked three "
@@ -273,41 +303,41 @@ msgid ""
 "`core/image_data.py`."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:125
+#: ../../../../CHANGELOG.md:142
 msgid "[0.1.2] - 2025-11-07"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:128
+#: ../../../../CHANGELOG.md:145
 msgid ""
 "Image selection: each captured shot can be included or excluded from PTM "
 "generation from the capture table."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:132
+#: ../../../../CHANGELOG.md:149
 msgid "Improved polling behaviour when waiting for a shot to land."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:133
+#: ../../../../CHANGELOG.md:150
 msgid "Better directory handling."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:135
+#: ../../../../CHANGELOG.md:152
 msgid "[0.1.1] - 2024-12-27"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:138
+#: ../../../../CHANGELOG.md:155
 msgid "Directory handling."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:139
+#: ../../../../CHANGELOG.md:156
 msgid "Light position adjusted; polling sleeps one second between checks."
 msgstr ""
 
-#: ../../../../CHANGELOG.md:141
+#: ../../../../CHANGELOG.md:158
 msgid "[0.1.0] - 2024-06-27"
 msgstr ""
 
-#: ../../../../CHANGELOG.md:143
+#: ../../../../CHANGELOG.md:160
 msgid ""
 "First packaged release of the PyQt5 rewrite: serial control of the LED "
 "dome, automated capture with retries, `.lp` generation and PTM creation "

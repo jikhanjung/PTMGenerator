@@ -18,12 +18,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shortcut under
   **PaleoBytes**, and can be uninstalled from Settings › Apps. Built with Inno
   Setup, matching Modan2, CTHarvester and PaperMeister.
-- **Settings and logs have a home of their own**, in
-  `%USERPROFILE%\PaleoBytes\PTMGenerator2` — not under the install directory,
-  which the uninstaller removes. Settings are `preferences.json`, readable and
-  editable; an `.ini` from an earlier version is imported on first run and left
-  where it is. The log is one file per day in `logs/`, appended to, rather than
-  an `output.log` in whatever directory the application happened to start in.
+- **Settings and logs have homes of their own**, neither under the install
+  directory, which the uninstaller removes.
+
+  Settings are `preferences.json` — readable and editable — where the operating
+  system keeps configuration: `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2` on
+  Windows, `~/.config/PaleoBytes/PTMGenerator2` on Linux,
+  `~/Library/Application Support/PaleoBytes/PTMGenerator2` on macOS. Settings
+  from an earlier version are imported the first time preferences are read, and
+  the originals are left where they are.
+
+  The log is one file per day in `~/PaleoBytes/PTMGenerator2/logs/`, appended to,
+  rather than an `output.log` in whatever directory the application happened to
+  start in.
 - **PTMs are now fitted in the application itself**, with no external program
   and no image-size limit beyond memory. `PTMfitter.exe` is 32-bit and fails
   above roughly 24 megapixels, which a 45MP body already exceeds. The images are

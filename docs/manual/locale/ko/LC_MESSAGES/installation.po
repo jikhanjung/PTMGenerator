@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PTMGenerator2 0.2.0-alpha.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-28 16:28+0900\n"
+"POT-Creation-Date: 2026-07-28 19:36+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -76,15 +76,20 @@ msgid ""
 "Download ``PTMGenerator2_v<version>_build<n>_Installer.exe`` from the "
 "`releases page <https://github.com/jikhanjung/PTMGenerator/releases>`_ "
 "and run it."
-msgstr "`릴리스 페이지 <https://github.com/jikhanjung/PTMGenerator/releases>`_ 에서 ``PTMGenerator2_v<버전>_build<번호>_Installer.exe`` 를 받아 실행하면 됩니다."
+msgstr ""
+"`릴리스 페이지 <https://github.com/jikhanjung/PTMGenerator/releases>`_ 에서 "
+"``PTMGenerator2_v<버전>_build<번호>_Installer.exe`` 를 받아 실행하면 됩니다."
 
 #: ../../installation.rst:27
 msgid ""
 "It installs per user, so there is no administrator prompt, into "
-"``%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2``. A Start Menu shortcut is "
-"created under **PaleoBytes**; a desktop shortcut is offered and off by "
-"default."
-msgstr "사용자 단위로 설치되므로 관리자 권한을 묻지 않으며, 설치 위치는 ``%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2`` 입니다. 시작 메뉴의 **PaleoBytes** 아래에 바로가기가 만들어지고, 바탕화면 바로가기는 선택 사항이며 기본값은 꺼짐입니다."
+"``%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2``. A Start Menu "
+"shortcut is created under **PaleoBytes**; a desktop shortcut is offered "
+"and off by default."
+msgstr ""
+"사용자 단위로 설치되므로 관리자 권한을 묻지 않으며, 설치 위치는 "
+"``%LOCALAPPDATA%\\Programs\\PaleoBytes\\PTMGenerator2`` 입니다. 시작 메뉴의 "
+"**PaleoBytes** 아래에 바로가기가 만들어지고, 바탕화면 바로가기는 선택 사항이며 기본값은 꺼짐입니다."
 
 #: ../../installation.rst:31
 msgid ""
@@ -98,42 +103,50 @@ msgstr "설정과 로그가 저장되는 위치"
 
 #: ../../installation.rst:37
 msgid ""
-"Not in the install directory — the uninstaller removes that. They are in "
-"``%USERPROFILE%\\PaleoBytes\\PTMGenerator2``::"
-msgstr "설치 디렉토리가 아닙니다. 그쪽은 제거할 때 함께 지워집니다. 설정과 로그는 ``%USERPROFILE%\\PaleoBytes\\PTMGenerator2`` 에 있습니다::"
+"Neither is in the install directory — the uninstaller removes that. They "
+"are in two places, because they are two different kinds of thing::"
+msgstr "둘 다 설치 디렉토리에 있지 않습니다. 그쪽은 제거할 때 함께 지워집니다. 성격이 다른 두 가지라 위치도 둘로 나뉩니다::"
 
-#: ../../installation.rst:44
+#: ../../installation.rst:47
 msgid ""
-"The application creates them on first run. Uninstalling leaves them "
-"alone, so reinstalling picks up where you left off; delete the folder by "
-"hand to start from defaults."
-msgstr "처음 실행할 때 프로그램이 만듭니다. 제거해도 남아 있으므로 다시 설치하면 쓰던 설정을 그대로 이어받습니다. 기본값부터 시작하려면 이 폴더를 직접 지우면 됩니다."
+"Settings go where Windows keeps configuration; see :doc:`configuration` "
+"for the macOS and Linux locations. The log stays with the application's "
+"own files, so that everything you would look at after a failed capture is"
+" in one folder."
+msgstr "설정은 Windows가 환경설정을 두는 위치에 저장됩니다. macOS와 Linux 경로는 :doc:`configuration` 을 보세요. 로그는 프로그램 자체 파일들과 함께 두어, 촬영이 실패했을 때 살펴볼 것들이 한 폴더에 모이도록 했습니다."
 
-#: ../../installation.rst:49
+#: ../../installation.rst:51
+msgid ""
+"The application creates both on first run. Uninstalling leaves them "
+"alone, so reinstalling picks up where you left off; delete the folders by"
+" hand to start from defaults."
+msgstr "둘 다 처음 실행할 때 프로그램이 만듭니다. 제거해도 남아 있으므로 다시 설치하면 쓰던 설정을 그대로 이어받습니다. 기본값부터 시작하려면 두 폴더를 직접 지우면 됩니다."
+
+#: ../../installation.rst:56
 msgid "From source"
 msgstr "소스에서 실행"
 
-#: ../../installation.rst:58
+#: ../../installation.rst:65
 msgid ""
 "Dependencies are declared in ``pyproject.toml``; there is no "
 "``requirements.txt``."
 msgstr "의존성은 ``pyproject.toml`` 한 곳에만 선언되어 있습니다. ``requirements.txt`` 는 없습니다."
 
-#: ../../installation.rst:61
+#: ../../installation.rst:68
 msgid "For development, install the extras and the pre-commit hooks instead:"
 msgstr "개발용으로는 extras와 pre-commit 훅까지 함께 설치하세요:"
 
-#: ../../installation.rst:67
+#: ../../installation.rst:74
 msgid ""
 "To reproduce a build exactly, install from the lockfile for your platform"
 " rather than from the ranges in ``pyproject.toml``:"
 msgstr "빌드를 그대로 재현하려면 ``pyproject.toml`` 의 버전 범위가 아니라 플랫폼에 맞는 락파일로 설치하세요:"
 
-#: ../../installation.rst:75
+#: ../../installation.rst:82
 msgid "Building the executable"
 msgstr "실행파일 빌드"
 
-#: ../../installation.rst:81
+#: ../../installation.rst:88
 msgid ""
 "The output name is generated from ``version.py`` plus the build date — "
 "for example ``PTMGenerator2_v0.1.2_20260728.exe`` — so bumping the "

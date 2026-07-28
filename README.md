@@ -80,17 +80,27 @@ It installs per user (no administrator prompt) into
 
 ### Where your settings and logs live
 
-`%USERPROFILE%\PaleoBytes\PTMGenerator2` on Windows,
-`~/PaleoBytes/PTMGenerator2` elsewhere:
+**Settings** go where the OS keeps configuration —
+`%LOCALAPPDATA%\PaleoBytes\PTMGenerator2\preferences.json` on Windows,
+`~/.config/PaleoBytes/PTMGenerator2/preferences.json` on Linux,
+`~/Library/Application Support/PaleoBytes/PTMGenerator2/preferences.json` on
+macOS. Readable JSON; edit it with the application closed.
+
+**The log** stays with the application's own files, in
+`%USERPROFILE%\PaleoBytes\PTMGenerator2` (`~/PaleoBytes/PTMGenerator2`
+elsewhere):
 
 | | |
 | --- | --- |
-| `preferences.json` | Everything from **Edit › Preferences**, as readable JSON |
 | `logs/PTMGenerator2_<date>.log` | Console output, one file per day |
 
-Deliberately not under the install directory, which the uninstaller removes.
-Uninstalling leaves your settings alone. Set `PTMGENERATOR2_DATA_DIR` to put
-them somewhere else.
+Neither is under the install directory, which the uninstaller removes, and
+uninstalling leaves both alone. `PTMGENERATOR2_CONFIG_DIR` and
+`PTMGENERATOR2_DATA_DIR` override them independently.
+
+Settings and data are apart on purpose: settings are machine-local state that
+costs nothing to recreate, and a data folder may end up on a shared drive.
+The convention is shared across PaleoBytes — see devlog 014.
 
 ## Repository layout
 
@@ -171,13 +181,14 @@ When the run finishes, **Generate PTM** converts the LED table (`POLAR_LIGHT_LIS
 
 - **image_data.csv**: Auto-generated file tracking captured images (format: index, directory, filename, include)
 - **{project}.lp**: Light position file generated during PTM creation
-- **preferences.json**: Every setting, in `%USERPROFILE%\PaleoBytes\PTMGenerator2`
+- **preferences.json**: Every setting, in the OS's config location under `PaleoBytes/PTMGenerator2`
 
 ### Preferences reference
 
-Stored as JSON in `%USERPROFILE%\PaleoBytes\PTMGenerator2\preferences.json`
-(`~/PaleoBytes/PTMGenerator2/preferences.json` elsewhere). An `.ini` written by
-an earlier version is imported on first run.
+Stored as JSON in `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2\preferences.json`
+(`~/.config/PaleoBytes/PTMGenerator2/` on Linux,
+`~/Library/Application Support/PaleoBytes/PTMGenerator2/` on macOS). Settings
+written by an earlier version are imported on first read.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |

@@ -34,7 +34,7 @@ without a display, a QApplication or a controller attached.
 | `core/self_test.py` | What `--self-test` checks: icons, translations, the light table |
 | `core/settings.py` | Preference keys, defaults, coercion |
 | `core/preferences.py` | The JSON store, and migration from the old QSettings `.ini` |
-| `core/paths.py` | `~/PaleoBytes/PTMGenerator2` — preferences and dated logs |
+| `core/paths.py` | Where preferences and the dated log go, per OS |
 | `ui/geometry.py` | QRect ↔ `[x, y, w, h]`, because JSON cannot hold a QRect |
 | `ui/main_window.py` | Widgets, the one-second timer, rendering what the session decides |
 | `ui/preferences_window.py` | The Edit > Preferences dialog |
@@ -116,13 +116,20 @@ and none should be added.
 
 ## Gotchas
 
-- **Everything the application writes outside the capture folder goes to
-  `core.paths.data_dir()`** — `~/PaleoBytes/PTMGenerator2`, which is
-  `%USERPROFILE%\PaleoBytes\PTMGenerator2` on Windows. Never under the install
-  directory: the installer deletes that on uninstall. `PTMGENERATOR2_DATA_DIR`
-  redirects it, which is how the suite stays out of the developer's real data —
-  a script that builds a window without setting it will write there, and this
-  has happened.
+- **Configuration does not live with data.** `core.paths.config_dir()` is the
+  OS config location plus `PaleoBytes/PTMGenerator2` and holds
+  `preferences.json`; `core.paths.data_dir()` is `~/PaleoBytes/PTMGenerator2`
+  and holds the log. Neither is under the install directory — the installer
+  deletes that on uninstall. The shared PaleoBytes convention; see devlog 014
+  for why, including why the log deliberately stays with the data.
+- **`PTMGENERATOR2_CONFIG_DIR` and `PTMGENERATOR2_DATA_DIR`** redirect the two
+  independently. That is how the suite stays out of the developer's real files —
+  a script that builds a window without setting them will write there, and this
+  has happened. The `settings_dir` fixture sets both.
+- **Preference migration hangs off the first read**, in `Preferences.__init__`,
+  not off the entry point. A script or a CLI never runs application startup, so
+  hooking it there would leave those running without the user's settings. It
+  never overwrites an existing file and never deletes the original.
 - **`initialize_variables()` replaces `sys.stdout`** with an `OutputRedirector`
   appending to `logs/PTMGenerator2_<YYYYMMDD>.log`. One file per day, opened
   in append mode. Tests restore stdout — see `tests/conftest.py`.

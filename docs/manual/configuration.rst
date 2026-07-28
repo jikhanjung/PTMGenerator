@@ -1,16 +1,24 @@
 Configuration
 =============
 
-Settings live in ``preferences.json``, in the application's data directory:
+Settings live in ``preferences.json``, where the operating system keeps
+configuration:
 
-* Windows: ``%USERPROFILE%\PaleoBytes\PTMGenerator2\preferences.json``
-* Linux and macOS: ``~/PaleoBytes/PTMGenerator2/preferences.json``
+* Windows: ``%LOCALAPPDATA%\PaleoBytes\PTMGenerator2\preferences.json``
+* macOS: ``~/Library/Application Support/PaleoBytes/PTMGenerator2/preferences.json``
+* Linux: ``~/.config/PaleoBytes/PTMGenerator2/preferences.json``
 
 It is ordinary JSON, so it can be read, edited with the application closed, and
 copied to another machine. Uninstalling does not remove it.
 
-Earlier versions kept an ``.ini`` under ``%APPDATA%``; it is imported the first
-time this version starts, and left where it is.
+Note that this is *not* where the log goes — see :doc:`installation`. Settings
+are machine-local state that costs nothing to recreate; keeping them apart from
+everything else means a folder can be copied or shared without the settings
+following it.
+
+Settings written by an earlier version, whether an ``.ini`` or a
+``preferences.json`` beside the log, are imported the first time this version
+reads its preferences. The originals are left where they are.
 
 Preferences
 -----------

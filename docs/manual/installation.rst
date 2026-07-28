@@ -34,15 +34,22 @@ from Settings › Apps, or from the Start Menu folder.
 Where your settings and logs live
 ---------------------------------
 
-Not in the install directory — the uninstaller removes that. They are in
-``%USERPROFILE%\PaleoBytes\PTMGenerator2``::
+Neither is in the install directory — the uninstaller removes that. They are in
+two places, because they are two different kinds of thing::
 
-    preferences.json      every setting from Edit › Preferences
-    logs\
-      PTMGenerator2_20260728.log     one file per day
+    %LOCALAPPDATA%\PaleoBytes\PTMGenerator2\
+      preferences.json                 every setting from Edit › Preferences
 
-The application creates them on first run. Uninstalling leaves them alone, so
-reinstalling picks up where you left off; delete the folder by hand to start
+    %USERPROFILE%\PaleoBytes\PTMGenerator2\
+      logs\
+        PTMGenerator2_20260728.log     one file per day
+
+Settings go where Windows keeps configuration; see :doc:`configuration` for the
+macOS and Linux locations. The log stays with the application's own files, so
+that everything you would look at after a failed capture is in one folder.
+
+The application creates both on first run. Uninstalling leaves them alone, so
+reinstalling picks up where you left off; delete the folders by hand to start
 from defaults.
 
 From source

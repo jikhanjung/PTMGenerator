@@ -33,6 +33,8 @@ renumbered, because commits reference them by name.
 | 010 | 2026-07-28 | [Fitting PTMs in-process — P02 phases 1–4](20260728_010_native_ptm_fitter.md) |
 | 011 | 2026-07-28 | [An installer, and somewhere to put the settings](20260728_011_installer_and_data_directory.md) |
 | 012 | 2026-07-28 | [Auditing the documentation against the code](20260728_012_doc_accuracy_sweep.md) |
+| 013 | 2026-07-28 | [Making mypy actually check `ui/`](20260728_013_mypy_over_ui.md) |
+| 014 | 2026-07-28 | [Applying the PaleoBytes config-location convention](20260728_014_config_location_convention.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy

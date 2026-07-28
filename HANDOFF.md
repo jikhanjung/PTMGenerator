@@ -14,9 +14,12 @@ since the tag and neither is released yet:
 1. **The built-in PTM fitter** (P02 phases 1–4, devlog 010). PTMs are fitted
    in-process by default; `PTMfitter.exe` stays selectable under
    **Preferences → PTM Engine**.
-2. **A Windows installer, and a data directory** (devlog 011). onefile became
-   onedir, releases ship an Inno Setup installer, and settings and logs moved to
-   `%USERPROFILE%\PaleoBytes\PTMGenerator2`. Built on Windows and the artifact
+2. **A Windows installer, and somewhere to put settings and logs** (devlog 011,
+   013, 014). onefile became onedir, releases ship an Inno Setup installer
+   into `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2`, settings are
+   `preferences.json` in the OS config location and the log is a dated file in
+   `~/PaleoBytes/PTMGenerator2/logs/`. mypy now genuinely covers `ui/`. Built on
+   Windows and the artifact
    checked (`PTMGenerator2_v0.2.0-alpha.2_build16_Installer.exe`, 43 MB, a valid
    Inno Setup binary) — but **nobody has run it**. See `TODOs.md`.
 
