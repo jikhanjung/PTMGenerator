@@ -1,6 +1,8 @@
 # Build output
 dist/
 build/
+# Artifacts downloaded from CI with `gh run download`
+dist-ci/
 
 # Runtime output
 image_data.csv
