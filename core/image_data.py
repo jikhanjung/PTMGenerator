@@ -38,20 +38,35 @@ class CaptureSlot(NamedTuple):
         return self.filename != MISSING
 
 
+#: Tried in order when reading a capture table. utf-8-sig first: that is what
+#: write_csv produces, and -sig absorbs the byte-order mark a spreadsheet adds
+#: when someone opens the file to look at it. The fallbacks are for tables
+#: written before this was pinned, when the encoding was whatever the machine
+#: defaulted to -- cp949 on Korean Windows. latin-1 decodes any byte sequence,
+#: so the last attempt always succeeds: a legacy name may come back mangled,
+#: but the run still opens, which beats refusing to load it at all.
+CSV_ENCODINGS = ("utf-8-sig", "cp949", "latin-1")
+
+
 def read_csv(path):
     """Load a capture table. Returns [] if there is no file.
 
     Accepts the 3-column format written before include flags existed; those
     rows default to included.
-
-    Read as utf-8-sig: utf-8 to match what write_csv produces regardless of
-    platform, and -sig so a file someone opened and re-saved in Excel, which
-    prefixes a byte-order mark, still parses its first column as a number.
     """
     if not os.path.exists(path):
         return []
+    for encoding in CSV_ENCODINGS:
+        try:
+            return _read_csv_as(path, encoding)
+        except UnicodeDecodeError:
+            continue
+    return []  # unreachable: latin-1 never raises
+
+
+def _read_csv_as(path, encoding):
     slots = []
-    with open(path, newline="", encoding="utf-8-sig") as fh:
+    with open(path, newline="", encoding=encoding) as fh:
         for row in csv.reader(fh):
             if len(row) == 3:
                 index, directory, filename = row

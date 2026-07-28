@@ -48,8 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports which port and why, and offers to continue without it.
 - **`image_data.csv` and `.lp` files are written as UTF-8.** They were written
   in the platform's default encoding, so a run captured on Korean Windows could
-  not be reopened on Linux, and vice versa. The CSV is read as `utf-8-sig`, so a
-  file re-saved by a spreadsheet still loads.
+  not be reopened on Linux, and vice versa.
+
+  *Existing captures keep working.* Reading falls back through utf-8-sig →
+  cp949 → latin-1, so a table written by an earlier version still loads,
+  including one with Korean names written on Korean Windows. It is rewritten as
+  UTF-8 the next time the run is saved. A file re-saved by a spreadsheet, which
+  adds a byte-order mark, also loads.
 - **Interval detection no longer miscounts across a daylight-saving change.**
   It compared naive local datetimes, so a gap spanning the transition read as
   hundreds of missed shots.

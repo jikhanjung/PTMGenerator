@@ -218,3 +218,31 @@ def test_a_dst_transition_does_not_invent_missing_shots(tmp_path):
     ctimes = [spring_forward - 10, spring_forward, spring_forward + 10]
     slots = run_detection(tmp_path, names, ctimes)
     assert [s.filename for s in slots] == names, "no placeholders should be inserted"
+
+
+def test_a_legacy_cp949_table_still_loads(tmp_path):
+    # What a run captured on Korean Windows before the encoding was pinned
+    # looks like on disk. Refusing to load it would strand existing captures.
+    path = tmp_path / "image_data.csv"
+    path.write_bytes("0,삼엽충,표본01.jpg,True\r\n".encode("cp949"))
+    slots = read_csv(str(path))
+    assert slots == [CaptureSlot(0, "삼엽충", "표본01.jpg", True)]
+
+
+def test_an_undecodable_table_degrades_rather_than_raising(tmp_path):
+    # Bytes that are valid in neither utf-8 nor cp949. The names come back
+    # mangled, but the run opens.
+    path = tmp_path / "image_data.csv"
+    path.write_bytes(b"0,\xff\xfe,shot.jpg,True\r\n")
+    slots = read_csv(str(path))
+    assert len(slots) == 1
+    assert slots[0].filename == "shot.jpg"
+
+
+def test_utf8_is_preferred_over_the_fallbacks(tmp_path):
+    # cp949 would decode these bytes too, into different characters, so the
+    # order of CSV_ENCODINGS is what makes the round-trip lossless.
+    path = str(tmp_path / "image_data.csv")
+    slots = [CaptureSlot(0, KOREAN_DIR, KOREAN_FILE, True)]
+    write_csv(path, slots)
+    assert read_csv(path) == slots

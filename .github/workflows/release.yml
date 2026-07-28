@@ -34,58 +34,14 @@ jobs:
     needs: verify-version
     uses: ./.github/workflows/test.yml
 
+  # The same build definition build.yml uses, so what a release ships is
+  # produced by exactly the steps already verified on main.
   build:
-    name: Build Windows executable
     needs: test
-    runs-on: windows-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: requirements*.lock
-
-      - name: Install build dependencies
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip
-          pip install --require-hashes -r requirements-build-windows.lock
-
-      # The spec derives the output name from version.py plus the build date,
-      # so there is no second version number to keep in step.
-      - name: Build
-        run: pyinstaller PTMGenerator2.spec
-
-      - name: Find the executable
-        id: exe
-        shell: bash
-        run: echo "path=$(ls dist/*.exe | head -1)" >> "$GITHUB_OUTPUT"
-
-      # A build that produces an .exe which cannot start is still a failed
-      # build. Source tests cannot see this: a checkout has icons/ and
-      # translations/ on disk whatever happens, while a frozen bundle only has
-      # them if PyInstaller was told to include them -- and if it was not, the
-      # application still starts, just with no icon and no Korean.
-      #
-      # --self-test starts the app headlessly against the bundle it is running
-      # from, checks every declared resource resolves, constructs the main
-      # window, and exits non-zero if anything is missing.
-      - name: Smoke-test the frozen build
-        shell: bash
-        run: |
-          test -s "${{ steps.exe.outputs.path }}" || { echo "::error::no executable produced"; exit 1; }
-          echo "built: ${{ steps.exe.outputs.path }} ($(stat -c%s "${{ steps.exe.outputs.path }}") bytes)"
-          "${{ steps.exe.outputs.path }}" --self-test || {
-            echo "::error::the built executable failed its self-test"; exit 1; }
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: PTMGenerator2-windows
-          path: dist/*.exe
-          retention-days: 30
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      artifact_name: PTMGenerator2-windows
+      retention_days: 90
 
   create-release:
     name: Publish

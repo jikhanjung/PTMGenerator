@@ -1,0 +1,44 @@
+name: Build
+
+# Builds the Windows executable without releasing anything, so the build can be
+# verified before a version tag is pushed. Without this the release workflow's
+# build step would be running for the first time *during* a release, and a
+# failure there leaves the tag already published.
+#
+# Run it from the Actions tab, or:
+#   gh workflow run build.yml
+#
+# The artifact appears on the run page and via `gh run download`.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    # Only when something that can change the executable changes. Editing the
+    # manual should not spend six minutes of Windows runner time.
+    paths:
+      - '**.py'
+      - 'PTMGenerator2.spec'
+      - 'pyproject.toml'
+      - 'requirements-build-*.lock'
+      - 'icons/**'
+      - 'translations/*.qm'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/reusable_build.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.py'
+      - 'PTMGenerator2.spec'
+      - 'icons/**'
+      - 'translations/*.qm'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      artifact_name: PTMGenerator2-windows-dev
+      retention_days: 14
