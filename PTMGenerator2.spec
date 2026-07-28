@@ -59,5 +59,10 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icons/PTMGenerator2.png'],
+    # .ico, not .png: on Windows PyInstaller accepts only exe/ico and fails the
+    # build outright with a .png unless Pillow happens to be installed to
+    # convert it. Linux ignores the icon entirely, which is why a Linux build
+    # passed with the .png and the Windows leg did not. Regenerate from the
+    # .png with tests/test_packaging.py's recipe if the artwork changes.
+    icon=['icons/PTMGenerator2.ico'],
 )
