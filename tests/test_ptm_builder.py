@@ -110,7 +110,9 @@ def test_the_lp_is_written_in_the_fitters_codepage(tmp_path, monkeypatch):
     monkeypatch.setattr("core.ptm_builder.lp_encoding", lambda: "cp949")
     path = tmp_path / "x.lp"
     write_lp(str(path), "1\n표본.jpg 0 0 1\n")
-    assert path.read_bytes().decode("cp949").startswith("1\n표본.jpg")
+    # Line endings are the platform's -- CRLF on Windows, which is what a
+    # Windows binary reading in text mode expects. The encoding is the point.
+    assert path.read_bytes().decode("cp949").splitlines() == ["1", "표본.jpg 0 0 1"]
 
 
 # -- helpers ---------------------------------------------------------------
