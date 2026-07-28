@@ -55,8 +55,11 @@ class CaptureSession:
         self.status = IDLE
         self.second_counter = 0
         self.retake_counter = 0
-        self.previous_index = -1
-        self.current_index = self.queue.pop(0) if self.queue else None
+        # -1 is a sentinel meaning "no slot has been finished yet"; after that
+        # it takes the same domain as current_index, which is None once the
+        # queue drains.
+        self.previous_index: int | None = -1
+        self.current_index: int | None = self.queue.pop(0) if self.queue else None
         self.finished = self.current_index is None
 
     @property

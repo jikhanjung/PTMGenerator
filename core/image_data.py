@@ -11,6 +11,7 @@ of a run is missing.
 
 import csv
 import os
+from collections import Counter
 from typing import NamedTuple
 
 # One list, used both when polling for an incoming shot and when rebuilding a
@@ -112,10 +113,9 @@ def detect_irregular_intervals(directory_path, getctime=os.path.getctime):
     if not intervals:
         return []
 
-    counts = {}
-    for interval in intervals:
-        counts[interval] = counts.get(interval, 0) + 1
-    typical = max(counts, key=counts.get)
+    # Counter over dict-plus-get: most_common(1) states the intent, and
+    # max(key=counts.get) does not type-check because .get can return None.
+    typical = Counter(intervals).most_common(1)[0][0]
 
     slots = [CaptureSlot(0, directory_path, image_files[0], True)]
     span = 0

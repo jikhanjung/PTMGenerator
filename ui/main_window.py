@@ -119,7 +119,6 @@ class PTMGeneratorMainWindow(QMainWindow):
 
         self.lblDirectory = QLabel(self.tr("Directory"))
         self.btnOpenDirectory = QPushButton(self.tr("Open Directory"))
-        self.btnOpenDirectory.setIcon(QIcon(icon_path("open_directory")))
         self.btnOpenDirectory.clicked.connect(self.on_action_open_directory_triggered)
         self.edtDirectory = QLineEdit()
         self.edtDirectory.setReadOnly(True)
@@ -166,9 +165,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.central_layout.addWidget(self.button_widget)
         self.setCentralWidget(self.central_widget)
 
-        self.actionOpenDirectory = QAction(
-            QIcon(icon_path("open_directory")), self.tr("Open Directory\tCtrl+O"), self
-        )
+        self.actionOpenDirectory = QAction(self.tr("Open Directory\tCtrl+O"), self)
         self.actionOpenDirectory.triggered.connect(self.on_action_open_directory_triggered)
         self.actionPreferences = QAction(self.tr("Preferences"), self)
         self.actionPreferences.triggered.connect(self.on_action_preferences_triggered)

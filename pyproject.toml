@@ -38,6 +38,7 @@ dev = [
     "pytest-cov>=4.1.0,<8.0.0",
     "pytest-timeout>=2.2.0,<3.0.0",
     "pytest-xdist>=3.5.0,<4.0.0",
+    "hypothesis>=6.0.0,<7.0.0",
     # ruff replaces black + isort + flake8 + pyupgrade. Pinned exactly, not
     # ranged: a newer ruff formats code the previous one accepted, so an
     # unpinned bump reformats the tree from under an unrelated PR. Bump
@@ -107,6 +108,7 @@ markers = [
     "ui: Requires a QApplication and real widgets",
     "smoke: Import/startup checks - must pass on every OS in the matrix",
     "slow: May take more than a second",
+    "property: Property-based tests using Hypothesis",
 ]
 
 # Warnings are errors so silent runtime degradation (pending deprecations,
@@ -191,6 +193,10 @@ ignore = [
     # regardless; S607 wants an absolute path, but the whole point of the
     # PTM Fitter preference is that the user chooses where it lives.
     "S603", "S607",
+    # TRY003 wants message text moved into the exception class. For
+    # core/self_test.py the message *is* the finding — "translations missing
+    # from the bundle: ko" — and a per-raise subclass for each would be noise.
+    "TRY003",
 ]
 
 [tool.ruff.lint.mccabe]
@@ -234,10 +240,27 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 
-# Scope is core/ only, the Qt-free half. Widening to ui/ means teaching mypy
-# about PyQt5's stubs; do it a module at a time, each one clean before it is
-# added. Tracked in TODOs.md.
+# check_untyped_defs is the setting that matters here. The code carries few
+# annotations, and by default mypy skips the *bodies* of unannotated functions
+# entirely — so before this was turned on, "Success: no issues found" meant
+# almost nothing had been examined. PyQt5 ships its own .pyi stubs and py.typed,
+# so no third-party stub package is needed.
 [[tool.mypy.overrides]]
 module = "core.*"
+check_untyped_defs = true
 disallow_untyped_defs = false
 warn_unused_ignores = true
+
+# ui/ is in scope and clean at the default leniency. check_untyped_defs is NOT
+# on for it yet: it surfaces 111 findings, essentially all from two systemic
+# patterns rather than 111 separate mistakes —
+#   * QApplication.instance() and menuBar().addMenu() are typed Optional, so
+#     every use is a union-attr warning;
+#   * the entry point bolts .translator/.language/.settings onto the
+#     QApplication object, which no stub knows about.
+# The second is a real design smell and wants a small typed holder rather than
+# a blanket ignore. Tracked in TODOs.md.
+[[tool.mypy.overrides]]
+module = "ui.*"
+check_untyped_defs = false
+disallow_untyped_defs = false

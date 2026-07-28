@@ -65,13 +65,21 @@ jobs:
         run: echo "path=$(ls dist/*.exe | head -1)" >> "$GITHUB_OUTPUT"
 
       # A build that produces an .exe which cannot start is still a failed
-      # build; the frozen bundle has different import and data-file behaviour
-      # from a source checkout.
+      # build. Source tests cannot see this: a checkout has icons/ and
+      # translations/ on disk whatever happens, while a frozen bundle only has
+      # them if PyInstaller was told to include them -- and if it was not, the
+      # application still starts, just with no icon and no Korean.
+      #
+      # --self-test starts the app headlessly against the bundle it is running
+      # from, checks every declared resource resolves, constructs the main
+      # window, and exits non-zero if anything is missing.
       - name: Smoke-test the frozen build
         shell: bash
         run: |
           test -s "${{ steps.exe.outputs.path }}" || { echo "::error::no executable produced"; exit 1; }
           echo "built: ${{ steps.exe.outputs.path }} ($(stat -c%s "${{ steps.exe.outputs.path }}") bytes)"
+          "${{ steps.exe.outputs.path }}" --self-test || {
+            echo "::error::the built executable failed its self-test"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:

@@ -17,14 +17,15 @@ run. Verified 2026-07-28.
 | 4 | `filterwarnings = error` | ✅ | `pyproject.toml`, one narrow documented ignore for PyQt5's sip shims |
 | 5 | Lockfile + pip-audit + Dependabot | ✅ | 9 per-platform locks with hashes, pip-audit on all three runtime locks, `.github/dependabot.yml` |
 | 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 88% |
-| 7 | Static type checking, scoped | ⚠️ | mypy gating over `core/` only. `ui/` is the open part |
+| 7 | Static type checking, scoped | ⚠️ | mypy gates over `core/` **and** `ui/`. `check_untyped_defs` is on for `core/` only — see below |
 | 8 | Dead-code / complexity automation | ✅ | `C90` enforced at the guide's threshold of 15 |
-| 9 | Packaged-artifact smoke test | ⚠️ | `release.yml` checks the .exe exists and is non-empty; it does not run it |
-| 10 | Property-based tests | ❌ | None. The light-vector maths is the obvious candidate |
+| 9 | Packaged-artifact smoke test | ✅ | `--self-test` runs against the built .exe in `release.yml`. Installer signing still open |
+| 10 | Property-based tests | ✅ | `tests/test_light_positions_properties.py`, hypothesis over the adjustment angle |
 
 **Done 2026-07-28** (see devlog R01): the serial-open crash and the
-platform-default encodings, the naive-datetime DST bug, and the full lint
-ruleset.
+platform-default encodings, the naive-datetime DST bug, the full lint ruleset,
+`--self-test` against the built executable, property-based tests for the light
+geometry, and mypy widened to `ui/` with body checking on for `core/`.
 
 **Not doing: branch protection on `main`.** The guide (§14) and Appendix A item
 2 both call for it, and it is deliberately declined here. This is a
@@ -36,12 +37,24 @@ rather than an oversight.
 
 ---
 
-## Widen mypy to `ui/`
+## Turn on `check_untyped_defs` for `ui/`
 
-`core/` is clean and gating. `ui/` needs PyQt5 stubs (`PyQt5-stubs`, which the
-sibling projects use) and a module-at-a-time cleanup — `main_window.py` first,
-then `preferences_window.py`, each one clean before it joins the `mypy` invocation
-in `.github/workflows/test.yml` and `.pre-commit-config.yaml`.
+`core/` has it; `ui/` does not. It is the setting that matters — the code
+carries few annotations, and by default mypy skips the *bodies* of unannotated
+functions, so scope alone buys very little.
+
+Enabling it for `ui/` surfaces 111 findings, but they are two systemic patterns
+rather than 111 mistakes:
+
+* `QApplication.instance()` and `menuBar().addMenu()` are typed as Optional, so
+  every use is a `union-attr` warning. Mechanical: assert once and reuse.
+* The entry point bolts `.translator`, `.language` and `.settings` onto the
+  QApplication object. No stub knows about them, and it is a real design smell —
+  a small typed holder passed to the windows would fix both the warnings and the
+  smell. That is the actual work here, and it is a refactor, not a lint pass.
+
+PyQt5 ships its own `.pyi` stubs and `py.typed`, so no third-party stub package
+is needed — the earlier note here claiming otherwise was wrong.
 
 ## Enable the remaining ruff rule groups
 
@@ -58,27 +71,12 @@ strings on the wire (CSV rows, `.lp` lines), so the conversion has to keep
 `str()` at the boundaries. Doable module by module; `core/image_data.py` and
 `core/ptm_builder.py` are the bulk of it.
 
-## Run the frozen executable in CI
-
-`release.yml` builds the .exe and checks it is non-empty. It does not start it,
-so a bundle missing `icons/` or `translations/` would ship. The sibling project
-solved this with a `--self-test` entry point that constructs the window, prints
-a version line and exits; the same would work here and would have caught, for
-example, `resource_path` regressions.
-
 ## Translate the manual
 
 `docs/manual/` is English-only. The application UI is fully translated
 (Korean, 44 strings), so the manual is the odd one out. `sphinx-intl` is already
 in the docs extra; the workflow is the same extract/translate/compile cycle as
 the `.ts` files.
-
-## Property-based tests for the light geometry
-
-`light_vectors()` has a clean invariant — every output is a unit vector, the
-elevation is preserved under any azimuth adjustment, and the adjustment is a
-rotation. Hypothesis over the adjustment angle would cover more than the four
-fixed angles currently tested.
 
 ## `image_data.csv` lives in the capture directory
 
