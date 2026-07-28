@@ -53,3 +53,72 @@ def test_the_entry_point_exists():
 def test_the_spec_reads_the_version_rather_than_hardcoding_it():
     assert "version.py" in SPEC
     assert not re.search(r"name\s*=\s*['\"]PTMGenerator2_v\d", SPEC)
+
+
+# -- the Inno Setup installer ----------------------------------------------
+#
+# The template and the spec have to agree on where the build lands and what it
+# is called. Nothing else checks that pair until a Windows runner has spent six
+# minutes on it.
+
+INSTALLER = (ROOT / "installer" / "PTMGenerator2.iss.template").read_text(encoding="utf-8")
+
+
+def test_the_spec_builds_a_directory_not_a_single_file():
+    """The installer ships dist/PTMGenerator2/, which only exists with COLLECT."""
+    assert "COLLECT(" in SPEC
+    assert "exclude_binaries=True" in SPEC
+
+
+def test_the_installer_ships_what_the_spec_produces():
+    name = re.search(r"EXE_NAME\s*=\s*[\"']([^\"']+)[\"']", SPEC).group(1)
+    assert rf"{{{{DIST_PATH}}}}\{name}\*" in INSTALLER
+    assert rf"{{app}}\{name}.exe" in INSTALLER
+
+
+def test_the_executable_name_carries_no_version():
+    """The installer filename carries it; a versioned .exe inside {app} would
+    leave the old one behind on every upgrade, and the Start Menu shortcut
+    would point at whichever version installed last."""
+    name = re.search(r"EXE_NAME\s*=\s*[\"']([^\"']+)[\"']", SPEC).group(1)
+    assert not re.search(r"_v?\d+\.", name), name
+    assert "{" not in name, "the name must be a constant, not built per build"
+
+
+def test_the_installer_has_a_stable_app_id():
+    """Inno keys upgrades and the uninstall entry off AppId. Changing it orphans
+    every existing installation."""
+    assert re.search(r"AppId=\{\{[0-9A-F-]{36}\}", INSTALLER)
+
+
+def test_the_installer_is_published_under_paleobytes():
+    assert "AppPublisher=PaleoBytes" in INSTALLER
+    assert r"DefaultDirName={localappdata}\PaleoBytes\PTMGenerator2" in INSTALLER
+
+
+def test_the_installer_needs_no_administrator():
+    assert "PrivilegesRequired=lowest" in INSTALLER
+
+
+def test_the_installer_does_not_touch_the_data_directory():
+    """Preferences and logs live in %USERPROFILE%\\PaleoBytes\\PTMGenerator2 and
+    must survive an uninstall. Anything the installer places there it also
+    removes -- so it must place nothing there. Directives only; the header
+    comment explains this and would otherwise trip the check."""
+    directives = [
+        line for line in INSTALLER.splitlines() if line.strip() and not line.startswith(";")
+    ]
+    assert not [line for line in directives if "userprofile" in line.lower()]
+
+
+def test_every_placeholder_ci_fills_is_one_ci_knows_about():
+    filled = {"VERSION", "DIST_PATH", "OUTPUT_DIR"}
+    assert set(re.findall(r"\{\{([A-Z_]+)\}\}", INSTALLER)) == filled
+
+
+def test_the_workflow_substitutes_every_placeholder():
+    workflow = (ROOT / ".github/workflows/reusable_build.yml").read_text(encoding="utf-8")
+    for placeholder in re.findall(r"\{\{([A-Z_]+)\}\}", INSTALLER):
+        assert f'Replace("{{{{{placeholder}}}}}"' in workflow or (
+            f'.Replace("{{{{{placeholder}}}}}"' in workflow
+        ), f"{placeholder} is never substituted"

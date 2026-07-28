@@ -1,0 +1,62 @@
+; Inno Setup script template for PTMGenerator2 (Windows installer).
+; CI (reusable_build.yml) fills {{VERSION}} / {{DIST_PATH}} / {{OUTPUT_DIR}} and
+; runs ISCC. Per-user install, so no admin rights and no UAC prompt.
+;
+; Runtime data is NOT installed or removed by this script. Preferences and logs
+; live in %USERPROFILE%\PaleoBytes\PTMGenerator2 (see core/paths.py) and must
+; survive an uninstall — the application creates them on first run. That is why
+; nothing the user cares about is kept under {app}, which is deleted here.
+
+#define AppVersion "{{VERSION}}"
+#define BuildNumber GetEnv('BUILD_NUMBER')
+
+[Setup]
+; Stable identity for upgrades and uninstall. Inno keys upgrade detection, the
+; Add/Remove Programs entry and {app} resolution off it, so a new AppId makes
+; every existing installation invisible to the installer and leaves it behind.
+; Generated once — never change it. The doubled leading brace is Inno's escape
+; for a literal "{"; it is not one of the placeholders CI substitutes, and must
+; be left alone.
+AppId={{3AF7491F-8640-4855-9C69-43326C34327D}
+AppName=PTMGenerator2
+AppVersion={#AppVersion}
+AppPublisher=PaleoBytes
+AppPublisherURL=https://github.com/jikhanjung/PTMGenerator
+AppSupportURL=https://github.com/jikhanjung/PTMGenerator/issues
+AppUpdatesURL=https://github.com/jikhanjung/PTMGenerator/releases
+; Local, not Roaming: the onedir payload would otherwise sync with the user
+; profile on domain-joined machines. Grouped under PaleoBytes to match Modan2,
+; CTHarvester and PaperMeister.
+DefaultDirName={localappdata}\PaleoBytes\PTMGenerator2
+; Per-user: no elevation, so {localappdata} and {userprograms} always resolve to
+; the invoking user rather than to whoever consented to the UAC prompt.
+PrivilegesRequired=lowest
+DisableProgramGroupPage=yes
+; No LicenseFile: pyproject.toml declares MIT but the repository has no LICENSE
+; file to point at, and ISCC fails on a missing one. Add the line once the file
+; exists rather than shipping an installer that asserts terms nobody wrote down.
+UninstallDisplayIcon={app}\PTMGenerator2.exe
+OutputDir={{OUTPUT_DIR}}
+; Conservative compression: solid LZMA trips antivirus heuristics more often,
+; and an installer quarantined on the user's machine is worse than a larger one.
+Compression=lzma/normal
+SolidCompression=no
+WizardStyle=modern
+OutputBaseFilename=PTMGenerator2_v{#AppVersion}_build{#BuildNumber}_Installer
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
+
+[Files]
+Source: "{{DIST_PATH}}\PTMGenerator2\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{userprograms}\PaleoBytes\PTMGenerator2"; Filename: "{app}\PTMGenerator2.exe"
+Name: "{userdesktop}\PTMGenerator2"; Filename: "{app}\PTMGenerator2.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Run]
+Filename: "{app}\PTMGenerator2.exe"; Description: "{cm:LaunchProgram,PTMGenerator2}"; Flags: postinstall shellexec nowait skipifsilent

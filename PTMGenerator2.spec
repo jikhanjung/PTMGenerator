@@ -2,15 +2,19 @@
 #
 # Single build spec for PTMGenerator2.
 #
-#   pyinstaller PTMGenerator2.spec
+#   pyinstaller PTMGenerator2.spec   ->  dist/PTMGenerator2/PTMGenerator2.exe
 #
-# The output name is derived from version.py — the single source of truth — plus
-# the build date, reproducing the historical naming convention
-# (PTMGenerator2_v0.1.2_20251107.exe) without a second version number to keep in
-# step. Bump with `python scripts/bump_version.py <part>`.
+# A onedir build, not onefile: the Inno Setup installer in installer/ ships the
+# directory, and that is what carries the version — in the installer filename
+# and in Add/Remove Programs — so the executable itself has a plain, stable
+# name. A onefile build would also unpack itself to a temp directory on every
+# launch, which for a ~100 MB bundle is a visible delay before the window
+# appears.
+#
+# The version is still read from version.py, the single source of truth, for the
+# Windows file properties. Bump with `python scripts/bump_version.py <part>`.
 
 import re
-from datetime import datetime
 from pathlib import Path
 
 _source = Path(SPECPATH) / "version.py"
@@ -19,7 +23,9 @@ _match = re.search(
 )
 __version__ = _match.group(1) if _match else "0.0.0"
 
-EXE_NAME = "PTMGenerator2_v{}_{}.exe".format(__version__, datetime.now().strftime("%Y%m%d"))
+# The name inside dist/. The installer, not the executable, carries the
+# version -- see installer/PTMGenerator2.iss.template.
+EXE_NAME = "PTMGenerator2"
 
 
 a = Analysis(
@@ -43,9 +49,8 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name=EXE_NAME,
     debug=False,
     bootloader_ignore_signals=False,
@@ -65,4 +70,14 @@ exe = EXE(
     # passed with the .png and the Windows leg did not. Regenerate from the
     # .png with tests/test_packaging.py's recipe if the artwork changes.
     icon=['icons/PTMGenerator2.ico'],
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name=EXE_NAME,
 )

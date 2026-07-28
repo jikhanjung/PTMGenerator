@@ -27,3 +27,7 @@ htmlcov/
 
 # Sphinx
 docs/manual/_build/
+
+# Generated from installer/*.iss.template by CI, and by anyone building locally.
+installer/*.iss
+installer/Output/

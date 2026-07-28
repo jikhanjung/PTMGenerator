@@ -1,6 +1,6 @@
 name: Build
 
-# Builds the Windows executable without releasing anything, so the build can be
+# Builds the Windows installer without releasing anything, so the build can be
 # verified before a version tag is pushed. Without this the release workflow's
 # build step would be running for the first time *during* a release, and a
 # failure there leaves the tag already published.
@@ -23,6 +23,7 @@ on:
       - 'requirements-build-*.lock'
       - 'icons/**'
       - 'translations/*.qm'
+      - 'installer/*.template'
       - '.github/workflows/build.yml'
       - '.github/workflows/reusable_build.yml'
   pull_request:
@@ -30,6 +31,7 @@ on:
     paths:
       - '**.py'
       - 'PTMGenerator2.spec'
+      - 'installer/*.template'
       - 'icons/**'
       - 'translations/*.qm'
 

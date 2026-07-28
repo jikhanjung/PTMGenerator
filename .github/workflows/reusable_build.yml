@@ -1,9 +1,9 @@
 name: Build executable
 
-# The single definition of how the Windows executable is built. Called by
-# build.yml (on demand, no release) and by release.yml (after the test matrix,
-# before publishing), so the artifact a release ships is produced by exactly the
-# same steps that were verified beforehand -- rather than two copies that drift.
+# The single definition of how the Windows build is made. Called by build.yml
+# (on demand, no release) and by release.yml (after the test matrix, before
+# publishing), so the artifact a release ships is produced by exactly the same
+# steps that were verified beforehand -- rather than two copies that drift.
 
 on:
   workflow_call:
@@ -18,20 +18,20 @@ on:
         type: number
         default: 30
     outputs:
-      exe_name:
-        description: Filename of the executable that was built.
-        value: ${{ jobs.build.outputs.exe_name }}
+      installer_name:
+        description: Filename of the installer that was built.
+        value: ${{ jobs.build.outputs.installer_name }}
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Windows executable
+    name: Windows installer
     runs-on: windows-latest
     timeout-minutes: 30
     outputs:
-      exe_name: ${{ steps.exe.outputs.name }}
+      installer_name: ${{ steps.installer.outputs.name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +48,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install --require-hashes -r requirements-build-windows.lock
 
-      # The spec derives the output name from version.py plus the build date,
-      # so there is no second version number to keep in step.
+      # onedir: the installer ships the directory. See PTMGenerator2.spec.
       - name: Build
         run: pyinstaller PTMGenerator2.spec
 
@@ -57,10 +56,9 @@ jobs:
         id: exe
         shell: bash
         run: |
-          path="$(ls dist/*.exe | head -1)"
+          path="dist/PTMGenerator2/PTMGenerator2.exe"
           test -s "$path" || { echo "::error::no executable produced"; exit 1; }
           echo "path=$path" >> "$GITHUB_OUTPUT"
-          echo "name=$(basename "$path")" >> "$GITHUB_OUTPUT"
           echo "built $path ($(stat -c%s "$path") bytes)"
 
       # The check that source tests cannot make. A checkout has icons/ and
@@ -73,15 +71,53 @@ jobs:
           "${{ steps.exe.outputs.path }}" --self-test || {
             echo "::error::the built executable failed its self-test"; exit 1; }
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          # Pinned to a GitHub release asset: jrsoftware.org only keeps the
+          # latest 6.x under /is/6/, so a pinned installer URL there starts
+          # returning 404 the moment a new version ships and takes every
+          # Windows build down with it. Same source and version as Modan2,
+          # CTHarvester and PaperMeister, which hit this first.
+          $url = "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe"
+          Invoke-WebRequest -Uri $url -OutFile inno.exe
+          Start-Process -FilePath inno.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) {
+            echo "::error::Inno Setup did not install"; exit 1
+          }
+
+      - name: Build the installer
+        id: installer
+        shell: pwsh
+        run: |
+          $ver = python -c "import version; print(version.__version__)"
+          $env:BUILD_NUMBER = "${{ github.run_number }}"
+          $tpl = Get-Content "installer/PTMGenerator2.iss.template" -Raw
+          $tpl = $tpl.Replace("{{VERSION}}", $ver).
+                      Replace("{{DIST_PATH}}", "$PWD\dist").
+                      Replace("{{OUTPUT_DIR}}", "$PWD\installer\Output")
+          Set-Content -Path "installer/PTMGenerator2.iss" -Value $tpl
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer/PTMGenerator2.iss"
+          if ($LASTEXITCODE -ne 0) { echo "::error::ISCC failed"; exit 1 }
+          $built = Get-ChildItem "installer/Output/*.exe" | Select-Object -First 1
+          if (-not $built) { echo "::error::no installer produced"; exit 1 }
+          # Moved to the root so the upload pattern is a plain filename. The
+          # release workflow globs what it downloads, and a nested path there
+          # once meant the installer was built and then never attached.
+          Move-Item $built.FullName -Destination "." -Force
+          echo "name=$($built.Name)" >> $env:GITHUB_OUTPUT
+          echo "built $($built.Name) ($((Get-Item $built.Name).Length) bytes)"
+
       - name: Summarize
         shell: bash
         run: |
           echo "## Build" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`${{ steps.exe.outputs.name }}\` built and self-tested." >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${{ steps.installer.outputs.name }}\` built; the bundled" \
+               "executable passed its self-test." >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_name }}
-          path: dist/*.exe
+          path: PTMGenerator2_*_Installer.exe
           retention-days: ${{ inputs.retention_days }}
