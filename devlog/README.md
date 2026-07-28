@@ -32,6 +32,7 @@ renumbered, because commits reference them by name.
 | P02 | 2026-07-28 | [Plan: fitting PTMs in-process](20260728_P02_NativePtmFitter.md) |
 | 010 | 2026-07-28 | [Fitting PTMs in-process — P02 phases 1–4](20260728_010_native_ptm_fitter.md) |
 | 011 | 2026-07-28 | [An installer, and somewhere to put the settings](20260728_011_installer_and_data_directory.md) |
+| 012 | 2026-07-28 | [Auditing the documentation against the code](20260728_012_doc_accuracy_sweep.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy

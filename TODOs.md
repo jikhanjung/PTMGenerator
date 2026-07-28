@@ -6,7 +6,7 @@ later. **This file is the plan**; `HANDOFF.md` is the current state, and
 
 ---
 
-## Finish the in-process fitter — P02 phases 4 and 5
+## Finish the in-process fitter — P02 phase 5
 
 Phases 1–4 are done: the container reader/writer (`core/ptm_format.py`), the fit
 (`core/ptm_fitter.py`), streaming so memory does not scale with the capture, and
@@ -53,15 +53,37 @@ than everything else on this list.
   is picked up and shown above the list.
 - **PTM generation from a Korean path** — the `.lp` codepage handling was
   measured under WSL interop, not on a Korean Windows desktop.
+- **The installer** — it compiles in CI and the artifact is a valid Inno Setup
+  binary, but nobody has run it. Install, check the Start Menu shortcut under
+  PaleoBytes, confirm settings arrive in
+  `%USERPROFILE%\PaleoBytes\PTMGenerator2`, install over the top to test the
+  upgrade path, then uninstall and confirm that directory survives.
+- **The preferences migration** — against a real `%APPDATA%\PaleoBytes\
+  PTMGenerator2.ini` written by 0.1.2, not a synthesised one. The serial port
+  and the language are what must come across.
 
 Once that passes: `python scripts/bump_version.py stage beta`.
+
+---
+
+## Add a LICENSE file
+
+`pyproject.toml` declares MIT and `README.md` says "[License information not
+specified]". There is no `LICENSE` file, which is why the installer has no
+`LicenseFile` line — ISCC fails on a missing one, so the wizard currently shows
+no terms at all.
+
+Add the file, then add `LicenseFile={{DIST_PATH}}\..\LICENSE` back to
+`installer/PTMGenerator2.iss.template` and fix the README section. Small, but it
+is the one place where the repository asserts something it cannot show.
 
 ---
 
 ## Process status against the sibling projects
 
 Where PTMGenerator2 stands against the process `../Modan2` and `../CTHarvester`
-run. Verified 2026-07-28, at v0.2.0-alpha.2.
+run. Verified 2026-07-28, after the built-in fitter and the installer (devlog
+010–011); the last tag is v0.2.0-alpha.2.
 
 | # | Item | Status | Where it stands |
 |---|---|---|---|
@@ -70,10 +92,10 @@ run. Verified 2026-07-28, at v0.2.0-alpha.2.
 | 3 | Expand the lint ruleset incrementally | ✅ | All of the guide's groups landed 2026-07-28: `E, F, I, N, UP, B, C4, SIM, PTH, RUF, DTZ, S, TRY, LOG, G, RET, PIE, PERF, A, C90`. Waivers argued in `pyproject.toml` |
 | 4 | `filterwarnings = error` | ✅ | `pyproject.toml`, one narrow documented ignore for PyQt5's sip shims |
 | 5 | Lockfile + pip-audit + Dependabot | ✅ | 9 per-platform locks with hashes, pip-audit on all three runtime locks, `.github/dependabot.yml` |
-| 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 88% across 161 tests |
+| 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 93% across 331 tests |
 | 7 | Static type checking, scoped | ⚠️ | mypy gates over `core/` **and** `ui/`. `check_untyped_defs` is on for `core/` only — see below |
 | 8 | Dead-code / complexity automation | ✅ | `C90` enforced at the guide's threshold of 15 |
-| 9 | Packaged-artifact smoke test | ✅ | `--self-test` runs against the built .exe in `release.yml`. Installer signing still open |
+| 9 | Packaged artifact + installer | ✅ | `--self-test` runs against the frozen .exe before Inno Setup packages it (`reusable_build.yml`). Signing still open |
 | 10 | Property-based tests | ✅ | `tests/test_light_positions_properties.py`, hypothesis over the adjustment angle |
 
 **Done 2026-07-28.** From the R01 audit (devlog 005–006): the serial-open crash
@@ -85,8 +107,10 @@ releases (`v0.2.0-alpha.1`, `v0.2.0-alpha.2`), the utf-8 fallback that keeps
 legacy capture tables loading, and the Korean manual.
 
 **Not doing: signed installers.** Item 9's remaining half. There is no
-certificate, and an unsigned single .exe with a SmartScreen warning is what this
+certificate, and an unsigned installer with a SmartScreen warning is what this
 audience already downloads. Revisit if the tool is distributed outside the lab.
+Now that there *is* an installer, this is the only thing between it and a
+warning-free install.
 
 **Not doing: branch protection on `main`.** The guide (§14) and Appendix A item
 2 both call for it, and it is deliberately declined here. This is a
@@ -117,33 +141,24 @@ rather than 111 mistakes:
 PyQt5 ships its own `.pyi` stubs and `py.typed`, so no third-party stub package
 is needed — the earlier note here claiming otherwise was wrong.
 
-## Enable the remaining ruff rule groups
-
-`N` (naming) will fire on the Qt-mirroring attribute names (`btnOkay`,
-`edtPtmFitter`) and the `Okay` method; those are deliberate and want per-file
-waivers rather than a rename. `C901` needs a threshold picked and
-`take_picture_process` / `setup_ui` checked against it. `S` (bandit) and `TRY`
-are probably clean already — try them and see.
-
 ## Convert `os.path` to `pathlib`
 
-`PTH` is enabled but eight rules are waived in `pyproject.toml`. The paths are
+`PTH` is enabled but eleven rules are waived in `pyproject.toml`. The paths are
 strings on the wire (CSV rows, `.lp` lines), so the conversion has to keep
 `str()` at the boundaries. Doable module by module; `core/image_data.py` and
 `core/ptm_builder.py` are the bulk of it.
 
-## Translate the manual
-
-`docs/manual/` is English-only. The application UI is fully translated
-(Korean, 44 strings), so the manual is the odd one out. `sphinx-intl` is already
-in the docs extra; the workflow is the same extract/translate/compile cycle as
-the `.ts` files.
-
 ## `image_data.csv` lives in the capture directory
 
-`update_csv()` writes to `self.current_directory`, but `load_csv_data()` reads
-from `self.edtDirectory.text()`. They are the same in practice because opening a
-directory sets both, but nothing enforces it. Worth collapsing to one source.
+`update_csv()` writes to `self.working_directory` (`ui/main_window.py`), but
+`load_csv_data()` reads from `self.edtDirectory.text()`. Those used to be the
+same folder. Since the monitored-root change (devlog 009) they are deliberately
+not: the field holds the folder the user picked, and `working_directory` holds
+the dated subfolder the shots actually landed in.
+
+So reopening a capture whose images went into a subfolder reads from the parent
+and finds no CSV. Worth collapsing to one source — `working_directory` is the
+right one.
 
 ## Arduino firmware is untested and unlinted
 

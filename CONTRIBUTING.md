@@ -15,8 +15,8 @@ hooks. Python 3.12 or newer.
 
 ```bash
 make lint          # ruff check + ruff format --check
-make type-check    # mypy over core/ and ui/
-make test          # the suite, ~1.3s
+make type-check    # mypy over core/
+make test          # the suite, ~6s
 ```
 
 The pre-commit hooks run the first two on every commit. CI runs all three plus
@@ -60,10 +60,11 @@ plugin. Please don't add xvfb.
 
 Two things bite people writing tests here:
 
-- Building a main window replaces `sys.stdout` and opens `output.log` in the
-  current directory. Use the `main_window` fixture, which handles both.
-- QSettings is global. Use the `settings_dir` fixture, or a script you run once
-  will write to your real preferences.
+- Building a main window replaces `sys.stdout` and opens today's log in the
+  data directory. Use the `main_window` fixture, which handles it.
+- The data directory is global. Use the `settings_dir` fixture, which points
+  `PTMGENERATOR2_DATA_DIR` at a temp directory — otherwise a script you run once
+  writes to your real `~/PaleoBytes/PTMGenerator2`.
 
 ## Translations
 

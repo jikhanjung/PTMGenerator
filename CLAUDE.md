@@ -10,8 +10,9 @@ DSLR shutter for each; the application drives that over serial, waits for each
 photo to land on disk, builds the light-position (`.lp`) file, and hands
 everything to the fitter — built in by default, `PTMfitter.exe` if asked.
 
-The shipped artifact is a single Windows executable. The Arduino firmware in
-`PTMController/` is a separate concern, flashed with the Arduino IDE.
+The shipped artifact is a per-user Windows installer built with Inno Setup. The
+Arduino firmware in `PTMController/` is a separate concern, flashed with the
+Arduino IDE.
 
 ## Architecture
 
@@ -30,12 +31,14 @@ without a display, a QApplication or a controller attached.
 | `core/ptm_fitter.py` | The built-in least-squares fit, streaming so memory does not scale with the capture |
 | `core/ptm_format.py` | Reading and writing the PTM 1.2 container |
 | `core/resources.py` | Bundled-file lookup, frozen or not |
+| `core/self_test.py` | What `--self-test` checks: icons, translations, the light table |
 | `core/settings.py` | Preference keys, defaults, coercion |
 | `core/preferences.py` | The JSON store, and migration from the old QSettings `.ini` |
 | `core/paths.py` | `~/PaleoBytes/PTMGenerator2` — preferences and dated logs |
 | `ui/geometry.py` | QRect ↔ `[x, y, w, h]`, because JSON cannot hold a QRect |
 | `ui/main_window.py` | Widgets, the one-second timer, rendering what the session decides |
 | `ui/preferences_window.py` | The Edit > Preferences dialog |
+| `ui/error_handling.py` | The `sys.excepthook` backstop |
 | `PTMGenerator2.py` | Entry point. `--self-test` checks the bundle and exits |
 | `version.py` | **Single source of truth for the version** |
 
@@ -63,30 +66,36 @@ produces a correct `.lp`. Do not compact the list.
 
 ```bash
 make install-dev     # dependencies + pre-commit hooks
-make test            # 161 tests, ~3s, no display needed
+make test            # 331 tests, ~6s, no display needed
 make test-cov        # with a coverage report
 make lint            # ruff check + ruff format --check
-make type-check      # mypy over core/ and ui/
+make type-check      # mypy over core/ (see the gotcha about ui/)
 make run             # run the application
-make build           # PyInstaller -> dist/PTMGenerator2_v<version>_<date>.exe
+make build           # PyInstaller -> dist/PTMGenerator2/PTMGenerator2.exe
 make translations    # pylupdate5 extract + pyside6-lrelease compile (the UI)
 make docs            # the manual, English and Korean
 make docs-i18n       # re-extract strings into the Korean manual catalogues
 make lock            # regenerate the per-platform lockfiles
 ```
 
-Check a Windows build without releasing: `gh workflow run build.yml`.
+Check a Windows build without releasing: `gh workflow run build.yml`. That is
+also the only way to build the installer — Inno Setup is Windows-only, so
+`installer/PTMGenerator2.iss.template` cannot be exercised locally on Linux. The
+tests in `tests/test_packaging.py` check it against the spec instead.
 
 Tests select Qt's offscreen platform plugin themselves, so **no xvfb is needed**
 and none should be added.
 
 ## Conventions
 
+- **The installer's `AppId` must never change.** Inno keys upgrade detection,
+  the Add/Remove Programs entry and `{app}` off it, so a new one makes every
+  existing installation invisible to the installer and leaves it behind.
 - **Never edit `version.py` by hand.** Use `python scripts/bump_version.py
   <part>`; it rolls `CHANGELOG.md`, commits and tags. See `VERSION_MANAGEMENT.md`.
 - **ruff is pinned to an exact version** in three places that must move
-  together: `pyproject.toml`, `.pre-commit-config.yaml`, and the lint job in
-  `.github/workflows/test.yml`.
+  together: `pyproject.toml`, `.pre-commit-config.yaml`, and the dev lockfiles
+  (`make lock`). CI installs from the lockfile rather than naming a version.
 - **`.qm` files are committed** and PyInstaller bundles them. Editing a `.ts`
   without running `make translations` ships stale strings; CI checks for drift.
 - **Qt-mirroring attribute names** (`btnOkay`, `edtPtmFitter`, `Okay`) are
@@ -128,9 +137,15 @@ and none should be added.
   entry point, and `read_settings()` expects them to exist.
 - **`detect_irregular_intervals`** rebuilds a capture table from files on disk;
   the name is historical and kept because it is referenced from the docs.
-- **mypy's `check_untyped_defs` is on for `core/` but not `ui/`.** Without it
-  mypy skips the bodies of unannotated functions, so a clean run over `ui/`
-  means less than it looks. See `TODOs.md`.
+- **A new dependency in `core/` is a new dependency of the documentation.**
+  `docs/manual/api.rst` autodocs `core/`, autodoc imports what it documents, and
+  the docs build runs with `-W`. Adding an import to `core/` without adding it
+  to `docs/manual/requirements.txt` fails the Documentation workflow, not the
+  tests. This has happened (devlog 010).
+- **mypy gates over `core/` only.** `make type-check`, the CI lint job and the
+  pre-commit hook all pass just `core/`. `mypy ui/` passes if run by hand, but
+  nothing runs it, and `check_untyped_defs` is off there — so mypy would skip
+  the bodies of unannotated functions anyway. See `TODOs.md`.
 - **`sys.excepthook` is installed by the entry point** (`ui/error_handling.py`).
   An exception escaping a Qt slot otherwise aborts the process silently.
 

@@ -105,6 +105,18 @@ several current cameras are.
 Nothing in this change addresses it — the fix is to do the fitting in-process,
 which is its own piece of work and is filed in `TODOs.md`.
 
+## One thing only Windows saw
+
+`test_the_lp_is_written_in_the_fitters_codepage` asserted the written file
+started with `"1\n표본.jpg"`. It passed on Linux and failed on the Windows leg:
+`open(..., "w")` translates `\n` to `\r\n` there, so the exact-string
+assertion did not match.
+
+The file was right — cp949 as intended, and CRLF is what a Windows binary
+reading in text mode expects. The assertion was too strict, and now compares
+`splitlines()`. The encoding is the point of that test; the line endings are the
+platform's business.
+
 ## What was rejected
 
 - **Copying everything to a temp directory for every fit**, which was the first

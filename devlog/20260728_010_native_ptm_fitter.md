@@ -150,6 +150,21 @@ on real files — it needs a different camera. The 641 MB figure above is
 synthetic data. Until that run happens, phase 5 stays open and `PTMfitter.exe`
 stays selectable.
 
+## The docs build broke on it
+
+`api.rst` autodocs `core/`, and autodoc imports what it documents. `core/`
+picked up numpy and Pillow with the fitter, so the manual build failed on
+`No module named 'numpy'` — and with `-W`, a warning *is* the build. Both
+packages are now named in `docs/manual/requirements.txt` with the reason.
+
+Worth remembering as a rule rather than an incident: **a new dependency in
+`core/` is a new dependency of the documentation.** Nothing else in the tree
+imports `core/` from a separate environment.
+
+While fixing it, the `from PIL import Image` inside `load_image` moved to module
+level. It was function-local for no stated reason and Pillow is a declared
+dependency.
+
 ## State
 
 262 tests, 91.8% coverage, ruff and mypy clean. Manual updated in both

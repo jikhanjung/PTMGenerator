@@ -20,7 +20,8 @@
 | `scripts/bump_version.py` | 버전 갱신 자동화 |
 | `CHANGELOG.md` | 버전별 변경 사항 ([Keep a Changelog](https://keepachangelog.com/) 형식) |
 | `pyproject.toml` | `dynamic = ["version"]`으로 `version.py`에서 읽어옴 |
-| `PTMGenerator2.spec` | 빌드 산출물 이름을 `version.py`에서 유도 |
+| `PTMGenerator2.spec` | Windows 파일 속성에 넣을 버전을 `version.py`에서 읽음 |
+| `installer/PTMGenerator2.iss.template` | 설치 파일 이름과 프로그램 추가/제거 항목의 버전. CI가 `version.py`에서 채워 넣음 |
 | `.github/workflows/release.yml` | 태그와 `version.py`가 다르면 릴리스를 거부 |
 
 `tests/test_version_consistency.py`가 이 연결이 끊기지 않았는지 검사합니다.
@@ -68,9 +69,16 @@ python scripts/bump_version.py --set 1.0.0
    스크립트는 이 섹션을 릴리스 항목으로 바꾸고 빈 `Unreleased`를 새로 엽니다.
    섹션이 없으면 거부합니다.
 
-2. **워킹트리를 깨끗하게 만듭니다.** 커밋되지 않은 변경이 있으면 거부합니다.
+2. **실행파일에 영향을 주는 변경이 있었다면 먼저 빌드를 돌려봅니다.**
+   ```bash
+   gh workflow run build.yml
+   ```
+   릴리스 도중에 빌드가 깨지면 태그는 이미 푸시된 상태로 남습니다. Windows에서만
+   드러나는 실패가 실제로 있었습니다 (devlog 007).
 
-3. **버전을 올립니다.**
+3. **워킹트리를 깨끗하게 만듭니다.** 커밋되지 않은 변경이 있으면 거부합니다.
+
+4. **버전을 올립니다.**
    ```bash
    python scripts/bump_version.py patch --dry-run   # 먼저 확인
    python scripts/bump_version.py patch
@@ -78,15 +86,16 @@ python scripts/bump_version.py --set 1.0.0
    `version.py`와 `CHANGELOG.md`가 갱신되고, `chore: release v<버전>` 커밋과
    `v<버전>` 주석 태그가 만들어집니다. 태그 메시지에는 해당 CHANGELOG 항목이 들어갑니다.
 
-4. **푸시합니다.**
+5. **푸시합니다.**
    ```bash
    git push && git push origin v0.1.3
    ```
-   `--push`를 주면 3번에서 함께 처리합니다.
+   `--push`를 주면 4번에서 함께 처리합니다.
 
-5. **`release.yml`이 이어받습니다.** 태그와 `version.py`가 일치하는지 검사하고,
-   전체 테스트 매트릭스를 돌린 뒤, Windows 실행파일을 빌드해 GitHub Release로
-   올립니다. 릴리스 노트는 `CHANGELOG.md`에서 가져옵니다.
+6. **`release.yml`이 이어받습니다.** 태그와 `version.py`가 일치하는지 검사하고,
+   전체 테스트 매트릭스를 돌린 뒤, PyInstaller 빌드 → `--self-test` → Inno Setup
+   순으로 `PTMGenerator2_v<버전>_build<번호>_Installer.exe` 를 만들어 GitHub
+   Release에 올립니다. 릴리스 노트는 `CHANGELOG.md`에서 가져옵니다.
 
 ## 주의
 

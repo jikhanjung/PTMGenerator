@@ -34,8 +34,9 @@ repos:
       - id: mixed-line-ending
         args: ['--fix=lf']
 
-  # mypy - scoped to core/, the Qt-free half. Widening to ui/ means teaching
-  # mypy about PyQt5's stubs; do it a module at a time. Tracked in TODOs.md.
+  # mypy - scoped to core/, the Qt-free half. PyQt5 ships its own stubs, so
+  # widening to ui/ is about turning on check_untyped_defs there and fixing what
+  # it finds; do it a module at a time. Tracked in TODOs.md.
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
