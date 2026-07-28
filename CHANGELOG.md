@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-alpha.1] - 2026-07-28
 ### Added
 - **The manual is published at <https://jikhanjung.github.io/PTMGenerator/>**,
   rebuilt on every push.

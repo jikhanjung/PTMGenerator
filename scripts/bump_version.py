@@ -132,7 +132,10 @@ def changelog_section(version):
         rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)", re.MULTILINE | re.DOTALL
     )
     match = pattern.search(text)
-    return match.group(1).strip() if match else ""
+    if not match:
+        return ""
+    # Trailing "---" is the separator between entries, not part of this one.
+    return match.group(1).strip().removesuffix("---").strip()
 
 
 def run(command, dry_run):

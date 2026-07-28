@@ -69,7 +69,9 @@ jobs:
               rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)",
               text, re.MULTILINE | re.DOTALL,
           )
-          print(match.group(1).strip() if match else f"Release {version}")
+          # Trailing "---" separates entries; it is not part of the notes.
+          body = match.group(1).strip().removesuffix("---").strip() if match else ""
+          print(body or f"Release {version}")
           PY
           echo "Release notes:"; cat notes.md
 
