@@ -10,6 +10,11 @@ The shared guide set carries an instruction near the top: *"Copy this directory
 into a project's `docs/` and adopt it as a contract."* That is what a portable
 standard is supposed to say, and it is what this project would have done.
 
+> **Same-day addendum.** That instruction has since been changed at the source —
+> the guide READMEs now say to *reference* the directory rather than copy it. The
+> quote is left as it stood when this decision was made, because the decision was
+> a departure from the guidance at the time, and the correction came out of it.
+
 Then the failure mode showed up in the source material, one day after the guides
 were written. The file-locations guide had distilled a sibling project's plan for
 making its data directory configurable, including a recommendation to split
