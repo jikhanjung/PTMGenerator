@@ -6,22 +6,25 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 
 ---
 
-## ▶ Current state (2026-07-28)
+## ▶ Current state (2026-07-29)
 
-**`v0.2.0-alpha.2`** — released 2026-07-28, pre-release. Two things have landed
-since the tag and neither is released yet:
+**`v0.2.0-alpha.3`** — released 2026-07-29, pre-release. Nothing is waiting
+behind the tag: `main` and `v0.2.0-alpha.3` are the same commit. Two things
+went out with it that no earlier release had:
 
 1. **The built-in PTM fitter** (P02 phases 1–4, devlog 010). PTMs are fitted
-   in-process by default; `PTMfitter.exe` stays selectable under
-   **Preferences → PTM Engine**.
+   in-process by default, with no size ceiling beyond memory; `PTMfitter.exe`
+   stays selectable under **Preferences → PTM Engine**.
 2. **A Windows installer, and somewhere to put settings and logs** (devlog 011,
    013, 014). onefile became onedir, releases ship an Inno Setup installer
    into `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2`, settings are
    `preferences.json` in the OS config location and the log is a dated file in
-   `~/PaleoBytes/PTMGenerator2/logs/`. mypy now genuinely covers `ui/`. Built on
-   Windows and the artifact
-   checked (`PTMGenerator2_v0.2.0-alpha.2_build16_Installer.exe`, 43 MB, a valid
-   Inno Setup binary) — but **nobody has run it**. See `TODOs.md`.
+   `~/PaleoBytes/PTMGenerator2/logs/`. mypy now genuinely covers `ui/`.
+
+The artifact is `PTMGenerator2_v0.2.0-alpha.3_build3_Installer.exe` (41 MB).
+The whole release matrix is green and `--self-test` ran against the frozen
+executable before Inno Setup packaged it — but **nobody has installed it**.
+That, and the hardware run, is what `TODOs.md` is about.
 
 | | |
 |---|---|
@@ -29,7 +32,7 @@ since the tag and neither is released yet:
 | Coverage | **93%** overall (gate: 85%). `core/self_test.py` is the outlier at 29% — it checks the frozen bundle, which the suite is not |
 | Lint / types | ruff 20 rule groups, mypy over `core/` **and** `ui/` with `check_untyped_defs` on both — all clean, all gating |
 | CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
-| Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2` — both built and self-tested on Windows |
+| Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2`, `v0.2.0-alpha.3` — all built and self-tested on Windows. alpha.3 is the first to ship an installer |
 | Artifact | Inno Setup installer, per-user, `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2` |
 | Manual | published, English + Korean |
 
@@ -46,19 +49,24 @@ camera change. Everything else is complete and tested.
 
 **The alpha has never met an Arduino.**
 
-Three things changed in the last cycle that CI structurally cannot verify,
-because every test mocks the serial port:
+Four things now shipped in alpha.3 that CI structurally cannot verify — every
+test mocks the serial port, and no runner installs the installer:
 
-1. **Serial error handling** — the new "COM3 could not be opened" dialog and the
+1. **Serial error handling** — the "COM3 could not be opened" dialog and the
    recovery path around it.
 2. **The capture loop** — now a `CaptureSession` the UI drives. The sequencing
    is tested exhaustively with fakes, but never against real camera timing.
    This is the largest behavioural change of the cycle.
 3. **The utf-8 fallback** — against an `image_data.csv` actually written by an
    older build on Korean Windows, not a synthesised one.
+4. **The installer** — it compiles, the artifact is a valid Inno Setup binary
+   and the frozen executable passes `--self-test`, but the install, the
+   upgrade-over-the-top and the uninstall have never been run.
 
-Until that run happens, `stage beta` is premature. Everything else in `TODOs.md`
-is smaller than this.
+alpha.3 exists so this can happen against a real build: it is the first release
+that carries the installer and the built-in fitter, so the earlier tags cannot
+stand in for it. Until the run happens, `stage beta` is premature. Everything
+else in `TODOs.md` is smaller than this.
 
 ## ▶ Resuming work
 
@@ -101,20 +109,20 @@ Never edit `version.py` by hand. Full detail in `VERSION_MANAGEMENT.md`.
 
 ## Where things came from
 
-One cycle, 2026-07-27 → 28. The project went from a 1,217-line single file with
+One cycle, 2026-07-27 → 29. The project went from a 1,217-line single file with
 no working test suite to the process the sibling projects run.
 
 | | Before | Now |
 |---|---|---|
-| Largest file | 1,217 lines | 687 (`ui/main_window.py`) |
+| Largest file | 1,217 lines | 696 (`ui/main_window.py`) |
 | Tests | 0 that completed | 347 |
 | Coverage | — | 93% |
 | ruff rule groups | 0 | 20 |
-| CI workflows | 0 | 5 |
-| Releases | 0 | 2 |
+| CI workflows | 0 | 6 |
+| Releases | 0 | 3 |
 | Manual | none | 2 languages |
 
-`devlog/README.md` indexes the write-ups; 003–011 cover this cycle. Eight bugs
+`devlog/README.md` indexes the write-ups; 003–015 cover this cycle. Eight bugs
 were fixed along the way, each with a regression test verified to fail against
 the previous code — the crashes are listed in `CHANGELOG.md` under
 `[0.2.0-alpha.1]`.

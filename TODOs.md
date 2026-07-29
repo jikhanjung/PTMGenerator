@@ -55,9 +55,11 @@ than everything else on this list.
   measured under WSL interop, not on a Korean Windows desktop.
 - **The installer** — it compiles in CI and the artifact is a valid Inno Setup
   binary, but nobody has run it. Install, check the Start Menu shortcut under
-  PaleoBytes, confirm settings arrive in
-  `%USERPROFILE%\PaleoBytes\PTMGenerator2`, install over the top to test the
-  upgrade path, then uninstall and confirm that directory survives.
+  PaleoBytes, then confirm the two locations separately (devlog 014 split them):
+  `preferences.json` under `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2` and the
+  dated log under `%USERPROFILE%\PaleoBytes\PTMGenerator2\logs`. Install over
+  the top to test the upgrade path, then uninstall and confirm **both** survive
+  — neither is under the install directory, which the uninstaller removes.
 - **The preferences migration** — against a real `%APPDATA%\PaleoBytes\
   PTMGenerator2.ini` written by 0.1.2, not a synthesised one. The serial port
   and the language are what must come across.
@@ -83,7 +85,7 @@ is the one place where the repository asserts something it cannot show.
 
 Where PTMGenerator2 stands against the process `../Modan2` and `../CTHarvester`
 run. Verified 2026-07-28, after the built-in fitter and the installer (devlog
-010–011); the last tag is v0.2.0-alpha.2.
+010–011); both shipped in v0.2.0-alpha.3, which is the last tag.
 
 | # | Item | Status | Where it stands |
 |---|---|---|---|
