@@ -122,7 +122,7 @@ no working test suite to the process the sibling projects run.
 | Releases | 0 | 3 |
 | Manual | none | 2 languages |
 
-`devlog/README.md` indexes the write-ups; 003–015 cover this cycle. Eight bugs
+`devlog/README.md` indexes the write-ups; 003–016 cover this cycle. Eight bugs
 were fixed along the way, each with a regression test verified to fail against
 the previous code — the crashes are listed in `CHANGELOG.md` under
 `[0.2.0-alpha.1]`.
