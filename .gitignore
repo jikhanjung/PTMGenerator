@@ -31,3 +31,7 @@ docs/manual/_build/
 # Generated from installer/*.iss.template by CI, and by anyone building locally.
 installer/*.iss
 installer/Output/
+
+# Symlink to the shared PaleoBytes guide set (a checkout of the private devdocs
+# repo). Referenced, never copied — a copy drifts from the source. See devlog 016.
+.guides

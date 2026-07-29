@@ -88,6 +88,15 @@ and none should be added.
 
 ## Conventions
 
+- **The family-wide conventions live outside this repository.** `.guides/` is a
+  symlink to a checkout of the shared PaleoBytes guide set;
+  `.guides/desktop/README.md` is the entry point (file locations, installer
+  identity, CI, packaging). It is referenced rather than copied, because a copy
+  drifts from the source — that has already happened once, within a day. It is
+  **not committed here**: the guides are private and this repository is public.
+  If `.guides` is missing the checkout is not in place; a broken symlink reads as
+  an empty directory, so check the link before concluding the guides are silent
+  on something. See devlog 016.
 - **The installer's `AppId` must never change.** Inno keys upgrade detection,
   the Add/Remove Programs entry and `{app}` off it, so a new one makes every
   existing installation invisible to the installer and leaves it behind.
