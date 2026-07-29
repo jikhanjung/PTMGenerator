@@ -92,7 +92,7 @@ run. Verified 2026-07-28, after the built-in fitter and the installer (devlog
 | 3 | Expand the lint ruleset incrementally | ✅ | All of the guide's groups landed 2026-07-28: `E, F, I, N, UP, B, C4, SIM, PTH, RUF, DTZ, S, TRY, LOG, G, RET, PIE, PERF, A, C90`. Waivers argued in `pyproject.toml` |
 | 4 | `filterwarnings = error` | ✅ | `pyproject.toml`, one narrow documented ignore for PyQt5's sip shims |
 | 5 | Lockfile + pip-audit + Dependabot | ✅ | 9 per-platform locks with hashes, pip-audit on all three runtime locks, `.github/dependabot.yml` |
-| 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 93% across 331 tests |
+| 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 93% across 347 tests |
 | 7 | Static type checking, scoped | ✅ | mypy gates over `core/` **and** `ui/`, `check_untyped_defs` on for both (devlog 013) |
 | 8 | Dead-code / complexity automation | ✅ | `C90` enforced at the guide's threshold of 15 |
 | 9 | Packaged artifact + installer | ✅ | `--self-test` runs against the frozen .exe before Inno Setup packages it (`reusable_build.yml`). Signing still open |
@@ -121,20 +121,6 @@ starts committing. Recording it so a later audit reads this as a decision
 rather than an oversight.
 
 ---
-
-## Settle the log filename across PaleoBytes
-
-The projects disagree by one character:
-
-    ~/PaleoBytes/Modan2/logs/Modan2.20260728.log
-    ~/PaleoBytes/PTMGenerator2/logs/PTMGenerator2_20260728.log
-
-R02 (the config-location convention) covers where logs go and says nothing about
-naming, so neither is wrong. But a shared convention that stops one character
-short is the kind of thing that quietly makes tooling per-project later.
-
-Whichever wins, it is a one-line change in `core/paths.log_path` here. Worth
-raising across the projects rather than deciding alone — see devlog 014.
 
 ## Convert `os.path` to `pathlib`
 

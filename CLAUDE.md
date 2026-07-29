@@ -66,7 +66,7 @@ produces a correct `.lp`. Do not compact the list.
 
 ```bash
 make install-dev     # dependencies + pre-commit hooks
-make test            # 331 tests, ~6s, no display needed
+make test            # 347 tests, ~6s, no display needed
 make test-cov        # with a coverage report
 make lint            # ruff check + ruff format --check
 make type-check      # mypy over core/ and ui/

@@ -25,7 +25,7 @@ since the tag and neither is released yet:
 
 | | |
 |---|---|
-| Tests | **331 passed**, ~6 s, no display needed |
+| Tests | **347 passed**, ~6 s, no display needed |
 | Coverage | **93%** overall (gate: 85%). `core/self_test.py` is the outlier at 29% — it checks the frozen bundle, which the suite is not |
 | Lint / types | ruff 20 rule groups, mypy over `core/` **and** `ui/` with `check_untyped_defs` on both — all clean, all gating |
 | CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
@@ -64,7 +64,7 @@ is smaller than this.
 
 ```bash
 make install-dev     # deps + pre-commit hooks
-make test            # 331 tests, ~6 s
+make test            # 347 tests, ~6 s
 make lint type-check
 ```
 
@@ -107,7 +107,7 @@ no working test suite to the process the sibling projects run.
 | | Before | Now |
 |---|---|---|
 | Largest file | 1,217 lines | 687 (`ui/main_window.py`) |
-| Tests | 0 that completed | 331 |
+| Tests | 0 that completed | 347 |
 | Coverage | — | 93% |
 | ruff rule groups | 0 | 20 |
 | CI workflows | 0 | 5 |

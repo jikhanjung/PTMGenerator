@@ -128,7 +128,14 @@ Dot against underscore. R02 covers where logs go and deliberately says nothing
 about what they are called, so this is not a violation of anything — but it is
 the kind of small divergence a shared convention exists to avoid, and it is
 cheaper to settle now than after either project has logs worth keeping. Left
-alone here rather than changed unilaterally; noted in `TODOs.md`.
+alone here rather than changed unilaterally.
+
+**Settled 2026-07-29: the underscore wins.** `<Program>_<YYYYMMDD>.log` is the
+shared form, and Modan2 moves to it; nothing changes here, since
+`core.paths.log_path` already writes
+`~/PaleoBytes/PTMGenerator2/logs/PTMGenerator2_<date>.log`. Recorded so the
+divergence is not re-opened from this side — if a future entry finds the two
+projects disagreeing again, it is Modan2 that has drifted.
 
 ## State
 

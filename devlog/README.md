@@ -35,6 +35,7 @@ renumbered, because commits reference them by name.
 | 012 | 2026-07-28 | [Auditing the documentation against the code](20260728_012_doc_accuracy_sweep.md) |
 | 013 | 2026-07-28 | [Making mypy actually check `ui/`](20260728_013_mypy_over_ui.md) |
 | 014 | 2026-07-28 | [Applying the PaleoBytes config-location convention](20260728_014_config_location_convention.md) |
+| 015 | 2026-07-29 | [The log filename, and reviewing Modan2's data-directory plan](20260729_015_log_filename_and_p03_review.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy
