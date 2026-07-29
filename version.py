@@ -11,7 +11,7 @@ in step. See VERSION_MANAGEMENT.md.
 
 import semver
 
-__version__ = "0.2.0-alpha.2"
+__version__ = "0.2.0-alpha.3"
 
 _ver = semver.VersionInfo.parse(__version__)
 __version_info__ = (_ver.major, _ver.minor, _ver.patch)

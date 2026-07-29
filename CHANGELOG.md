@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-alpha.3] - 2026-07-29
 ### Added
 - **A Windows installer.** Releases now ship
   `PTMGenerator2_v<version>_build<n>_Installer.exe` instead of a bare
