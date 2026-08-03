@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+### Added
+- **A `LICENSE` file.** `pyproject.toml` had declared MIT since the beginning
+  and `README.md` said the licence was unspecified; the terms now exist as a
+  file, the README points at it, and the Windows installer shows them as a
+  wizard page rather than asking for consent to nothing.
 
 ## [0.2.0-alpha.3] - 2026-07-29
 ### Added

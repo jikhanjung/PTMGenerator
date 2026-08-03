@@ -101,14 +101,35 @@ def test_the_installer_needs_no_administrator():
 
 
 def test_the_installer_does_not_touch_the_data_directory():
-    """Preferences and logs live in %USERPROFILE%\\PaleoBytes\\PTMGenerator2 and
-    must survive an uninstall. Anything the installer places there it also
-    removes -- so it must place nothing there. Directives only; the header
-    comment explains this and would otherwise trip the check."""
+    """Preferences live in %LOCALAPPDATA%\\PaleoBytes\\PTMGenerator2 and the log
+    in %USERPROFILE%\\PaleoBytes\\PTMGenerator2 -- two locations since devlog
+    014. Both must survive an uninstall, and anything the installer places
+    there it also removes -- so it must place nothing in either. Directives
+    only; the header comment explains this and would otherwise trip the check.
+
+    Note {userpf} expands to %LOCALAPPDATA%\\Programs, which is where the
+    payload is *supposed* to go; matching on the literal string leaves it
+    alone."""
     directives = [
         line for line in INSTALLER.splitlines() if line.strip() and not line.startswith(";")
     ]
-    assert not [line for line in directives if "userprofile" in line.lower()]
+    stray = [
+        line
+        for line in directives
+        if "userprofile" in line.lower() or "localappdata" in line.lower()
+    ]
+    assert not stray
+
+
+def test_the_license_the_installer_shows_exists():
+    """ISCC aborts on a missing LicenseFile, and the wizard is the only place
+    the MIT terms are shown to someone who never opens the repository. The path
+    is absolute once CI substitutes DIST_PATH, so resolve it the same way."""
+    match = re.search(r"^LicenseFile=(.+)$", INSTALLER, re.MULTILINE)
+    assert match, "the installer no longer shows the licence"
+    named = match.group(1).replace(r"{{DIST_PATH}}", str(ROOT / "dist")).replace("\\", "/")
+    assert Path(named).resolve() == (ROOT / "LICENSE").resolve()
+    assert (ROOT / "LICENSE").is_file()
 
 
 def test_every_placeholder_ci_fills_is_one_ci_knows_about():

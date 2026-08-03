@@ -2,10 +2,12 @@
 ; CI (reusable_build.yml) fills {{VERSION}} / {{DIST_PATH}} / {{OUTPUT_DIR}} and
 ; runs ISCC. Per-user install, so no admin rights and no UAC prompt.
 ;
-; Runtime data is NOT installed or removed by this script. Preferences and logs
-; live in %USERPROFILE%\PaleoBytes\PTMGenerator2 (see core/paths.py) and must
-; survive an uninstall — the application creates them on first run. That is why
-; nothing the user cares about is kept under {app}, which is deleted here.
+; Runtime data is NOT installed or removed by this script. Preferences live in
+; %LOCALAPPDATA%\PaleoBytes\PTMGenerator2 and the log in
+; %USERPROFILE%\PaleoBytes\PTMGenerator2 -- two locations, not one, since
+; devlog 014 (see core/paths.py). Both must survive an uninstall, and the
+; application creates them on first run. That is why nothing the user cares
+; about is kept under {app}, which is deleted here.
 
 #define AppVersion "{{VERSION}}"
 #define BuildNumber GetEnv('BUILD_NUMBER')
@@ -36,9 +38,13 @@ DefaultDirName={userpf}\PaleoBytes\PTMGenerator2
 ; the invoking user rather than to whoever consented to the UAC prompt.
 PrivilegesRequired=lowest
 DisableProgramGroupPage=yes
-; No LicenseFile: pyproject.toml declares MIT but the repository has no LICENSE
-; file to point at, and ISCC fails on a missing one. Add the line once the file
-; exists rather than shipping an installer that asserts terms nobody wrote down.
+; The MIT terms, shown as a wizard page. {{DIST_PATH}} is the absolute path to
+; dist\, so this resolves to the LICENSE at the repository root -- absolute
+; rather than relative, because ISCC resolves a relative path against the
+; generated .iss in installer\ and there is no placeholder for the root. ISCC
+; fails outright if the file is missing, which is what tests/test_packaging.py
+; guards against.
+LicenseFile={{DIST_PATH}}\..\LICENSE
 UninstallDisplayIcon={app}\PTMGenerator2.exe
 OutputDir={{OUTPUT_DIR}}
 ; Conservative compression: solid LZMA trips antivirus heuristics more often,

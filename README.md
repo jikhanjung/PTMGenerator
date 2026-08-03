@@ -356,7 +356,8 @@ claimed v0.1.2 was current for two releases after it was not.
 
 ## License
 
-[License information not specified]
+MIT — see [LICENSE](LICENSE). The Windows installer shows the same terms as a
+wizard page.
 
 ## Credits
 
