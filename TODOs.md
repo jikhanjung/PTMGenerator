@@ -6,6 +6,25 @@ later. **This file is the plan**; `HANDOFF.md` is the current state, and
 
 ---
 
+## Fit a high-resolution capture — the release gate
+
+**This is the next thing to do, and it unblocks everything below it.** Shoot a
+capture on the mirrorless body at full resolution and fit it with the built-in
+fitter. If the PTM comes out correct, three things follow in order: retire
+`PTMfitter.exe` (phase 5, below), then release — the version stops being a
+pre-release.
+
+The hardware run of 2026-08-03 (devlog 017) verified the whole happy path on the
+alpha.3 installer — Arduino, shutter, capture loop, polling, folder discovery,
+and a PTM fitted in-process — but the capture was ≤24MP, which the external
+fitter already handles. So the fitter is proven correct on real files and
+unproven at the sizes that motivated writing it. `PTMfitter.exe` is 32-bit and
+fails above roughly 24 megapixels; a 45MP body exceeds it. Until this run, the
+headroom is known only from `ptm_fitter.memory_estimate` and a measured 641 MB
+peak on synthetic 48MP data.
+
+Watch memory while it runs — that is the number the estimate is guessing at.
+
 ## Finish the in-process fitter — P02 phase 5
 
 Phases 1–4 are done: the container reader/writer (`core/ptm_format.py`), the fit
@@ -13,18 +32,14 @@ Phases 1–4 are done: the container reader/writer (`core/ptm_format.py`), the f
 the **PTM Engine** preference that selects it — built-in by default, with
 `PTMfitter.exe` still selectable. See devlog 010.
 
-What is left:
-
-**Fit a real 48MP capture.** The one thing that motivated the work is the one
-thing not yet demonstrated on real files; it needs a different camera. Until
-then the ceiling is only known from the estimate (`ptm_fitter.memory_estimate`)
-and from a measured 641 MB peak on synthetic 48MP data.
-
-**Phase 5 — retire the external fitter.** Once the built-in one has fitted real
-captures, `core/ptm_builder.py` loses `generate`, the staging directory, the
-codepage-encoding rules for `.lp`, the whitespace check and the exit-code-1
-quirk — most of the module. Wait for phase 4 to prove itself in the field first;
-the preference is what makes that safe.
+**Phase 5 — retire the external fitter.** Blocked on the capture above, and on
+nothing else. `core/ptm_builder.py` then loses `generate`, the staging
+directory, the codepage-encoding rules for `.lp`, the whitespace check and the
+exit-code-1 quirk — most of the module. The **PTM Engine** preference goes with
+it, along with the `PTMfitter.exe` path setting in the preferences dialog and
+its docs. The preference is what made keeping the fallback safe; once the
+built-in fitter has done the thing the external one cannot, there is nothing
+left to fall back to.
 
 **Move the fit off the UI thread.** `generate_ptm_natively` pumps the event loop
 from its progress callback, which keeps the dialog responsive but is not what
@@ -33,51 +48,41 @@ worth doing at the same time as the capture loop, which has the same problem.
 
 ---
 
-## Verify the alpha against real hardware — blocks `stage beta`
+## Hardware verification — what is left
 
-Every test mocks `serial.Serial`, so three changes from the last cycle have
-never met an Arduino. Nothing in CI can substitute for this, and it is larger
-than everything else on this list.
+Every test mocks `serial.Serial`, so this list can only be worked through by
+hand. The 2026-08-03 run (devlog 017) cleared the happy path; what remains is
+failure handling and the installer lifecycle.
 
+**Done 2026-08-03**, against the alpha.3 installer on the real dome: Arduino
+control and the shutter, a capture loop against real camera timing, polling for
+the arriving image, the dated capture folder being discovered, a PTM fitted
+in-process, and the installer installing and launching.
+
+**Not blocking the release** — a bad outcome in any of these is a confusing
+dialog or a lost preference, not a capture that cannot run. Worth clearing
+anyway, and the installer pair is cheap enough to do in the same sitting as the
+high-resolution capture:
+
+- **The installer's upgrade and uninstall paths** — install over the top, then
+  uninstall and confirm the two locations survive separately (devlog 014 split
+  them): `preferences.json` under `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2` and
+  the dated log under `%USERPROFILE%\PaleoBytes\PTMGenerator2\logs`. Neither is
+  under the install directory, which the uninstaller removes. Check the Start
+  Menu shortcut under PaleoBytes while you are there. **Most worth doing before
+  a non-alpha release** — it is the first one anyone installs over an existing
+  copy.
 - **Serial error handling** — unplug the board mid-run, and start a capture with
   the Arduino IDE's serial monitor holding the port. Both should report which
   port and why, and offer to continue.
-- **The capture loop** — a full 50-LED run against real camera timing. The
-  sequencing moved into `core/capture_session.py` and is tested exhaustively
-  with fakes; what is unverified is whether the preparation and polling windows
-  still suit a real shutter and a real card write.
 - **The utf-8 fallback** — open an `image_data.csv` actually written by an
   earlier build on Korean Windows, not a synthesised one.
-- **The capture folder discovery** — start a session before the day's first
-  shot, with EOS Utility pointed at the parent, and confirm the dated subfolder
-  is picked up and shown above the list.
 - **PTM generation from a Korean path** — the `.lp` codepage handling was
-  measured under WSL interop, not on a Korean Windows desktop.
-- **The installer** — it compiles in CI and the artifact is a valid Inno Setup
-  binary, but nobody has run it. Install, check the Start Menu shortcut under
-  PaleoBytes, then confirm the two locations separately (devlog 014 split them):
-  `preferences.json` under `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2` and the
-  dated log under `%USERPROFILE%\PaleoBytes\PTMGenerator2\logs`. Install over
-  the top to test the upgrade path, then uninstall and confirm **both** survive
-  — neither is under the install directory, which the uninstaller removes.
+  measured under WSL interop, not on a Korean Windows desktop. Moot once
+  phase 5 deletes the codepage rules along with the external fitter.
 - **The preferences migration** — against a real `%APPDATA%\PaleoBytes\
   PTMGenerator2.ini` written by 0.1.2, not a synthesised one. The serial port
   and the language are what must come across.
-
-Once that passes: `python scripts/bump_version.py stage beta`.
-
----
-
-## Add a LICENSE file
-
-`pyproject.toml` declares MIT and `README.md` says "[License information not
-specified]". There is no `LICENSE` file, which is why the installer has no
-`LicenseFile` line — ISCC fails on a missing one, so the wizard currently shows
-no terms at all.
-
-Add the file, then add `LicenseFile={{DIST_PATH}}\..\LICENSE` back to
-`installer/PTMGenerator2.iss.template` and fix the README section. Small, but it
-is the one place where the repository asserts something it cannot show.
 
 ---
 

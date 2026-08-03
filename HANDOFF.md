@@ -6,7 +6,7 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 
 ---
 
-## ▶ Current state (2026-07-29)
+## ▶ Current state (2026-08-03)
 
 **`v0.2.0-alpha.3`** — released 2026-07-29, pre-release. Nothing is waiting
 behind the tag: `main` and `v0.2.0-alpha.3` are the same commit. Two things
@@ -21,10 +21,10 @@ went out with it that no earlier release had:
    `preferences.json` in the OS config location and the log is a dated file in
    `~/PaleoBytes/PTMGenerator2/logs/`. mypy now genuinely covers `ui/`.
 
-The artifact is `PTMGenerator2_v0.2.0-alpha.3_build3_Installer.exe` (41 MB).
-The whole release matrix is green and `--self-test` ran against the frozen
-executable before Inno Setup packaged it — but **nobody has installed it**.
-That, and the hardware run, is what `TODOs.md` is about.
+The artifact is `PTMGenerator2_v0.2.0-alpha.3_build3_Installer.exe` (41 MB). The
+whole release matrix is green, `--self-test` ran against the frozen executable
+before Inno Setup packaged it, and **on 2026-08-03 the installer was installed
+and driven against the real dome** — the run in devlog 017.
 
 | | |
 |---|---|
@@ -41,32 +41,39 @@ That, and the hardware run, is what `TODOs.md` is about.
   [ko](https://jikhanjung.github.io/PTMGenerator/ko/)
 
 One thing is deliberately half-finished: **P02 phase 5**, deleting the external
-fitter and the path workarounds it forces on `core/ptm_builder.py`. It is
-blocked on the built-in fitter having fitted a real capture, which needs a
-camera change. Everything else is complete and tested.
+fitter and the path workarounds it forces on `core/ptm_builder.py`. See below —
+it is now one capture away. Everything else is complete and tested.
 
-## ▶ The one thing blocking progress
+## ▶ The one thing blocking the release
 
-**The alpha has never met an Arduino.**
+**Fit a high-pixel-count capture from the mirrorless body.**
 
-Four things now shipped in alpha.3 that CI structurally cannot verify — every
-test mocks the serial port, and no runner installs the installer:
+That single test is the gate, and it decides three things at once: whether the
+built-in fitter clears the ceiling it was written for, whether `PTMfitter.exe`
+can be deleted (P02 phase 5), and whether the version stops being a pre-release.
+The plan, as decided 2026-08-03, is to do all three off the back of it.
 
-1. **Serial error handling** — the "COM3 could not be opened" dialog and the
-   recovery path around it.
-2. **The capture loop** — now a `CaptureSession` the UI drives. The sequencing
-   is tested exhaustively with fakes, but never against real camera timing.
-   This is the largest behavioural change of the cycle.
-3. **The utf-8 fallback** — against an `image_data.csv` actually written by an
-   older build on Korean Windows, not a synthesised one.
-4. **The installer** — it compiles, the artifact is a valid Inno Setup binary
-   and the frozen executable passes `--self-test`, but the install, the
-   upgrade-over-the-top and the uninstall have never been run.
+The reason it is down to one item is the hardware run in **devlog 017**. On
+2026-08-03 the alpha.3 installer was installed and driven against the real dome,
+and the whole happy path worked: the Arduino and the shutter over a real serial
+port, the `CaptureSession` loop against real camera timing, the polling for the
+arriving file, the dated capture folder being discovered, and a PTM fitted
+in-process with no external fitter. That was the largest untested surface in the
+project and it is now behind us.
 
-alpha.3 exists so this can happen against a real build: it is the first release
-that carries the installer and the built-in fitter, so the earlier tags cannot
-stand in for it. Until the run happens, `stage beta` is premature. Everything
-else in `TODOs.md` is smaller than this.
+What that run did **not** cover, because the capture was ≤24MP — inside what the
+external fitter already handles — is the headroom. The built-in fitter is proven
+*correct on real files*; it is not yet proven on the file sizes that motivated
+writing it. Hence the gate above.
+
+Still unverified, and deliberately **not** blocking the release (a bad outcome
+is a confusing dialog or a lost preference, not a capture that cannot run):
+serial error handling, the installer's upgrade-over-the-top and uninstall paths,
+the utf-8 fallback against a real legacy `image_data.csv`, Korean-path PTM
+generation, and the preferences migration from a real 0.1.2 `.ini`. The upgrade
+and uninstall are cheap and worth running in the same sitting as the high-res
+capture — a first non-alpha release is the first one someone installs over an
+existing copy. All of it is itemised in `TODOs.md`.
 
 ## ▶ Resuming work
 
