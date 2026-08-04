@@ -34,20 +34,27 @@ DEVELOPMENT = {
 
 
 def _candidates():
-    """Where the file might be, frozen or not.
+    """Where the file might be, frozen or not, in the order to trust them.
 
     Not `core.resources.resource_path`: that resolves the non-frozen case
     against the *current working directory*, and the build metadata has to
     read the same whatever directory the application was started from.
+
+    `sys._MEIPASS` comes first because it is the bundle's own directory and is
+    therefore authoritative for a frozen build. **It is not the same as the
+    directory holding the executable.** PyInstaller 6 puts a onedir build's
+    data in an `_internal/` subdirectory, so beside-the-executable is a real
+    layout for older versions and a stale file waiting to win for this one.
+    Both are checked; the bundle's is preferred.
     """
-    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    paths = [os.path.join(here, BUILD_INFO_FILE)]
-    meipass = getattr(sys, "_MEIPASS", None)  # PyInstaller onefile
+    paths = []
+    meipass = getattr(sys, "_MEIPASS", None)
     if meipass:
-        paths.insert(0, os.path.join(meipass, BUILD_INFO_FILE))
-    # onedir: beside the executable.
+        paths.append(os.path.join(meipass, BUILD_INFO_FILE))
     if getattr(sys, "frozen", False):
-        paths.insert(0, os.path.join(os.path.dirname(sys.executable), BUILD_INFO_FILE))
+        paths.append(os.path.join(os.path.dirname(sys.executable), BUILD_INFO_FILE))
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    paths.append(os.path.join(here, BUILD_INFO_FILE))
     return paths
 
 

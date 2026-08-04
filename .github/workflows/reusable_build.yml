@@ -65,15 +65,21 @@ jobs:
         env:
           BUILD_NUMBER: ${{ inputs.build_number }}
 
-      - name: Check the build metadata was stamped
+      - name: Check the build metadata was stamped and bundled
         shell: bash
         run: |
           test -f build_info.json || { echo "::error::the spec did not write build_info.json"; exit 1; }
           cat build_info.json
           grep -q '"build_number": "${{ inputs.build_number }}"' build_info.json \
             || { echo "::error::build_info.json does not carry the build number CI passed"; exit 1; }
-          test -f dist/PTMGenerator2/build_info.json \
-            || { echo "::error::build_info.json was not bundled"; exit 1; }
+          # Searched rather than named: PyInstaller 6 puts a onedir build's data
+          # in _internal/ rather than beside the executable, and this check
+          # asserted the pre-6 path on its first run. Where it lands is
+          # PyInstaller's business -- `sys._MEIPASS` is what finds it at
+          # runtime. That it is in the bundle at all is ours.
+          bundled=$(find dist/PTMGenerator2 -name build_info.json | head -1)
+          test -n "$bundled" || { echo "::error::build_info.json was not bundled"; exit 1; }
+          echo "bundled at $bundled"
 
       - name: Locate the executable
         id: exe

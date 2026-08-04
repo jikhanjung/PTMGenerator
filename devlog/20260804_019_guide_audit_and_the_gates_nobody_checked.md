@@ -171,6 +171,25 @@ the metadata — and a step in the build asserts that the number CI passed is th
 number that came out the other end, since "the metadata file exists" and "the
 metadata file says what we told it" are different claims.
 
+**That step failed on its first run, and was right to.** It asserted
+`dist/PTMGenerator2/build_info.json`; PyInstaller 6 puts a onedir build's data
+in an `_internal/` subdirectory, so the real path is
+`dist/PTMGenerator2/_internal/build_info.json`. The runtime lookup was fine —
+`sys._MEIPASS` points at `_internal` and found it — so nothing shipped would
+have been broken. What was wrong was the check.
+
+Two things came out of that. The step now *searches* the bundle instead of
+naming a path: where PyInstaller puts a data file is PyInstaller's business and
+has already changed once, whereas "it is in the bundle at all" is the property
+worth asserting. And `_candidates()` had the executable's directory ahead of
+`sys._MEIPASS`, which is a stale-file hazard rather than a bug today — the
+bundle's own directory is authoritative for a frozen build, so it now comes
+first, with a test for the ordering.
+
+Both were confirmed against a real onedir build rather than reasoned about:
+`dist/PTMGenerator2/_internal/build_info.json`, and the frozen executable's
+`--self-test` passing with `frozen: True`.
+
 ## Smaller things
 
 `.pre-commit-config.yaml`'s mypy hook pinned mirrors-mypy `v1.8.0` while the

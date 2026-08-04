@@ -63,6 +63,37 @@ def test_the_first_readable_candidate_wins(tmp_path):
     assert build_info.read([str(first), str(second)])["build_number"] == "second"
 
 
+def test_the_bundled_copy_is_preferred_over_one_beside_the_executable(tmp_path, monkeypatch):
+    """`sys._MEIPASS` is not the directory holding the executable.
+
+    PyInstaller 6 puts a onedir build's data in `_internal/`, so the metadata
+    is *not* beside the .exe -- a CI check asserting the pre-6 path failed on
+    its first real run while the runtime lookup was fine. Both layouts are
+    still searched, and the bundle's own directory wins, so a leftover file
+    next to the executable cannot report a stale build.
+    """
+    bundle = tmp_path / "_internal"
+    bundle.mkdir()
+    (bundle / "build_info.json").write_text(json.dumps({"build_number": "bundled"}))
+    (tmp_path / "build_info.json").write_text(json.dumps({"build_number": "stale"}))
+
+    monkeypatch.setattr(build_info.sys, "_MEIPASS", str(bundle), raising=False)
+    monkeypatch.setattr(build_info.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(build_info.sys, "executable", str(tmp_path / "PTMGenerator2"))
+
+    candidates = build_info._candidates()
+    assert candidates[0] == str(bundle / "build_info.json")
+    assert build_info.read()["build_number"] == "bundled"
+
+
+def test_a_source_checkout_looks_beside_the_package():
+    # Not via the working directory: the metadata must read the same whatever
+    # directory the application was started from.
+    monkeypatch_free = build_info._candidates()
+    assert monkeypatch_free[-1].endswith("build_info.json")
+    assert "core" not in monkeypatch_free[-1].split("/")[-2:]
+
+
 def test_the_summary_names_the_build():
     info = {"version": "1.2.3", "build_number": "412", "build_date": "2026-08-04"}
     assert build_info.summary(info) == "1.2.3 (build 412, 2026-08-04)"
