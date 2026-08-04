@@ -9,11 +9,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/about.py" line="106"/>
-        <source>About</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/about.py" line="115"/>
         <source>Copy diagnostics</source>
         <translation type="unfinished"></translation>
@@ -21,6 +16,11 @@
     <message>
         <location filename="../ui/about.py" line="83"/>
         <source>build</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/about.py" line="106"/>
+        <source>About</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

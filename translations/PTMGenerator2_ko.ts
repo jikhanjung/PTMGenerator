@@ -16,7 +16,7 @@
     <message>
         <location filename="../ui/about.py" line="106"/>
         <source>About</source>
-        <translation>정보</translation>
+        <translation type="unfinished">정보</translation>
     </message>
     <message>
         <location filename="../ui/about.py" line="115"/>

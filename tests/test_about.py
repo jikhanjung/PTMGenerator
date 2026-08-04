@@ -250,11 +250,21 @@ def test_the_about_dialog_is_translated(korean, main_window):
     Asserting on the rendered text is what closes that: a string that stopped
     being extracted comes back English here.
     """
+    from PyQt5.QtCore import QCoreApplication
+
     dialog, copy_button = about.build_about_box(main_window)
     try:
-        assert dialog.windowTitle() == "정보"
         assert copy_button.text() == "진단 정보 복사"
         assert "라이선스로 배포됩니다" in dialog.text()
         assert "빌드" in dialog.text()
     finally:
         dialog.deleteLater()
+
+    # The title through the catalogue rather than off the dialog: **macOS
+    # returns "" from a QMessageBox's windowTitle()**, because Apple's
+    # guidelines say a message box has no title and Qt honours that. The
+    # assertion passed on Linux and Windows and failed the macOS leg -- which
+    # is the whole argument for having that leg. Whether a platform displays
+    # the title is not this project's business; that the string is translated
+    # is.
+    assert QCoreApplication.translate("About", "About") == "정보"

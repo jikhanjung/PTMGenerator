@@ -153,6 +153,15 @@ A gate that checks the shape of a call is a gate that stops looking the moment
 the shape changes; that is the same lesson as §8, arrived at from the other
 side.
 
+That test then failed on macOS only. **`QMessageBox.windowTitle()` returns `""`
+there** — Apple's guidelines say a message box has no title and Qt honours it —
+so asserting the translated title off the dialog passed on Linux and Windows
+and failed the third leg. The title is now checked through the catalogue
+instead: whether a platform displays it is not this project's business, whereas
+whether the string is translated is. ci.md §1 calls the matrix the keystone
+check and this is why — the failure was invisible from the dev machine and from
+reading the code.
+
 ## The build number, checked against the sibling rather than assumed
 
 `ci.md` §6 asks for a build number derived from the commit count, not
