@@ -25,6 +25,17 @@ peak on synthetic 48MP data.
 
 Watch memory while it runs — that is the number the estimate is guessing at.
 
+**What rides along with that release**, deliberately deferred to it because
+each needs a Windows build and beta.1 had just been published:
+
+- the Windows file-properties claim in `PTMGenerator2.spec` (below);
+- the uninstall path, the last item in the hardware list below.
+
+Listed here rather than only in their own sections, because a deferred item
+with no place in the list someone actually reads is one nobody reads — which is
+how `guard_slot` and the `--self-test` tests went missing for a cycle
+(devlog 019).
+
 ## Finish the in-process fitter — P02 phase 5
 
 Phases 1–4 are done: the container reader/writer (`core/ptm_format.py`), the fit
@@ -59,19 +70,32 @@ control and the shutter, a capture loop against real camera timing, polling for
 the arriving image, the dated capture folder being discovered, a PTM fitted
 in-process, and the installer installing and launching.
 
+**Done 2026-08-04**, the upgrade half of the installer pair: beta.1 installed
+over alpha.3, in place. Verified rather than assumed — one uninstall record in
+HKCU under the GUID `AppId` (no name-derived key anywhere, nothing in HKLM, so
+`PrivilegesRequired=lowest` held), one `unins000`, one Start-Menu shortcut, and
+`preferences.json` intact with the language, serial port and engine the user
+had set. The running build identified itself as beta.1 build 112 from commit
+`cf48851` through the new `build_info.json` — which is what that file is for.
+The 101 files Inno skipped are versioned Qt/MSVC DLLs, byte-identical between
+the builds because the lockfile pins the wheels exactly; the `.exe` was
+replaced. **Uninstall is still open** — see below.
+
 **Not blocking the release** — a bad outcome in any of these is a confusing
 dialog or a lost preference, not a capture that cannot run. Worth clearing
 anyway, and the installer pair is cheap enough to do in the same sitting as the
 high-resolution capture:
 
-- **The installer's upgrade and uninstall paths** — install over the top, then
-  uninstall and confirm the two locations survive separately (devlog 014 split
-  them): `preferences.json` under `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2` and
-  the dated log under `%USERPROFILE%\PaleoBytes\PTMGenerator2\logs`. Neither is
-  under the install directory, which the uninstaller removes. Check the Start
-  Menu shortcut under PaleoBytes while you are there. **Most worth doing before
-  a non-alpha release** — it is the first one anyone installs over an existing
-  copy.
+- **The installer's uninstall path** — the upgrade half is done (above). What
+  is left is uninstalling and confirming the two locations survive separately
+  (devlog 014 split them): `preferences.json` under
+  `%LOCALAPPDATA%\PaleoBytes\PTMGenerator2` and the dated log under
+  `%USERPROFILE%\PaleoBytes\PTMGenerator2\logs`. Neither is under the install
+  directory, which the uninstaller removes, and `tests/test_packaging.py`
+  asserts the template writes nothing to either — but that test reads the
+  `.iss`, and only a real uninstall proves what Inno's log actually contains.
+  Confirm the Start-Menu entry and `{app}` go, and that both data locations
+  stay.
 - **Serial error handling** — unplug the board mid-run, and start a capture with
   the Arduino IDE's serial monitor holding the port. Both should report which
   port and why, and offer to continue.
@@ -168,6 +192,55 @@ starts committing. Recording it so a later audit reads this as a decision
 rather than an oversight.
 
 ---
+
+## Stamp the Windows file properties, or stop claiming to — with `0.2.0`
+
+`PTMGenerator2.spec` says, in a comment above the version parsing:
+
+> The version is still read from version.py, the single source of truth, **for
+> the Windows file properties**.
+
+It is not. `__version__` is parsed and then used only in the `build_info`
+dictionary; `EXE()` takes no `version=` argument, so the executable carries no
+`VS_VERSION_INFO` resource at all. Confirmed against the installed beta.1
+binary rather than inferred from the spec:
+
+```
+VS_VERSION_INFO present: False        <- PTMGenerator2.exe
+'0.2.0' anywhere in the binary: False
+VS_VERSION_INFO present: True         <- Qt5Core.dll, as a control
+```
+
+Two consequences, both small. Right-click → Properties → Details shows no
+version, which is the first place a Windows user looks when asked which build
+they are running. And **Inno compares versioned files by version and
+unversioned ones by timestamp** — so this file takes the timestamp path. That
+worked on the beta.1 upgrade (the `.exe` was replaced; the 101 files Inno
+skipped were Qt/MSVC DLLs, identical between builds because the lockfile pins
+the wheels exactly), and it is one fewer guarantee than the DLLs beside it get.
+
+**Two directions, and they are not the same decision:**
+
+1. **Stamp it.** `EXE(..., version="file_version_info.txt")`, with the spec
+   generating that file from `version.py` the way it already generates
+   `build_info.json`. The comment becomes true and the exe gains the resource.
+   Note SemVer does not fit the Windows `FILEVERSION` field, which is four
+   integers — `0.2.0-beta.1` has to become `(0, 2, 0, <build number>)`, with
+   the full string in `ProductVersion` where free text is allowed. The build
+   number is already threaded through for `build_info.json`, so it is to hand.
+2. **Delete the claim.** One line, no build change, and honest. The About
+   dialog now carries version, build number, date and commit with a
+   **Copy diagnostics** button, which answers "which build is this" better
+   than the file properties would.
+
+Deferred to the `0.2.0` release deliberately: either way it needs a Windows
+build, and beta.1 had just been published. Doing it in the same cycle as the
+release gate above costs one build instead of two.
+
+*Found 2026-08-04 while verifying that the beta.1 upgrade over alpha.3 had gone
+in place — it had; see devlog 019 and `HANDOFF.md`. The comment is the exact
+shape `.guides/desktop/file-locations.md` §6 warns about: a build file that
+documents behaviour it does not have, which anyone reading it believes.*
 
 ## Convert `os.path` to `pathlib`
 
