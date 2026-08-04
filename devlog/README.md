@@ -40,6 +40,7 @@ renumbered, because commits reference them by name.
 | 017 | 2026-08-03 | [The alpha meets the rig](20260803_017_first_hardware_run.md) |
 | 018 | 2026-08-04 | [What the first real run showed](20260804_018_ui_fixes_after_the_first_run.md) |
 | 019 | 2026-08-04 | [Auditing against the guide, and the two items the table could not hold](20260804_019_guide_audit_and_the_gates_nobody_checked.md) |
+| 020 | 2026-08-04 | [The installer, installed over itself and then removed](20260804_020_installer_lifecycle_verified.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy

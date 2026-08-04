@@ -11,8 +11,22 @@
 # launch, which for a ~100 MB bundle is a visible delay before the window
 # appears.
 #
-# The version is still read from version.py, the single source of truth, for the
-# Windows file properties. Bump with `python scripts/bump_version.py <part>`.
+# The version is read from version.py, the single source of truth, and goes into
+# build_info.json below — which the About dialog reads. Bump it with
+# `python scripts/bump_version.py <part>`.
+#
+# **The executable carries no Windows version resource.** `EXE()` takes no
+# `version=`, so Properties → Details shows nothing, and Inno compares this file
+# by timestamp rather than by version when installing over an existing copy.
+# That is deliberate: a `VS_VERSION_INFO` block needs `FILEVERSION` as four
+# integers, which a SemVer pre-release does not fit — `0.2.0-beta.1` would have
+# to become `(0, 2, 0, <build>)` with the real string relegated to
+# `ProductVersion`. The About dialog answers "which build is this" exactly,
+# including the commit, and has a button that copies it.
+#
+# This comment used to claim the version went into the file properties. It never
+# did; the claim survived three releases because nobody had reason to check a
+# comment. See TODOs.md and devlog 019.
 
 import datetime
 import json

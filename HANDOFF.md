@@ -84,12 +84,17 @@ writing it. Hence the gate above.
 
 Still unverified, and deliberately **not** blocking the release (a bad outcome
 is a confusing dialog or a lost preference, not a capture that cannot run):
-serial error handling, the installer's upgrade-over-the-top and uninstall paths,
-the utf-8 fallback against a real legacy `image_data.csv`, Korean-path PTM
-generation, and the preferences migration from a real 0.1.2 `.ini`. The upgrade
-and uninstall are cheap and worth running in the same sitting as the high-res
-capture — a first non-alpha release is the first one someone installs over an
-existing copy. All of it is itemised in `TODOs.md`.
+serial error handling, the utf-8 fallback against a real legacy
+`image_data.csv`, Korean-path PTM generation, and the preferences migration
+from a real 0.1.2 `.ini`.
+
+**The installer lifecycle is now verified** (devlog 020): beta.1 installed over
+alpha.3 in place — one uninstall record under the GUID `AppId`, nothing in
+HKLM — and the uninstall removed `{app}`, the registry record and the shortcut
+while leaving `preferences.json` and the log where devlog 014 put them. That
+was the item most worth clearing before a non-alpha release, because a release
+people install over an existing copy is where a wrong `AppId` costs the most.
+Everything above is itemised in `TODOs.md`.
 
 ## ▶ Resuming work
 
