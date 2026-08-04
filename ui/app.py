@@ -19,6 +19,7 @@ from PyQt5.QtCore import QTranslator
 from PyQt5.QtWidgets import QApplication
 
 from core.preferences import Preferences
+from version import COMPANY_NAME, PROGRAM_NAME, __version__
 
 
 class PtmApplication(QApplication):
@@ -38,6 +39,18 @@ class PtmApplication(QApplication):
 
     def __init__(self, argv):
         super().__init__(argv)
+        # Qt derives its own per-application locations and window-manager
+        # identity from these. Preferences do not go through QSettings here --
+        # core/paths.py resolves them with platformdirs -- but anything in Qt
+        # that falls back to them (a native file dialog's state, the WM class)
+        # should agree with the rest of the family rather than defaulting to
+        # the executable's name. See .guides/branding.md: one project ended up
+        # with three different organization strings and a QSettings helper
+        # reading a path nothing else wrote to.
+        self.setOrganizationName(COMPANY_NAME)
+        self.setApplicationName(PROGRAM_NAME)
+        self.setApplicationVersion(__version__)
+
         self.translator = None
         self.language = "en"
         self.settings = None

@@ -36,13 +36,26 @@ repos:
 
   # mypy - core/ and ui/, both with check_untyped_defs on. PyQt5 ships its own
   # stubs, so no stub package is needed.
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+  #
+  # `language: system` and the project's own command, rather than the
+  # mirrors-mypy hook. The mirror pins its own mypy in its own environment,
+  # which drifted two years behind the version the lockfile installs -- so the
+  # hook and CI could answer differently in either direction, and the answer a
+  # contributor got locally was the one from neither.
+  #
+  # `pass_filenames: false` for the same reason: mypy follows imports
+  # differently depending on which files it is handed, so only the identical
+  # invocation guarantees the identical result. This is `make type-check` and
+  # the `lint` job's command, character for character.
+  - repo: local
     hooks:
       - id: mypy
-        args: ['--config-file=pyproject.toml']
+        name: mypy (core, ui)
+        entry: mypy --config-file pyproject.toml core/ ui/
+        language: system
+        types: [python]
         files: '^(core|ui)/.*\.py$'
-        exclude: 'tests/|build/|dist/|legacy/'
+        pass_filenames: false
 
 default_language_version:
   python: python3.12

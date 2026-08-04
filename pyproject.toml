@@ -11,7 +11,13 @@ name = "PTMGenerator2"
 dynamic = ["version"]
 description = "Automated Polynomial Texture Mapping capture for an Arduino LED dome"
 readme = "README.md"
-requires-python = ">=3.12"
+# Pinned to the one version CI actually runs. `>=3.12` claimed 3.13 and 3.14
+# and tested neither, which is the implicit minimum the shared guide warns
+# against — a desktop app's runtime is the user's machine, and an untested
+# version is a promise nobody checked. Widen this and the CI matrix together,
+# never one without the other; `tests/test_version_consistency.py` pins the
+# pair.
+requires-python = ">=3.12,<3.13"
 license = {text = "MIT"}
 authors = [{name = "PaleoBytes"}]
 keywords = ["ptm", "polynomial-texture-mapping", "photography", "arduino", "rti"]

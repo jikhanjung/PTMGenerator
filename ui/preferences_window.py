@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 from core import settings as prefs
 from core.resources import icon_path, translation_path
 from ui.app import app
+from ui.error_handling import guard_slot
 from ui.geometry import to_list, to_rect
 
 
@@ -58,12 +59,14 @@ class PreferencesWindow(QDialog):
         self.comboFitter = QComboBox()
         for label, code in prefs.SUPPORTED_FITTERS:
             self.comboFitter.addItem(label, code)
-        self.comboFitter.setToolTip(
-            self.tr(
-                "Built-in has no image size limit. PTMfitter.exe is 32-bit and "
-                "fails on images above about 24 megapixels."
-            )
-        )
+        self.comboFitter.setToolTip(self._fitter_tooltip())
+
+        # The tooltip only reaches someone already hovering the combo. The
+        # limit costs a whole capture when it bites -- the fit fails after
+        # every shot is taken -- so it is also said on screen, and only while
+        # the choice it applies to is the one selected.
+        self.lblFitterWarning = QLabel(self._fitter_warning())
+        self.lblFitterWarning.setWordWrap(True)
 
         self.lblPtmFitter = QLabel(self.tr("PTM Fitter"))
         self.edtPtmFitter = QLineEdit()
@@ -72,6 +75,12 @@ class PreferencesWindow(QDialog):
 
         self.ptmfitter_widget = QWidget()
         self.ptmfitter_layout = QHBoxLayout()
+        # No margins. Every other row puts its widget straight into the form,
+        # which applies its own spacing; this row wraps two widgets in a
+        # container, and the container's layout would add a second set of
+        # margins on top -- so the field sat indented and taller than the rows
+        # above and below it.
+        self.ptmfitter_layout.setContentsMargins(0, 0, 0, 0)
         self.ptmfitter_widget.setLayout(self.ptmfitter_layout)
         self.ptmfitter_layout.addWidget(self.edtPtmFitter)
         self.ptmfitter_layout.addWidget(self.btnPtmFitter)
@@ -102,6 +111,7 @@ class PreferencesWindow(QDialog):
         self.form_layout.addRow(self.language_label, self.language_combobox)
         self.form_layout.addRow(self.lblSerialPort, self.comboSerialPort)
         self.form_layout.addRow(self.lblFitter, self.comboFitter)
+        self.form_layout.addRow(self.lblFitterWarning)
         self.form_layout.addRow(self.lblPtmFitter, self.ptmfitter_widget)
         self.form_layout.addRow(self.lblNumberOfLEDs, self.edtNumberOfLEDs)
         self.form_layout.addRow(self.lblRetryCount, self.edtRetryCount)
@@ -119,6 +129,10 @@ class PreferencesWindow(QDialog):
         self.language_combobox.setCurrentIndex(self.language_combobox.findData(self.language))
         self.comboSerialPort.setCurrentIndex(self.comboSerialPort.findData(self.serial_port))
         self.comboFitter.setCurrentIndex(self.comboFitter.findData(self.fitter))
+        self.comboFitter.currentIndexChanged.connect(self.on_fitter_changed)
+        # Connected after the stored choice is applied, so call it once here to
+        # match the rest of the form to it.
+        self.on_fitter_changed()
         self.edtPtmFitter.setText(self.ptm_fitter)
         self.edtNumberOfLEDs.setText(str(self.number_of_LEDs))
         self.edtRetryCount.setText(str(self.retry_count))
@@ -135,10 +149,37 @@ class PreferencesWindow(QDialog):
         if not ports:
             self.comboSerialPort.addItem("None", "None")
 
+    def _fitter_tooltip(self):
+        return self.tr(
+            "Built-in has no image size limit. PTMfitter.exe is 32-bit and "
+            "fails on images above about 24 megapixels."
+        )
+
+    def _fitter_warning(self):
+        return self.tr(
+            "PTMfitter.exe is 32-bit: a capture of images above about 24 "
+            "megapixels will fail to fit. The built-in engine has no such limit."
+        )
+
+    @guard_slot("Changing the PTM engine")
+    def on_fitter_changed(self, index=None):
+        """Follow the engine choice: the path below it only applies to one.
+
+        The path is disabled rather than hidden, and never cleared -- someone
+        trying the built-in engine and going back should not have to find
+        their executable again. `save_settings` writes it either way.
+        """
+        external = self.comboFitter.currentData() == prefs.FITTER_EXTERNAL
+        self.lblPtmFitter.setEnabled(external)
+        self.ptmfitter_widget.setEnabled(external)
+        self.lblFitterWarning.setVisible(external)
+
+    @guard_slot("Saving preferences")
     def Okay(self):
         self.save_settings()
         self.accept()
 
+    @guard_slot("Select PTM Fitter")
     def on_browse_ptm_fitter(self):
         filename, _ = QFileDialog.getOpenFileName(
             self, self.tr("Select PTM Fitter"), "", "Executable Files (*.exe)"
@@ -187,6 +228,7 @@ class PreferencesWindow(QDialog):
         s.setValue(prefs.POST_SHUTTER_POLLING, str(self.edtPostShutterPolling.text()))
         s.sync()
 
+    @guard_slot("Changing language")
     def language_combobox_currentIndexChanged(self, index):
         self.language = self.language_combobox.currentData()
         self.update_language(self.language)
@@ -208,6 +250,8 @@ class PreferencesWindow(QDialog):
         self.language_label.setText(self.tr("Language"))
         self.lblSerialPort.setText(self.tr("Serial Port"))
         self.lblFitter.setText(self.tr("PTM Engine"))
+        self.lblFitterWarning.setText(self._fitter_warning())
+        self.comboFitter.setToolTip(self._fitter_tooltip())
         self.lblPtmFitter.setText(self.tr("PTM Fitter"))
         self.btnPtmFitter.setText(self.tr("Browse"))
         self.lblNumberOfLEDs.setText(self.tr("Number of LEDs"))

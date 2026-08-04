@@ -50,6 +50,14 @@ def test_selected_rows_defaults_to_empty(main_window):
     assert main_window.selected_rows == []
 
 
+def test_the_directory_starts_at_home(main_window):
+    # It used to start at ".", which is wherever the shortcut happened to
+    # launch from. Expanded, not a literal "~" -- os.path does not resolve one.
+    home = os.path.expanduser("~")
+    assert main_window.monitor_root == home
+    assert main_window.edtDirectory.text() == home
+
+
 # -- capture table ---------------------------------------------------------
 
 
@@ -117,6 +125,18 @@ def test_clear_image_data_resets_the_table(window_in):
         window_in.image_model.horizontalHeaderItem(c).text()
         for c in range(window_in.image_model.columnCount())
     ] == ["Include", "Filename"]
+
+
+def test_filename_keeps_stretching_after_the_table_is_cleared(window_in):
+    # Clearing the model drops the columns, and the header's resize modes go
+    # with them -- Filename stopped following the panel from then on.
+    window_in.clear_image_data()
+    header = window_in.table_view.horizontalHeader()
+    assert header.sectionResizeMode(1) == header.Stretch
+
+    narrow = window_in.table_view.width()
+    window_in.table_view.resize(narrow + 200, window_in.table_view.height())
+    assert header.sectionSize(1) > narrow
 
 
 def test_record_slot_appends_a_missing_shot(window_in):
@@ -488,14 +508,15 @@ class TestCaptureDirectoryAdoption:
         window, root = watching
         self.shoot_into(root / "2026-07-28")
         window.poll_for_image()
-        assert str(root / "2026-07-28") in window.lblCaptureDirectory.text()
+        # The path, on its own -- it is copied out of here into a file manager.
+        assert window.lblCaptureDirectory.text() == str(root / "2026-07-28")
 
-    def test_before_anything_lands_the_label_says_so(self, watching):
-        window, root = watching
+    def test_before_anything_lands_the_label_is_empty(self, watching):
+        window, _root = watching
         window.update_capture_directory_label()
-        text = window.lblCaptureDirectory.text()
-        assert "Waiting" in text
-        assert str(root) in text
+        # No "waiting for..." sentence: the watched root is already in the
+        # Directory field above, so saying it again explained nothing.
+        assert window.lblCaptureDirectory.text() == ""
 
     def test_the_top_field_keeps_showing_the_watched_folder(self, watching):
         window, root = watching

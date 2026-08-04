@@ -15,5 +15,12 @@
 # Binary — never touch these
 *.exe   binary
 *.png   binary
+*.ico   binary
 *.qm    binary
 *.pyc   binary
+
+# CRLF, because Windows shells need it. Nothing here uses them yet; the rule
+# is cheap now and is the sort of thing nobody thinks of when adding the first
+# one.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf

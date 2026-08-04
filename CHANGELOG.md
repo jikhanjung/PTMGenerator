@@ -13,6 +13,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `README.md` said the licence was unspecified; the terms now exist as a
   file, the README points at it, and the Windows installer shows them as a
   wizard page rather than asking for consent to nothing.
+- **PTMfitter.exe's size limit is now stated in Preferences**, under the engine
+  choice and only while `PTMfitter.exe` is the one selected. It is 32-bit and
+  fails on captures above about 24 megapixels; the built-in engine has no such
+  limit. The fitter path is disabled — but kept — while the built-in engine is
+  in use.
+- **The About dialog now says who made this and which build you are running.**
+  Vendor, licence, copyright, links to the project, the manual and the issue
+  tracker — and the build number, date and commit, so a bug report can name the
+  exact executable rather than just the released version. A **Copy diagnostics**
+  button puts all of that, plus your OS, Python and Qt versions and the two
+  directories the application writes to, on the clipboard.
+- **`SHA256SUMS.txt` is published with each release**, so a downloaded
+  installer can be checked against what CI built.
+
+### Changed
+- **The capture folder line shows the folder and nothing else.** It used to
+  explain that it was waiting and repeat the watched folder, which the
+  Directory field above already shows.
+- **Build numbers now come from the commit count** rather than a per-workflow
+  counter, so the same commit built on `main` and released carry one number
+  instead of two. Matches Modan2, CTHarvester and PaperMeister.
+- **The Windows executable is no longer UPX-compressed**, for the same reason
+  the installer does not use solid compression: it trips antivirus heuristics,
+  and a quarantined download is worse than a larger one.
+- **The copyright line reads `© 2018-2026 Jikhan Jung` everywhere.** The manual
+  said `2024-2026, PaleoBytes`; PaleoBytes is the vendor — the name on the
+  installer and the Start-Menu group — and the licence holder is the person, as
+  `LICENSE` has always said. Both now derive from one source.
+- **`requires-python` is `>=3.12,<3.13`**, which is the version CI runs and the
+  lockfiles are compiled for. It previously admitted 3.13 and 3.14, neither of
+  which was tested. No effect on the installer, which carries its own
+  interpreter.
+
+### Fixed
+- **A failure in any button, menu item or dialog now reports instead of closing
+  the application.** PyQt5 aborts the process when an exception escapes a
+  signal handler, so until now an unanticipated error meant the window vanished
+  with no message. Every handler in both windows is guarded; the error names
+  what you were doing and points at the log.
+- **The PTM Fitter row in Preferences lines up with the rest of the form.** Its
+  file-selector was indented and half again as tall as every other row.
+- **The Filename column follows the width of the image list again.** It stopped
+  after the first capture: clearing the table dropped the columns, and the
+  header's resize modes went with them.
+- **The directory at the top of the window starts at the user's home
+  directory** rather than `.`, which was wherever the application happened to
+  be launched from — and was also the folder watched for arriving images until
+  one was chosen.
 
 ## [0.2.0-alpha.3] - 2026-07-29
 ### Added

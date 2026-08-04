@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+from pathlib import Path
 
 from PyQt5.QtCore import QObject, QRect, Qt, QTimer, QTranslator, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
@@ -30,7 +31,9 @@ from core.image_data import MISSING, CaptureSlot
 from core.light_positions import light_vectors
 from core.resources import icon_path, translation_path
 from core.serial_controller import SerialController
+from ui import about
 from ui.app import app, require
+from ui.error_handling import guard_slot
 from ui.geometry import to_list, to_rect
 from ui.preferences_window import PreferencesWindow
 from version import __version__
@@ -92,8 +95,10 @@ class PTMGeneratorMainWindow(QMainWindow):
     def initialize_variables(self):
         self.image_data = []
         #: The folder the user chose. Watched, including everything beneath it,
-        #: until a shot lands.
-        self.monitor_root = "."
+        #: until a shot lands. Until they choose, the home directory -- expanded
+        #: here, because the watch walks it with `os.path` and nothing further
+        #: down resolves a `~`.
+        self.monitor_root = str(Path.home())
         #: The folder shots are actually arriving in, discovered from the first
         #: one. None until then. Tethering software commonly files images into
         #: a dated subfolder that does not exist before the day's first shot,
@@ -141,11 +146,8 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.image_list_layout.addWidget(self.image_view, 4)
 
         self.image_model = QStandardItemModel()
-        self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
         self.table_view.setModel(self.image_model)
-        header = require(self.table_view.horizontalHeader(), "table header")
-        header.setSectionResizeMode(0, header.ResizeToContents)
-        header.setSectionResizeMode(1, header.Stretch)
+        self.set_table_headers()
         self.selection().selectionChanged.connect(self.on_selection_changed)
 
         self.status_bar = QStatusBar()
@@ -331,6 +333,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.btnPauseContinue.setText(self.tr("Pause"))
         self.timer.start(TICK_MS)
 
+    @guard_slot("Take All Pictures")
     def take_all_pictures(self):
         # Checked before clear_image_data() so a refused run leaves the
         # existing capture table untouched.
@@ -342,6 +345,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.capture_directory = None
         self._start_session(range(self.number_of_LEDs))
 
+    @guard_slot("Retake Picture")
     def on_retake_picture_triggered(self):
         if not self.selected_rows:
             return
@@ -349,6 +353,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             return
         self._start_session(sorted(self.selected_rows))
 
+    @guard_slot("Test Shot")
     def test_shot(self):
         if not self.ensure_serial_ready():
             return
@@ -367,17 +372,16 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.serial.close()
 
     def update_capture_directory_label(self):
-        """Show where shots are going, and whether that is the watched folder."""
-        if self.capture_directory is None:
-            self.lblCaptureDirectory.setText(
-                self.tr("Waiting for the first shot — watching {root} and below").format(
-                    root=self.monitor_root
-                )
-            )
-        else:
-            self.lblCaptureDirectory.setText(
-                self.tr("Capture folder: {directory}").format(directory=self.capture_directory)
-            )
+        """Show the capture folder once there is one, and nothing before that.
+
+        The label used to explain that it was waiting and which root it was
+        watching. Both are already on screen — the watched root is the
+        Directory field above — so it was a sentence restating its neighbour.
+        This holds one thing: the exact path shots are landing in, which is not
+        shown anywhere else because it is discovered from the first shot rather
+        than chosen.
+        """
+        self.lblCaptureDirectory.setText(self.capture_directory or "")
 
     @property
     def working_directory(self):
@@ -417,6 +421,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.last_checked = mtime
         return path
 
+    @guard_slot("The capture")
     def take_picture_process(self):
         """One capture tick, driven by the timer."""
         session = self.session
@@ -470,6 +475,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         if path is not None:
             self.show_image(path)
 
+    @guard_slot("Pause/Continue")
     def pause_continue_process(self):
         if self.timer.isActive():
             self.timer.stop()
@@ -480,6 +486,7 @@ class PTMGeneratorMainWindow(QMainWindow):
             self.status_bar.showMessage(self.tr("Continued"), 1000)
             self.btnPauseContinue.setText(self.tr("Pause"))
 
+    @guard_slot("Stop")
     def stop_process(self):
         self.timer.stop()
         self.session = None
@@ -491,7 +498,7 @@ class PTMGeneratorMainWindow(QMainWindow):
     def clear_image_data(self):
         self.image_data = []
         self.image_model.clear()
-        self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
+        self.set_table_headers()
         self.image_view.clear()
         self.selection().clearSelection()
         self.prev_selected_rows = []
@@ -533,6 +540,19 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.sync_checkbox_states_to_image_data()
         image_data.write_csv(os.path.join(self.working_directory, self.csv_file), self.image_data)
 
+    def set_table_headers(self):
+        """Label the capture table's columns and fix how they take the width.
+
+        `QStandardItemModel.clear()` removes the columns, and the header's
+        per-section resize modes go with them -- Filename would fall back to a
+        fixed width and stop following the panel. So the modes are re-applied
+        every time the labels are, not once in `setup_ui`.
+        """
+        self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
+        header = require(self.table_view.horizontalHeader(), "table header")
+        header.setSectionResizeMode(0, header.ResizeToContents)
+        header.setSectionResizeMode(1, header.Stretch)
+
     def selection(self):
         """The table's selection model.
 
@@ -541,6 +561,7 @@ class PTMGeneratorMainWindow(QMainWindow):
         """
         return require(self.table_view.selectionModel(), "selection model")
 
+    @guard_slot("Selecting a shot")
     def on_selection_changed(self, selected, deselected):
         self.selected_rows = sorted({index.row() for index in self.selection().selectedIndexes()})
         for row in self.selected_rows:
@@ -557,6 +578,7 @@ class PTMGeneratorMainWindow(QMainWindow):
 
     # -- actions ------------------------------------------------------------
 
+    @guard_slot("Open Directory")
     def on_action_open_directory_triggered(self):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Open Directory"))
         if not directory:
@@ -572,18 +594,19 @@ class PTMGeneratorMainWindow(QMainWindow):
         else:
             self.load_image_files()
 
+    @guard_slot("Preferences")
     def on_action_preferences_triggered(self):
         preferences = PreferencesWindow(self)
         preferences.exec()
         self.read_settings()
 
+    @guard_slot("About")
     def on_action_about_triggered(self):
-        QMessageBox.about(
-            self, self.tr("About"), "{} v{}".format(self.tr("PTMGenerator2"), __version__)
-        )
+        about.show_about(self)
 
     # -- PTM ----------------------------------------------------------------
 
+    @guard_slot("Generate PTM")
     def generatePTM(self):
         """Ask where the .ptm goes, then fit it.
 
@@ -691,6 +714,6 @@ class PTMGeneratorMainWindow(QMainWindow):
         self.file_menu.setTitle(self.tr("File"))
         self.edit_menu.setTitle(self.tr("Edit"))
         self.help_menu.setTitle(self.tr("Help"))
-        self.image_model.setHorizontalHeaderLabels([self.tr("Include"), self.tr("Filename")])
+        self.set_table_headers()
         self.update_capture_directory_label()
         self.update()

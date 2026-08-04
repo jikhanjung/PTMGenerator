@@ -7,13 +7,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
+from version import COMPANY_NAME, COPYRIGHT_HOLDER, COPYRIGHT_YEARS  # noqa: E402
 from version import __version__ as release  # noqa: E402
 
 version = release
 
 project = "PTMGenerator2"
-copyright = "2024-2026, PaleoBytes"
-author = "PaleoBytes"
+# Derived, not written out again. This line said "2024-2026, PaleoBytes" while
+# LICENSE said "2018-2026 Jikhan Jung" -- two spellings of the same fact, which
+# is what having two of them produces. The holder is the person; PaleoBytes is
+# the brand, and appears as the author below.
+copyright = f"{COPYRIGHT_YEARS}, {COPYRIGHT_HOLDER}"
+author = COMPANY_NAME
 
 extensions = [
     "sphinx.ext.autodoc",

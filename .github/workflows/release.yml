@@ -34,12 +34,28 @@ jobs:
     needs: verify-version
     uses: ./.github/workflows/test.yml
 
+  # Same derivation as build.yml, so a commit built on main and the same
+  # commit released carry one build number rather than two.
+  build-number:
+    name: Build number
+    needs: verify-version
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.count.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: count
+        run: echo "value=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+
   # The same build definition build.yml uses, so what a release ships is
   # produced by exactly the steps already verified on main.
   build:
-    needs: test
+    needs: [test, build-number]
     uses: ./.github/workflows/reusable_build.yml
     with:
+      build_number: ${{ needs.build-number.outputs.value }}
       artifact_name: PTMGenerator2-windows
       retention_days: 90
 
@@ -75,9 +91,23 @@ jobs:
           PY
           echo "Release notes:"; cat notes.md
 
+      # SHA256SUMS.txt beside the artifacts, so someone downloading the
+      # installer over a link they were sent can check what they got. Written
+      # with bare filenames -- `sha256sum -c` resolves them relative to the
+      # directory it is run in, and a path from the runner would not exist on
+      # the machine doing the checking.
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum *.exe > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/SHA256SUMS.txt
           body_path: notes.md
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

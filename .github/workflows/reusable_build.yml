@@ -8,6 +8,15 @@ name: Build executable
 on:
   workflow_call:
     inputs:
+      build_number:
+        # Computed by the caller from the commit count, not taken from
+        # github.run_number: that counter is per-workflow, so the same commit
+        # built by build.yml and by release.yml would stamp two different
+        # numbers into two installers that are byte-for-byte the same build.
+        # Matches Modan2, CTHarvester and PaperMeister.
+        description: Build number, from `git rev-list --count HEAD`.
+        required: true
+        type: string
       artifact_name:
         description: Name for the uploaded artifact.
         required: false
@@ -49,8 +58,22 @@ jobs:
           pip install --require-hashes -r requirements-build-windows.lock
 
       # onedir: the installer ships the directory. See PTMGenerator2.spec.
+      # BUILD_NUMBER is read by the spec, which stamps it into build_info.json
+      # and bundles it -- that is what the About dialog reports.
       - name: Build
         run: pyinstaller PTMGenerator2.spec
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+
+      - name: Check the build metadata was stamped
+        shell: bash
+        run: |
+          test -f build_info.json || { echo "::error::the spec did not write build_info.json"; exit 1; }
+          cat build_info.json
+          grep -q '"build_number": "${{ inputs.build_number }}"' build_info.json \
+            || { echo "::error::build_info.json does not carry the build number CI passed"; exit 1; }
+          test -f dist/PTMGenerator2/build_info.json \
+            || { echo "::error::build_info.json was not bundled"; exit 1; }
 
       - name: Locate the executable
         id: exe
@@ -91,7 +114,7 @@ jobs:
         shell: pwsh
         run: |
           $ver = python -c "import version; print(version.__version__)"
-          $env:BUILD_NUMBER = "${{ github.run_number }}"
+          $env:BUILD_NUMBER = "${{ inputs.build_number }}"
           $tpl = Get-Content "installer/PTMGenerator2.iss.template" -Raw
           $tpl = $tpl.Replace("{{VERSION}}", $ver).
                       Replace("{{DIST_PATH}}", "$PWD\dist").

@@ -39,10 +39,38 @@ def test_the_ico_carries_the_sizes_windows_asks_for():
     assert {(16, 16), (32, 32), (48, 48), (256, 256)} <= sizes
 
 
+#: Bundled files the spec writes itself, so they are absent from a checkout.
+#: Each must be paired with a test below proving the spec really does produce
+#: it -- otherwise this set is just a way to silence the check.
+GENERATED = {"build_info.json"}
+
+
 def test_the_datas_globs_match_something():
     """('icons/*.png', 'icons') style entries must actually collect files."""
     for pattern, _dest in re.findall(r"\('([^']+)',\s*'([^']+)'\)", SPEC):
+        if pattern in GENERATED:
+            continue
         assert list(ROOT.glob(pattern)), f"the spec bundles {pattern}, which matches nothing"
+
+
+def test_the_spec_writes_the_build_metadata_it_bundles():
+    """The other half of the waiver above.
+
+    `build_info.json` is not in the tree because the spec stamps it at build
+    time. If that ever stops happening the bundle silently loses it and the
+    About dialog reports "local" from a released executable -- so assert the
+    spec both writes it and hands it to PyInstaller.
+    """
+    assert "build_info.json" in SPEC
+    assert re.search(r'Path\(SPECPATH, "build_info\.json"\)\.write_text', SPEC)
+    assert re.search(r"\('build_info\.json',\s*'\.'\)", SPEC)
+
+
+def test_the_build_number_is_not_taken_from_a_per_workflow_counter():
+    # github.run_number differs between build.yml and release.yml, so the same
+    # commit would stamp two different build numbers. The commit count does not.
+    assert "rev-list" in SPEC
+    assert "run_number" not in SPEC
 
 
 def test_the_entry_point_exists():
@@ -143,3 +171,47 @@ def test_the_workflow_substitutes_every_placeholder():
         assert f'Replace("{{{{{placeholder}}}}}"' in workflow or (
             f'.Replace("{{{{{placeholder}}}}}"' in workflow
         ), f"{placeholder} is never substituted"
+
+
+# -- the release workflow ----------------------------------------------------
+
+RELEASE = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+BUILD = (ROOT / ".github" / "workflows" / "build.yml").read_text(encoding="utf-8")
+REUSABLE = (ROOT / ".github" / "workflows" / "reusable_build.yml").read_text(encoding="utf-8")
+
+
+def _directives(workflow):
+    """The workflow with its comments removed.
+
+    Necessary because these files *explain* why they do not use
+    `github.run_number`, and a check reading the prose would fail on the
+    comment that documents the fix.
+    """
+    return "\n".join(line for line in workflow.splitlines() if not line.strip().startswith("#"))
+
+
+@pytest.mark.parametrize("workflow", [RELEASE, BUILD], ids=["release", "build"])
+def test_both_build_paths_derive_the_build_number_the_same_way(workflow):
+    """One commit, one build number, whichever workflow built it.
+
+    github.run_number counts runs of a single workflow, so build.yml and
+    release.yml would stamp different numbers into identical builds.
+    """
+    assert "git rev-list --count HEAD" in workflow
+    # `rev-list --count` on a shallow clone returns 1. actions/checkout is
+    # shallow by default, so this line is what makes the number real.
+    assert "fetch-depth: 0" in workflow
+    assert "github.run_number" not in _directives(workflow)
+
+
+def test_the_build_number_reaches_the_bundle_and_the_installer():
+    # The spec reads BUILD_NUMBER to stamp build_info.json; Inno reads it for
+    # the installer filename. Setting it for only one was the earlier bug.
+    assert REUSABLE.count("BUILD_NUMBER") >= 2
+    assert "inputs.build_number" in REUSABLE
+    assert "github.run_number" not in _directives(REUSABLE)
+
+
+def test_the_release_publishes_checksums():
+    assert "sha256sum" in RELEASE
+    assert "SHA256SUMS.txt" in RELEASE

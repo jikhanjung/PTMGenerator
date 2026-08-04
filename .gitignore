@@ -16,6 +16,10 @@ __pycache__/
 .claude/settings.local.json
 
 # Note: PTMGenerator2.spec is build configuration (source), so it is tracked.
+# Written by the spec at build time and read back by core/build_info.py. Not
+# tracked: a committed one would be whatever the last local build stamped, and
+# the About dialog would then report a stale build number as if it were real.
+build_info.json
 
 # Coverage
 .coverage

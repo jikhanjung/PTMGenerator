@@ -6,7 +6,7 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 
 ---
 
-## ▶ Current state (2026-08-03)
+## ▶ Current state (2026-08-04)
 
 **`v0.2.0-alpha.3`** — released 2026-07-29, pre-release. Nothing is waiting
 behind the tag: `main` and `v0.2.0-alpha.3` are the same commit. Two things
@@ -26,10 +26,18 @@ whole release matrix is green, `--self-test` ran against the frozen executable
 before Inno Setup packaged it, and **on 2026-08-03 the installer was installed
 and driven against the real dome** — the run in devlog 017.
 
+Since the tag, unreleased on `main`: the UI fixes that run turned up (devlog
+018) and an audit of the whole application against `.guides/` (devlog 019).
+The audit closed the two adoption-checklist items that had gone unrecorded —
+`guard_slot` on every connected slot, and tests for the `--self-test` gate
+itself — plus the About dialog, build metadata, and the build number now
+deriving from the commit count. `TODOs.md`'s status table is renumbered against
+the guide's current thirteen items.
+
 | | |
 |---|---|
-| Tests | **347 passed**, ~6 s, no display needed |
-| Coverage | **93%** overall (gate: 85%). `core/self_test.py` is the outlier at 29% — it checks the frozen bundle, which the suite is not |
+| Tests | **401 passed**, ~6 s, no display needed |
+| Coverage | **95%** overall (gate: 85%) |
 | Lint / types | ruff 20 rule groups, mypy over `core/` **and** `ui/` with `check_untyped_defs` on both — all clean, all gating |
 | CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
 | Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2`, `v0.2.0-alpha.3` — all built and self-tested on Windows. alpha.3 is the first to ship an installer |

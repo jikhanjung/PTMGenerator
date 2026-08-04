@@ -86,24 +86,42 @@ high-resolution capture:
 
 ---
 
-## Process status against the sibling projects
+## Process status against the shared desktop guide
 
-Where PTMGenerator2 stands against the process `../Modan2` and `../CTHarvester`
-run. Verified 2026-07-28, after the built-in fitter and the installer (devlog
-010–011); both shipped in v0.2.0-alpha.3, which is the last tag.
+Where PTMGenerator2 stands against `.guides/desktop/README.md`'s prioritized
+adoption checklist. **Verified 2026-08-04**, against the guide's current
+thirteen items.
+
+The previous version of this table tracked ten, numbered against an older
+structure of the guide (it cited "§14" and "Appendix A item 2", neither of
+which exists now). That is not a bookkeeping detail: the guide had grown two
+items, and because the table kept the old numbering, **the two new ones had
+nowhere to be recorded and were simply not looked at.** Both turned out to be
+missing — item 6's `guard_slot` and item 13 entirely. Renumbering to match the
+source is what surfaced them, which is the argument for keeping this table
+indexed on the guide rather than on its own history.
 
 | # | Item | Status | Where it stands |
 |---|---|---|---|
-| 1 | Cross-platform CI matrix + headless smoke test | ✅ | 3 OS x Python 3.12, `tests/test_smoke.py`. No xvfb — Qt's offscreen plugin |
-| 2 | Lint + tests gating | ✅ | ruff, mypy, the test matrix and the translation check all gate. No `\|\| true` anywhere |
-| 3 | Expand the lint ruleset incrementally | ✅ | All of the guide's groups landed 2026-07-28: `E, F, I, N, UP, B, C4, SIM, PTH, RUF, DTZ, S, TRY, LOG, G, RET, PIE, PERF, A, C90`. Waivers argued in `pyproject.toml` |
+| 1 | Cross-platform CI matrix + headless smoke test | ✅ | 3 OS, `tests/test_smoke.py`, no xvfb (Qt's offscreen plugin). One Python version, and `requires-python` now says so — see below |
+| 2 | Lint + tests gating | ✅ | ruff, mypy, the test matrix and the translation check all gate. No `\|\| true` anywhere. Branch protection declined — see below |
+| 3 | One linter, pinned in three places | ✅ | ruff `0.16.0` in `pyproject.toml`, `.pre-commit-config.yaml` and the dev locks CI installs from. Full ruleset; waivers argued in `pyproject.toml` |
 | 4 | `filterwarnings = error` | ✅ | `pyproject.toml`, one narrow documented ignore for PyQt5's sip shims |
-| 5 | Lockfile + pip-audit + Dependabot | ✅ | 9 per-platform locks with hashes, pip-audit on all three runtime locks, `.github/dependabot.yml` |
-| 6 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 93% across 347 tests |
-| 7 | Static type checking, scoped | ✅ | mypy gates over `core/` **and** `ui/`, `check_untyped_defs` on for both (devlog 013) |
-| 8 | Dead-code / complexity automation | ✅ | `C90` enforced at the guide's threshold of 15 |
-| 9 | Packaged artifact + installer | ✅ | `--self-test` runs against the frozen .exe before Inno Setup packages it (`reusable_build.yml`). Signing still open |
-| 10 | Property-based tests | ✅ | `tests/test_light_positions_properties.py`, hypothesis over the adjustment angle |
+| 5 | Hashed lockfiles + `--require-hashes` + lock-check + pip-audit | ✅ | 9 per-platform locks, `lockfiles-current` gate in `security.yml`, pip-audit on all three runtime locks, `.github/dependabot.yml` |
+| 6 | `guard_slot` on every slot + global excepthook | ✅ | **Done 2026-08-04** (devlog 019). Both windows; `tests/test_error_handling.py` asserts the pattern's coverage and pins the surplus-argument trap with real `clicked` / `currentIndexChanged` signals |
+| 7 | Coverage gate | ✅ | `--cov-fail-under=85` on the Linux leg; actual is 95% across 401 tests |
+| 8 | Static type checking, scoped | ✅ | mypy gates over `core/` **and** `ui/`, `check_untyped_defs` on for both (devlog 013) |
+| 9 | Version single-source + consistency test; CHANGELOG as release-notes SSOT | ✅ | `version.py`, `tests/test_version_consistency.py`, release notes extracted from `CHANGELOG.md` |
+| 10 | Packaged-artifact smoke, then signing | ⚠️ | `--self-test` runs against the frozen `.exe` in the build job, and is now itself tested (item 13). Signing declined — see below |
+| 11 | Property-based tests | ✅ | `tests/test_light_positions_properties.py`, hypothesis over the adjustment angle |
+| 12 | File locations + installer identity | ✅ | devlog 011, 014. GUID `AppId`, `lowest`, `{userpf}\PaleoBytes\PTMGenerator2`, config/data split with two independent overrides, migration on first read. `tests/test_paths.py` covers §7's checklist |
+| 13 | Verify each gate sees what you think it sees | ✅ | **Done 2026-08-04** (devlog 019). `tests/test_self_test.py` runs the frozen-bundle gate against known-bad input and asserts it fails; the flag dispatch is pinned separately |
+
+Beyond the checklist, from `branding.md`: the About dialog now carries the
+vendor, the build number, date and commit, the licence, the copyright and a
+**Copy diagnostics** button (`ui/about.py`), and `PtmApplication` sets Qt's
+organization and application names. Build metadata is stamped by the spec and
+read back by `core/build_info.py`.
 
 **Done 2026-07-28.** From the R01 audit (devlog 005–006): the serial-open crash
 and the platform-default encodings, the naive-datetime DST bug, the full lint
@@ -113,14 +131,36 @@ on-demand build workflow and the Windows icon defect it found, the first two
 releases (`v0.2.0-alpha.1`, `v0.2.0-alpha.2`), the utf-8 fallback that keeps
 legacy capture tables loading, and the Korean manual.
 
-**Not doing: signed installers.** Item 9's remaining half. There is no
+**Decided: one Python version, and the metadata says so.** Item 1 asks for
+OS x {min, max} runtime; the guide permits collapsing to one version
+deliberately, and that is the decision here. `requires-python` was `>=3.12`
+while CI ran 3.12 only, so 3.13 and 3.14 were claimed and untested; it is now
+`>=3.12,<3.13`.
+
+The reason this is cheap rather than a real constraint: **nobody runs this from
+source.** The artifact is a Windows installer carrying its own interpreter, and
+anyone working on the code sets up their own environment. Where it does matter
+is the lockfiles — `make lock` compiles them for 3.12 only, so metadata
+admitting 3.13 would have sent a contributor on 3.12+1 straight into a
+`--require-hashes` failure with nothing explaining why.
+
+**This is settled, not deferred.** A second Python leg would spend runner time
+on a configuration no user is in and no developer would be stuck in; the
+version that ships is the one PyInstaller bundles. The item stays ✅ on the
+strength of the decision being written down, which is what the guide asks for.
+
+`tests/test_version_consistency.py` couples the claim to the matrix, so the two
+cannot drift apart again — if a future change does widen the support window, it
+has to add the leg in the same commit or the suite says so.
+
+**Not doing: signed installers.** Item 10's remaining half. There is no
 certificate, and an unsigned installer with a SmartScreen warning is what this
 audience already downloads. Revisit if the tool is distributed outside the lab.
 Now that there *is* an installer, this is the only thing between it and a
 warning-free install.
 
-**Not doing: branch protection on `main`.** The guide (§14) and Appendix A item
-2 both call for it, and it is deliberately declined here. This is a
+**Not doing: branch protection on `main`.** Item 2 calls for it, and it is
+deliberately declined here. This is a
 single-maintainer repository with no review partner, so requiring pull requests
 buys nothing that the pre-commit hooks and the gating CI do not already provide,
 and costs a PR round-trip on every one-line fix. Revisit if a second person

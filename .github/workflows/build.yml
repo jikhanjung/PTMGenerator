@@ -39,8 +39,26 @@ permissions:
   contents: read
 
 jobs:
+  # The build number, shared with release.yml so the same commit stamps the
+  # same number whichever workflow builds it. github.run_number cannot: it
+  # counts runs of one workflow. The commit count is workflow-independent and
+  # monotonic -- and needs the full history, hence fetch-depth: 0.
+  build-number:
+    name: Build number
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.count.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: count
+        run: echo "value=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: build-number
     uses: ./.github/workflows/reusable_build.yml
     with:
+      build_number: ${{ needs.build-number.outputs.value }}
       artifact_name: PTMGenerator2-windows-dev
       retention_days: 14

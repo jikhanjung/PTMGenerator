@@ -206,3 +206,145 @@ def test_keyboard_interrupt_is_left_alone(capsys):
             error_handling.handle_exception(*sys.exc_info())
     default.assert_called_once()
     assert "Unhandled exception" not in capsys.readouterr().out
+
+
+# -- guard_slot -------------------------------------------------------------
+#
+# The hook above is the backstop. This is the fix: a failure is caught inside
+# the slot, before PyQt5 gets to abort the process.
+
+
+@pytest.fixture
+def silent_guard(monkeypatch):
+    """guard_slot with the dialog suppressed, and the log captured."""
+    logged = []
+    monkeypatch.setattr(error_handling, "print", logged.append, raising=False)
+    return logged
+
+
+def test_a_guarded_slot_returns_the_value_on_success():
+    @error_handling.guard_slot("Anything")
+    def fine(value):
+        return value * 2
+
+    assert fine(21) == 42
+
+
+def test_a_guarded_slot_swallows_the_failure_and_returns_none(silent_guard):
+    @error_handling.guard_slot("Doing the thing", show_dialog=False)
+    def broken():
+        raise ValueError("boom")
+
+    assert broken() is None
+    assert any("Doing the thing" in line for line in silent_guard)
+    assert any("boom" in line for line in silent_guard)
+
+
+def test_a_guarded_slot_does_not_catch_a_keyboard_interrupt():
+    # Ctrl-C must still quit. `except Exception`, not `except BaseException`.
+    @error_handling.guard_slot("Anything", show_dialog=False)
+    def interrupted():
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        interrupted()
+
+
+def test_a_failed_guarded_slot_leaves_no_wait_cursor(qapp):
+    """A cursor stack that outlives the failure locks the user out.
+
+    Nothing sets one today; the drain is in the guard so that whoever adds the
+    first one does not also have to remember this.
+    """
+    from PyQt5.QtCore import Qt
+    from PyQt5.QtGui import QCursor
+    from PyQt5.QtWidgets import QApplication
+
+    @error_handling.guard_slot("Anything", show_dialog=False)
+    def broken():
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        raise ValueError("boom")
+
+    broken()
+    assert QApplication.overrideCursor() is None
+
+
+# The variadic trap, pinned with real signals. sip decides how many of a
+# signal's arguments to forward by introspecting the slot, and a plain
+# `def wrapper(*args, **kwargs)` says it takes everything -- so without the
+# trimming in `_positional_limit`, every guarded slot on `clicked(bool)` or
+# `currentIndexChanged(int)` raises "takes 1 positional argument but 2 were
+# given" the first time it is pressed. That is a guard that breaks exactly
+# what it was added to protect.
+
+
+def test_a_guarded_slot_survives_a_signal_that_carries_an_argument(qapp):
+    from PyQt5.QtWidgets import QPushButton
+
+    calls = []
+
+    class Widget(QPushButton):
+        @error_handling.guard_slot("Pressed", show_dialog=False)
+        def on_clicked(self):
+            calls.append("pressed")
+
+    button = Widget()
+    button.clicked.connect(button.on_clicked)
+    button.click()  # clicked(bool) -- one argument the slot does not declare
+    assert calls == ["pressed"], "the argument the signal carries broke the slot"
+
+
+def test_a_guarded_slot_that_wants_the_argument_still_gets_it(qapp):
+    from PyQt5.QtWidgets import QComboBox
+
+    seen = []
+
+    class Widget(QComboBox):
+        @error_handling.guard_slot("Changed", show_dialog=False)
+        def on_index_changed(self, index):
+            seen.append(index)
+
+    combo = Widget()
+    combo.currentIndexChanged.connect(combo.on_index_changed)
+    combo.addItems(["a", "b"])
+    combo.setCurrentIndex(1)
+    assert seen[-1] == 1
+
+
+def test_a_guarded_slot_taking_star_args_is_left_alone():
+    @error_handling.guard_slot("Anything")
+    def takes_everything(*args):
+        return args
+
+    assert takes_everything(1, 2, 3) == (1, 2, 3)
+
+
+# -- coverage of the pattern ------------------------------------------------
+
+
+def _connected_slot_names(source):
+    import re
+
+    return {match.group(1) for match in re.finditer(r"\.connect\(\s*self\.(\w+)", source)}
+
+
+@pytest.mark.parametrize("module", ["ui/main_window.py", "ui/preferences_window.py"])
+def test_every_connected_slot_is_guarded(module, main_window, prefs_window):
+    """Partial coverage of this pattern is worse than none.
+
+    A window where most handlers are guarded reads as protected, so the one
+    that is not is the one nobody checks -- and it aborts the process exactly
+    like an unguarded window would.
+    """
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / module).read_text(encoding="utf-8")
+    window = main_window if "main_window" in module else prefs_window
+
+    unguarded = []
+    for name in sorted(_connected_slot_names(source)):
+        slot = getattr(window, name, None)
+        if slot is None or not hasattr(slot, "guarded"):
+            unguarded.append(name)
+    assert not unguarded, f"connected but not wrapped in guard_slot: {unguarded}"

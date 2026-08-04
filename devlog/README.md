@@ -38,6 +38,8 @@ renumbered, because commits reference them by name.
 | 015 | 2026-07-29 | [The log filename, and reviewing Modan2's data-directory plan](20260729_015_log_filename_and_p03_review.md) |
 | 016 | 2026-07-29 | [The shared guides, referenced instead of copied](20260729_016_shared_guides_checkout.md) |
 | 017 | 2026-08-03 | [The alpha meets the rig](20260803_017_first_hardware_run.md) |
+| 018 | 2026-08-04 | [What the first real run showed](20260804_018_ui_fixes_after_the_first_run.md) |
+| 019 | 2026-08-04 | [Auditing against the guide, and the two items the table could not hold](20260804_019_guide_audit_and_the_gates_nobody_checked.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy

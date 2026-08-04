@@ -338,6 +338,22 @@ out the interface without hardware attached.
 Line endings are normalized by `.gitattributes` (LF in the repository). If phantom
 whole-file diffs appear, run `git add --renormalize .`.
 
+### `Could not load the Qt platform plugin "xcb"` (Linux / WSL)
+Running from source on Linux — the shipped artifact is a Windows installer, so this
+is a developer's problem rather than a user's. PyQt5's wheel bundles Qt but not the
+system libraries it links against:
+
+```bash
+sudo apt-get install -y \
+  libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+  libxcb-randr0 libxcb-render-util0 libxcb-xfixes0 libxcb-shape0 \
+  libxcb-cursor0 libegl1 libgl1
+```
+
+That is the same list `.github/workflows/test.yml` installs. The test suite itself
+needs none of it: `tests/conftest.py` selects Qt's offscreen platform plugin, which
+is why there is no xvfb anywhere in this project.
+
 ## Legacy code
 
 `legacy/` holds superseded implementations, kept only for reference. They are not
