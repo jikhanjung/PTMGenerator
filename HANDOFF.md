@@ -8,9 +8,20 @@ re-deriving it. **This file is state, not a plan** — the work list lives in
 
 ## ▶ Current state (2026-08-04)
 
-**`v0.2.0-alpha.3`** — released 2026-07-29, pre-release. Nothing is waiting
-behind the tag: `main` and `v0.2.0-alpha.3` are the same commit. Two things
-went out with it that no earlier release had:
+**`v0.2.0-beta.1`** — released 2026-08-04, pre-release. Nothing is waiting
+behind the tag: `main` and `v0.2.0-beta.1` are the same commit.
+
+**Why beta rather than another alpha.** The alpha line was written before
+anything had met the hardware. On 2026-08-03 the installed alpha.3 drove the
+real dome end to end (devlog 017), and since then the UI defects that run
+exposed are fixed (devlog 018) and the application has been read against
+`.guides/` in full (devlog 019). What that audit found was not features
+missing but **two checks that were not watching anything** — `guard_slot` on
+the connected slots, and any test of the `--self-test` gate the build depends
+on. Both are closed. The code has stopped being a thing that has never been
+run, which is what the alpha label was honest about and no longer is.
+
+What went out under the alpha line and carries forward:
 
 1. **The built-in PTM fitter** (P02 phases 1–4, devlog 010). PTMs are fitted
    in-process by default, with no size ceiling beyond memory; `PTMfitter.exe`
@@ -21,26 +32,17 @@ went out with it that no earlier release had:
    `preferences.json` in the OS config location and the log is a dated file in
    `~/PaleoBytes/PTMGenerator2/logs/`. mypy now genuinely covers `ui/`.
 
-The artifact is `PTMGenerator2_v0.2.0-alpha.3_build3_Installer.exe` (41 MB). The
-whole release matrix is green, `--self-test` ran against the frozen executable
-before Inno Setup packaged it, and **on 2026-08-03 the installer was installed
-and driven against the real dome** — the run in devlog 017.
-
-Since the tag, unreleased on `main`: the UI fixes that run turned up (devlog
-018) and an audit of the whole application against `.guides/` (devlog 019).
-The audit closed the two adoption-checklist items that had gone unrecorded —
-`guard_slot` on every connected slot, and tests for the `--self-test` gate
-itself — plus the About dialog, build metadata, and the build number now
-deriving from the commit count. `TODOs.md`'s status table is renumbered against
-the guide's current thirteen items.
+New in beta.1: the About dialog with build metadata and **Copy diagnostics**,
+build numbers derived from the commit count, `SHA256SUMS.txt` with the
+release, and `requires-python` narrowed to the one version CI runs.
 
 | | |
 |---|---|
-| Tests | **401 passed**, ~6 s, no display needed |
+| Tests | **407 passed**, ~6 s, no display needed |
 | Coverage | **95%** overall (gate: 85%) |
 | Lint / types | ruff 20 rule groups, mypy over `core/` **and** `ui/` with `check_untyped_defs` on both — all clean, all gating |
 | CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
-| Releases | `v0.2.0-alpha.1`, `v0.2.0-alpha.2`, `v0.2.0-alpha.3` — all built and self-tested on Windows. alpha.3 is the first to ship an installer |
+| Releases | `v0.2.0-alpha.1` … `-alpha.3`, `v0.2.0-beta.1` — all built and self-tested on Windows. alpha.3 was the first to ship an installer |
 | Artifact | Inno Setup installer, per-user, `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2` |
 | Manual | published, English + Korean |
 
@@ -52,14 +54,20 @@ One thing is deliberately half-finished: **P02 phase 5**, deleting the external
 fitter and the path workarounds it forces on `core/ptm_builder.py`. See below —
 it is now one capture away. Everything else is complete and tested.
 
-## ▶ The one thing blocking the release
+## ▶ The one thing blocking `0.2.0`
 
 **Fit a high-pixel-count capture from the mirrorless body.**
 
 That single test is the gate, and it decides three things at once: whether the
 built-in fitter clears the ceiling it was written for, whether `PTMfitter.exe`
-can be deleted (P02 phase 5), and whether the version stops being a pre-release.
-The plan, as decided 2026-08-03, is to do all three off the back of it.
+can be deleted (P02 phase 5), and whether the version stops being a
+pre-release. The plan, as decided 2026-08-03, is to do all three off the back
+of it.
+
+It does **not** gate beta.1, which is still a pre-release — that is what the
+label is for. What beta.1 claims is that the code has been run against the
+hardware and that the checks guarding it are checking something. What it does
+not claim is the headroom below.
 
 The reason it is down to one item is the hardware run in **devlog 017**. On
 2026-08-03 the alpha.3 installer was installed and driven against the real dome,
