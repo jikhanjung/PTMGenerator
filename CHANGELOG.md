@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+### Security
+- **Pillow 13.0.0**, up from 12.3.0, which has 39 known vulnerabilities
+  (PYSEC-2026-4326 … 4343 and related CVEs), all fixed in 13.0.0. Pillow
+  decodes every captured JPEG for the built-in fitter.
 
 ## [0.2.0-beta.1] - 2026-08-04
 ### Added
