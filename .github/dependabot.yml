@@ -3,7 +3,11 @@ version: 2
 updates:
   # Dependabot bumps the ranges in pyproject.toml. The lockfiles are generated
   # from those ranges, so a bump leaves them stale until `make lock` is run --
-  # the `lockfiles-current` job in security.yml is what catches that.
+  # the `lockfiles-current` job in security.yml catches a range the lock no
+  # longer satisfies. It does NOT catch a range that was only *widened*: `uv
+  # pip compile` keeps an existing pin that still fits, so the lock stays on
+  # the old version and CI never runs the new one. Upgrade those explicitly
+  # (`--upgrade-package <name>`); see devlog 021.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
