@@ -42,6 +42,7 @@ renumbered, because commits reference them by name.
 | 019 | 2026-08-04 | [Auditing against the guide, and the two items the table could not hold](20260804_019_guide_audit_and_the_gates_nobody_checked.md) |
 | 020 | 2026-08-04 | [The installer, installed over itself and then removed](20260804_020_installer_lifecycle_verified.md) |
 | 021 | 2026-11-11 | [Dependabot's first batch, and the checks that had stopped running](20261111_021_dependabot_and_dormant_checks.md) |
+| R02 | 2026-11-11 | [Porting to Rust and GPUI: a review](20261111_R02_rust_gpui_port_review.md) |
 
 P-series entries (`P01`, `P02`, …) are **plans**: work that has not happened
 yet, written down before starting so the approach and the verification strategy
