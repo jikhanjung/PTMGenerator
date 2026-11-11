@@ -100,7 +100,7 @@ Everything above is itemised in `TODOs.md`.
 
 ```bash
 make install-dev     # deps + pre-commit hooks
-make test            # 347 tests, ~6 s
+make test            # 407 tests, ~6 s
 make lint type-check
 ```
 
