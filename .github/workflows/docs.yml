@@ -12,8 +12,13 @@ permissions:
 # One deployment at a time. Cancelling an in-progress *run* would be wrong
 # here — a half-finished Pages deployment is worse than a slightly stale one —
 # so queue instead.
+#
+# Only pushes to main deploy, so only they share the `pages` group. A group
+# holds one pending run and cancels the one it replaces, so when pull requests
+# shared it too, several PRs opened together cancelled each other's builds
+# (devlog 021). Each PR now queues only behind itself.
 concurrency:
-  group: pages
+  group: ${{ github.event_name == 'push' && 'pages' || format('docs-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:
