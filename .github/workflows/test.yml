@@ -153,7 +153,7 @@ jobs:
 
       - name: Upload coverage
         if: always() && runner.os == 'Linux'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests
