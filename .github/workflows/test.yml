@@ -143,21 +143,16 @@ jobs:
           pytest tests/ \
             --cov=core --cov=ui \
             --cov-report=term-missing \
-            --cov-report=xml \
             --cov-fail-under=85 \
             --timeout=60
 
+      # No Codecov upload. It never worked: the repository has no
+      # CODECOV_TOKEN, every upload was refused ("Token required - not valid
+      # tokenless upload"), and `fail_ci_if_error: false` kept that green. The
+      # gate above is what enforces coverage. See devlog 021.
       - name: Run tests (Windows/macOS)
         if: runner.os != 'Linux'
         run: pytest tests/ --timeout=60
-
-      - name: Upload coverage
-        if: always() && runner.os == 'Linux'
-        uses: codecov/codecov-action@v7
-        with:
-          files: ./coverage.xml
-          flags: unittests
-          fail_ci_if_error: false
 
   # The .qm files are committed, and PyInstaller bundles them, so a .ts edit
   # that was never compiled ships stale strings. Recompile and diff.

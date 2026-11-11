@@ -41,7 +41,7 @@ release, and `requires-python` narrowed to the one version CI runs.
 | Tests | **407 passed**, ~6 s, no display needed |
 | Coverage | **95%** overall (gate: 85%) |
 | Lint / types | ruff 20 rule groups, mypy over `core/` **and** `ui/` with `check_untyped_defs` on both — all clean, all gating |
-| CI | 6 workflows, all green: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call) |
+| CI | 6 workflows: test, build, release, docs, security, codeql (plus `reusable_build.yml`, which build and release both call). GitHub disables scheduled workflows after 60 days with no repository activity; security and codeql were found disabled on 2026-11-11 (devlog 021) — check `gh workflow list --all` after a quiet spell |
 | Releases | `v0.2.0-alpha.1` … `-alpha.3`, `v0.2.0-beta.1` — all built and self-tested on Windows. alpha.3 was the first to ship an installer |
 | Artifact | Inno Setup installer, per-user, `%LOCALAPPDATA%\Programs\PaleoBytes\PTMGenerator2` |
 | Manual | published, English + Korean |
