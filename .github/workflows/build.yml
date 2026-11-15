@@ -61,4 +61,4 @@ jobs:
     with:
       build_number: ${{ needs.build-number.outputs.value }}
       artifact_name: PTMGenerator2-windows-dev
-      retention_days: 14
+      retention_days: 3
